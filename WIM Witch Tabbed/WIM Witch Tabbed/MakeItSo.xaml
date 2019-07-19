@@ -1,0 +1,19 @@
+﻿<Window x:Class="WIM_Witch_Tabbed.MakeItSo"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WIM_Witch_Tabbed"
+        mc:Ignorable="d"
+        Title="MakeItSo" Height="500" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="733*"/>
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="MISFileNameTextBox" HorizontalAlignment="Left" Height="25" Margin="26,144,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+        <Label Content="Enter a file name:" HorizontalAlignment="Left" Height="25" Margin="26,114,0,0" VerticalAlignment="Top" Width="100"/>
+        <Button x:Name="MISFileButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="451,193,0,0" VerticalAlignment="Top" Width="75"/>
+        <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select a destination folder and give the WIM file a name. When ready, make it so!" VerticalAlignment="Top" Height="42" Width="353"/>
+
+    </Grid>
+</Window>

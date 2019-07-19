@@ -1,0 +1,15 @@
+C:\Users\donna\source\repos\WimWitch\WimWitch\bin\Debug\WimWitch.exe.config
+C:\Users\donna\source\repos\WimWitch\WimWitch\bin\Debug\WimWitch.exe
+C:\Users\donna\source\repos\WimWitch\WimWitch\bin\Debug\WimWitch.pdb
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.csprojAssemblyReference.cache
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\MainWindow.g.cs
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\App.g.cs
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch_MarkupCompile.cache
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch_MarkupCompile.lref
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\MainWindow.baml
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.g.resources
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.Properties.Resources.resources
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.csproj.GenerateResource.cache
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.csproj.CoreCompileInputs.cache
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.exe
+C:\Users\donna\source\repos\WimWitch\WimWitch\obj\Debug\WimWitch.pdb
