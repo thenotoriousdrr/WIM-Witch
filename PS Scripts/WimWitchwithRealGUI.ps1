@@ -211,9 +211,9 @@ Rename-Item -Path D:\WIMWorking\in_process.wim -NewName complete.wim
 #===========================================================================
 
 
-$WPFCloseButton.Add_Click({$form.Close()}) #Close Button                                                                  
+#$WPFCloseButton.Add_Click({$form.Close()}) #Close Button                                                                  
 
-$WPFMountButton.Add_Click({SelectMountdir}) #Mount Dir Button
+#$WPFMountButton.Add_Click({SelectMountdir}) #Mount Dir Button
 
 $WPFSourceWIMSelectButton.Add_Click({SelectSourceWIM}) #Source WIM File Button
 
@@ -221,7 +221,7 @@ $WPFJSONButton.Add_Click({SelectJSONFile}) #JSON File selection Button
 
 $WPFDriverDirButton.Add_Click({SelectDriverSource}) #Driver Source Folder Button
 
-$WPFMakeItSoButton.Add_Click({MakeItSo}) #Make it So Button, which builds the WIM file
+#$WPFMakeItSoButton.Add_Click({MakeItSo}) #Make it So Button, which builds the WIM file
      
 #Reference 
  
