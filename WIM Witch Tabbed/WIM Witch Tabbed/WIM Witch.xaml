@@ -6,21 +6,25 @@
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
         Title="WIM Witch" Height="500" Width="800">
-	<Grid>
+    <Grid>
         <TabControl>
-            <TabItem Header="Source WIM" Margin="0">
+            <TabItem Header="Source WIM" Margin="0" Width="75">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="359*"/>
+                        <ColumnDefinition Width="430*"/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <TextBox x:Name="SourceWIMSelectWIMTextBox" HorizontalAlignment="Left" Height="25" Margin="26,98,0,0" TextWrapping="Wrap" Text="Select WIM File" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <TextBox x:Name="SourceWIMSelectWIMTextBox" HorizontalAlignment="Left" Height="25" Margin="26,98,0,0" TextWrapping="Wrap" Text="Select WIM File" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.ColumnSpan="2"/>
                     <Label Content="Source Wim " HorizontalAlignment="Left" Height="25" Margin="26,70,0,0" VerticalAlignment="Top" Width="100"/>
                     <Button x:Name="SourceWIMMountButton" Content="Mount" HorizontalAlignment="Left" Margin="129,336,0,0" VerticalAlignment="Top" Width="75"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the path to the driver source that contains the drivers that will be injected by DISM." VerticalAlignment="Top" Height="42" Width="353"/>
-                    <Button x:Name="SourceWIMSelectButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="451,142,0,0" VerticalAlignment="Top" Width="75"/>
-                    <TextBox x:Name="SourceWimMountTextBox" HorizontalAlignment="Left" Height="25" Margin="21,369,0,0" TextWrapping="Wrap" Text="Select Mount Path" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the path to the driver source that contains the drivers that will be injected by DISM." VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
+                    <Button x:Name="SourceWIMSelectButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="92.281,142,0,0" VerticalAlignment="Top" Width="75" Grid.Column="1"/>
+                    <TextBox x:Name="SourceWimMountTextBox" HorizontalAlignment="Left" Height="25" Margin="21,369,0,0" TextWrapping="Wrap" Text="Select Mount Path" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.ColumnSpan="2"/>
                     <Label x:Name="MountLabel" Content="Mount Path" HorizontalAlignment="Left" Margin="21,331,0,0" VerticalAlignment="Top" Height="25" Width="100"/>
-                    <Button x:Name="SourceWimMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="446,407,0,0" VerticalAlignment="Top" Width="75" Height="25"/>
+                    <Button x:Name="SourceWimMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="87.281,407,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
                     <Button x:Name="SourceWIMDismountButton" Content="Dismount!" HorizontalAlignment="Left" Margin="230,336,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBox x:Name="SourceWIMImgDesTextBox" HorizontalAlignment="Left" Height="23" Margin="94,155,0,0" TextWrapping="Wrap" Text="ImageDescription" VerticalAlignment="Top" Width="225"/>
                     <TextBox x:Name="SourceWimArchTextBox" HorizontalAlignment="Left" Height="23" Margin="94,183,0,0" TextWrapping="Wrap" Text="Architecture" VerticalAlignment="Top" Width="225"/>
@@ -34,7 +38,7 @@
                     <Label Content="Languages" HorizontalAlignment="Left" Height="30" Margin="22,267,0,0" VerticalAlignment="Top" Width="68"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="JSON" Margin="-2,0,3,0">
+            <TabItem Header="JSON" Margin="-2,0,3,0" Width="75">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="733*"/>
@@ -43,11 +47,11 @@
                     <Label x:Name="JSONLabel" Content="Source JSON" HorizontalAlignment="Left" Height="25" Margin="26,114,0,0" VerticalAlignment="Top" Width="100"/>
                     <Button x:Name="JSONButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="451,193,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select a JSON file for use in deploying Autopilot systems. The file will be copied to processing folder during the build" VerticalAlignment="Top" Height="42" Width="353"/>
-                    <CheckBox Content="Enable Autopilot " HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="JSONEnableCheckBox" Content="Enable Autopilot " HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top"/>
 
                 </Grid>
             </TabItem>
-            <TabItem Header="Drivers" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="54">
+            <TabItem Header="Drivers" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="733*"/>
@@ -68,7 +72,38 @@
 
                 </Grid>
             </TabItem>
+            <TabItem Header="Make It So" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+
+                        <ColumnDefinition Width="20*"/>
+                        <ColumnDefinition Width="769*"/>
+
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="430.508,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647" Grid.Column="1"/>
+                    <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="5.508,85,0,0" TextWrapping="Wrap" Text="New WIM Name" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISDriverTextBox" HorizontalAlignment="Left" Height="23" Margin="104.508,183,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
+                    <Label Content="Drivers Selected?" HorizontalAlignment="Left" Height="30" Margin="1.508,183,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
+                    <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="104.508,214,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
+                    <Label Content="JSON Selected?" HorizontalAlignment="Left" Margin="1.508,211,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
+                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="New WIM Folder" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
+                    <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="5.508,336,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
+                    <Label Content="Image Mounted?" HorizontalAlignment="Left" Margin="1.508,242,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
+                    <TextBox x:Name="MISMountedTextBox" HorizontalAlignment="Left" Height="23" Margin="104.508,245,0,0" TextWrapping="Wrap" Text="Mounted Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="Logging" Header="Logging" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+
+                    </Grid.ColumnDefinitions>
+                    <ListBox x:Name="LoggingListBox" HorizontalAlignment="Left" Height="365" Margin="25,61,0,-6.2" VerticalAlignment="Top" Width="743" Grid.ColumnSpan="2"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Log rolls downstairs, alone or in pairs, rolls over your neighbor's dog. It fits on your back. It's great for a snack It's Log, Log, Log!" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
+
+                </Grid>
+            </TabItem>
         </TabControl>
 
-	</Grid>
+    </Grid>
 </Window>
