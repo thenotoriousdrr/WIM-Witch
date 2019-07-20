@@ -80,7 +80,7 @@
                         <ColumnDefinition Width="769*"/>
 
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="MISFolderButton" Content="Button" HorizontalAlignment="Left" Margin="430.508,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647" Grid.Column="1"/>
+                    <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="430.508,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647" Grid.Column="1"/>
                     <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="5.508,85,0,0" TextWrapping="Wrap" Text="New WIM Name" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <TextBox x:Name="MISDriverTextBox" HorizontalAlignment="Left" Height="23" Margin="104.508,183,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
                     <Label Content="Drivers Selected?" HorizontalAlignment="Left" Height="30" Margin="1.508,183,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
@@ -90,7 +90,7 @@
                     <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
                     <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="5.508,336,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
                     <Label Content="Image Mounted?" HorizontalAlignment="Left" Margin="1.508,242,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
-                    <TextBox x:Name="MISMountedTextBox" HorizontalAlignment="Left" Height="23" Margin="104.508,245,0,0" TextWrapping="Wrap" Text="Mounted Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" TextChanged="MISMountedTextBox_TextChanged"/>
+                    <TextBox x:Name="MISMountedTextBox" HorizontalAlignment="Left" Height="23" Margin="104.508,245,0,0" TextWrapping="Wrap" Text="Mounted Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
                 </Grid>
             </TabItem>
             <TabItem x:Name="Logging" Header="Logging" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
