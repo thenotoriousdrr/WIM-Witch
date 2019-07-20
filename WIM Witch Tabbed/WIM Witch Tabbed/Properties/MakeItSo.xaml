@@ -1,0 +1,26 @@
+﻿<Window x:Class="WIM_Witch_Tabbed.Window2"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WIM_Witch_Tabbed"
+        mc:Ignorable="d"
+        Title="Make It So" Height="500" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+
+        </Grid.ColumnDefinitions>
+        <Button Content="Button" HorizontalAlignment="Left" Margin="451,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647"/>
+        <TextBox HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="New WIM Name" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="125,183,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120"/>
+        <Label Content="Drivers Selected?" HorizontalAlignment="Left" Height="30" Margin="22,183,0,0" VerticalAlignment="Top" Width="101"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="125,214,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120"/>
+        <Label Content="JSON Selected?" HorizontalAlignment="Left" Margin="22,211,0,0" VerticalAlignment="Top" Width="102"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="26,119,0,0" TextWrapping="Wrap" Text="New WIM Folder" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+        <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353"/>
+        <Button Content="Make it so!" HorizontalAlignment="Left" Margin="26,336,0,0" VerticalAlignment="Top" Width="353" Height="64"/>
+        <Label Content="Image Mounted?" HorizontalAlignment="Left" Margin="22,242,0,0" VerticalAlignment="Top" Width="102"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="125,245,0,0" TextWrapping="Wrap" Text="Mounted Y/N" VerticalAlignment="Top" Width="120"/>
+
+    </Grid>
+</Window>
