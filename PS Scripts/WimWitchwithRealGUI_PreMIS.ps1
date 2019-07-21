@@ -211,44 +211,14 @@ $DriverTextBoxNumber.Text = $DriverDir
 #Function for the Make it So button
 Function MakeItSo {
 
-#check for working directory, make if does not exist, delete files if they exist
-$FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
-if ($FolderExist = $False) {
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging}
-    Else{
-    Remove-Item –path c:\WIMWitch\Staging\* -Recurse}
-
-
-#Copy source WIM
-Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging"
-
-#Rename copied source WiM
-$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text
-$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1
-
-
-#Inject Autopilot JSON file
-$autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
-Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir
-
-
-
-#Inject Drivers
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir1TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir2TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir3TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir4TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir5TextBox.text -Recurse 
-
-
-#Dismount, commit, and move WIM
-Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save
-Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text
-
+Copy-Item $SourceWIM.FileName -Destination "D:\WIMWorking"
+Rename-Item -Path D:\WIMWorking\install.wim -NewName in_process.wim
+Mount-WindowsImage -Path $MountDir -ImagePath D:\WIMWorking\in_process.wim -Index 1
+Copy-Item $JSON.FileName -Destination "D:\mount\windows\Provisioning\Autopilot"
+Dism /Image:$MountDir /Add-Driver /Driver:$DriverDir /Recurse
+Dismount-WindowsImage -Path $MountDir -save
+Rename-Item -Path D:\WIMWorking\in_process.wim -NewName complete.wim
 }
-
 
 #Function to assign the target directory
 Function SelectTargetDir {
@@ -297,7 +267,7 @@ $WPFDriverDir4Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriv
 $WPFDriverDir5Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir5TextBox}) 
 
 #Make it So Button, which builds the WIM file
-$WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
+#$WPFMakeItSoButton.Add_Click({MakeItSo}) 
 
 
 
@@ -357,7 +327,7 @@ $WPFDriverCheckBox.Add_Click({
 write-host "To show the form, run the following" -ForegroundColor Cyan
 '$Form.ShowDialog() | out-null'
  
- $Form.ShowDialog() | out-null
+# $Form.ShowDialog() | out-null
  
 
 
