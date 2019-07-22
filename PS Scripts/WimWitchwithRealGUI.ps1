@@ -98,12 +98,10 @@ $inputXML = @"
             </TabItem>
             <TabItem x:Name="Logging" Header="Logging" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-
-                    </Grid.ColumnDefinitions>
-                    <ListBox x:Name="LoggingListBox" HorizontalAlignment="Left" Height="365" Margin="25,61,0,-6.2" VerticalAlignment="Top" Width="743" Grid.ColumnSpan="2"/>
+               
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Log rolls downstairs, alone or in pairs, rolls over your neighbor's dog. It fits on your back. It's great for a snack It's Log, Log, Log!" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
-
+                    <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
+            
                 </Grid>
             </TabItem>
 
@@ -208,6 +206,8 @@ $DriverDir = $browser.SelectedPath
 $DriverTextBoxNumber.Text = $DriverDir
 }
 
+
+
 #Function for the Make it So button
 Function MakeItSo {
 
@@ -262,6 +262,76 @@ $WPFMISWimFolderTextBox.text = $TargetDir #I SCREWED UP THIS VARIABLE
 
 }
 
+#Function to enable logging
+#Syntax = update-log -Data "Hello this is a test" -Class Warning
+Function Update-Log
+{
+    Param(
+    [Parameter(
+        Mandatory=$true, 
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        Position=0
+    )]
+    [string]$Data,
+
+    [Parameter(
+        Mandatory=$false, 
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        Position=0
+    )]
+    [string]$Solution = $Solution,
+
+    [Parameter(
+        Mandatory=$false, 
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true,
+        Position=1
+    )]
+    [validateset('Information','Warning','Error')]
+    [string]$Class = "Information"
+
+    )
+    $global:ScriptLogFilePath = $Log
+    $LogString = "$(Get-Date) $Class  -  $Data"
+    $HostString = "$(Get-Date) $Class  -  $Data"
+
+    
+    Add-Content -Path $Log -Value $LogString
+    switch ($Class)
+    {
+        'Information'{
+            Write-Host $HostString -ForegroundColor Gray
+            }
+        'Warning'{
+            Write-Host $HostString -ForegroundColor Yellow
+            }
+        'Error'{
+            Write-Host $HostString -ForegroundColor Red
+            }
+        Default {}
+    }
+}
+
+#Removes old log and creates if does not exist
+Function Set-Logging{
+
+$FileExist = Test-Path -Path C:\WIMWitch\logging\WIMWitch.Log -PathType Leaf
+if ($FileExist -eq $False) {
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging
+    New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"}
+    Else{
+     Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
+     New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"}
+}
+
+#===========================================================================
+# Run commands to reset values of files, etc.
+#===========================================================================
+Set-Logging #Clears out old logs from previous builds
+
+
 #===========================================================================
 # Set default values for certain variables
 #===========================================================================
@@ -272,6 +342,8 @@ $WPFMISJSONTextBox.Text = "False"
 #Set the value of the Driver field in the Make It So tab
 $WPFMISDriverTextBox.Text = "False"
 
+#Set the path and name for logging
+$Log = "C:\WIMWitch\logging\WIMWitch.log"
 
 #===========================================================================
 # Section for Buttons to call functions
@@ -299,7 +371,8 @@ $WPFDriverDir5Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriv
 #Make it So Button, which builds the WIM file
 $WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
 
-
+#Logging window
+$WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -352,11 +425,22 @@ $WPFDriverCheckBox.Add_Click({
 # $WPFbutton.Add_Click({ Test-connection -count 1 -ComputerName $WPFtextBox.Text
 # })
 #===========================================================================
+# Commands before forms load
+#===========================================================================
+
+
+
+
+
+
+#write-host "To show the form, run the following" -ForegroundColor Cyan
+#'$Form.ShowDialog() | out-null'
+
+#===========================================================================
 # Shows the form
 #===========================================================================
-write-host "To show the form, run the following" -ForegroundColor Cyan
-'$Form.ShowDialog() | out-null'
- 
+
+
  $Form.ShowDialog() | out-null
  
 
@@ -368,3 +452,4 @@ write-host "To show the form, run the following" -ForegroundColor Cyan
 
  # Get-WindowsImage -ImagePath install.wim -Index 1
 #  This will list the relevant info 
+
