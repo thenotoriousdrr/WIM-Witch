@@ -28,9 +28,6 @@
 
     )
     $global:ScriptLogFilePath = $Log
-   # $LogString = "$Solution, $Data, $Class, $(Get-Date)"
-   # $HostString = "$Solution, $Data, $(Get-Date)"
-
     $LogString = "$(Get-Date), $Class,  $Data"
     $HostString = "$(Get-Date), $Class,  $Data"
 
