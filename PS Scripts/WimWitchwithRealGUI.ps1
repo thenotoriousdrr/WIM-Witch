@@ -172,10 +172,21 @@ $SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 }
 $null = $SourceWIM.ShowDialog()
 $WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
-$ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index 1
+
+try
+{
+    $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index 1 -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM file selected may be borked. Try a different one" -Class Warning
+    Return
+}
+
+
 update-log -Data "WIM file selected" -Class Information
 $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
-#$WPFSourceWimArchTextBox.text = $ImageInfo.Architecture
 $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
 $WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
 $WPFSourceWimLangTextBox.text = $ImageInfo.Languages
@@ -218,36 +229,96 @@ Function MakeItSo {
 #check for working directory, make if does not exist, delete files if they exist
 $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
 update-log -Data "Checking to see if the staging path exists..." -Class Information
-if ($FolderExist = $False) {
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging
-    update-log -Data "Path did not exist, but it does now :)" -Class Information}
+
+try
+{
+    if ($FolderExist = $False) {
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging -ErrorAction Stop
+        update-log -Data "Path did not exist, but it does now :)" -Class Information -ErrorAction Stop}
     Else{
-    Remove-Item –path c:\WIMWitch\Staging\* -Recurse
-    update-log -Data "The path existed, and it has been purged." -Class Information
-    }
+        Remove-Item –path c:\WIMWitch\Staging\* -Recurse -ErrorAction Stop
+        update-log -Data "The path existed, and it has been purged." -Class Information -ErrorAction Stop}
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
+    break
+}
+
 
 
 #Copy source WIM
 update-log -Data "Copying source WIM to the staging folder" -Class Information
-Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging"
+
+try
+{
+    Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging" -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -Data "The file couldn't be copied. No idea what happened" -class Error
+    return
+}
+
 update-log -Data "Source WIM has been copied to the source folder" -Class Information
 
 #Rename copied source WiM
-$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text
+
+try
+{
+    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim -ErrorAction Stop
+    Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The copied source file couldn't be renamed. This shouldn't have happened." -Class Error
+    Update-Log -data "Go delete the WIM from C:\WIMWitch\Staging\, then try again" -Class Error
+    return
+}
+
 update-log -Data "Copied source WIM has been renamed" -Class Information
 $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
 update-log -Data "Mounting source WIM" -Class Information
-Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1
+
+try
+{
+    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM couldn't be mounted. Make sure the mount directory is empty" -Class Error
+    Update-Log -Data "and that it isn't an active mount point" -Class Error
+    return
+}
 
 
 #Inject Autopilot JSON file
-$autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
-Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir
 update-log -Data "Injecting JSON file" -Class Information
+
+try
+{
+    $autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
+    Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "JSON file couldn't be copied. Check to see if the correct SKU" -Class Error
+    Update-Log -Data "of Windows has been selected" -Class Error
+    Update-log -Data "The WIM is still mounted. You'll need to clean that up manually until" -Class Error
+    Update-Log -data "I get around to handling that error more betterer" -Class Error
+    Update-Log -data "- <3 Donna" -Class Error
+    return  
+}
 
 
 #Inject Drivers
+update-log -Data "The driver function needs to be updated. There's no error handling" -Class Information 
+update-log -Data "it will attempt to inject whatever it finds. Good luck. -D" -Class Information 
 Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir1TextBox.text -Recurse
 update-log -Data "Injecting drivers from path 1" -Class Information 
 Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir2TextBox.text -Recurse 
@@ -260,11 +331,35 @@ Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir5TextBox.t
 update-log -Data "Injecting drivers from path 5" -Class Information 
 
 #Dismount, commit, and move WIM
+
 update-log -Data "Dismounting WIM file, committing changes" -Class Information 
-Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save
+try
+{
+    Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM couldn't save. You will have to manually discard the" -Class Error
+    Update-Log -data "mounted image manually" -Class Error
+    return
+}
+
 update-log -Data "WIM dismounted" -Class Information 
-Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text
+
+try
+{
+    Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM couldn't be copied. You can still retrieve it from staging path." -Class Error
+    Update-Log -data "The file will be deleted when the tool is rerun." -Class Error
+    return
+}
 update-log -Data "Moved saved WIM to target directory" -Class Information 
+update-log -Data "Job's done." -Class Information 
 }
 
 
