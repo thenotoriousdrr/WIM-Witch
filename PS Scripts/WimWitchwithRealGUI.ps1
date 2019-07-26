@@ -243,7 +243,7 @@ catch
 {
     Update-Log -data $_.Exception.Message -class Error
     Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
-    break
+    return
 }
 
 
@@ -330,6 +330,21 @@ update-log -Data "Injecting drivers from path 4" -Class Information
 Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir5TextBox.text -Recurse 
 update-log -Data "Injecting drivers from path 5" -Class Information 
 
+#Copy log to mounted WIM
+try
+{
+    update-log -Data "Attempting to copy log to mounted image" -Class Information 
+    $mountlogdir = $WPFMISMountTextBox.Text + "\windows\"
+    Copy-Item C:\WIMWitch\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
+    $CopyLogExist = Test-Path $mountlogdir\WIMWitch.log -PathType Leaf
+    if ($CopyLogExist -eq $true) {update-log -Data "Log filed copied successfully" -Class Information}
+}
+catch
+{
+   Update-Log -data $_.Exception.Message -class Error
+   update-log -data "Coudn't copy the log file to the mounted image." -class Error
+}
+
 #Dismount, commit, and move WIM
 
 update-log -Data "Dismounting WIM file, committing changes" -Class Information 
@@ -359,9 +374,26 @@ catch
     return
 }
 update-log -Data "Moved saved WIM to target directory" -Class Information 
+
+
+#Copy log here
+try
+{
+    update-log -Data "Copying build log to target folder" -Class Information 
+    Copy-Item -Path C:\WIMWitch\logging\WIMWitch.log -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+    $logold = $WPFMISWimFolderTextBox.Text + "\WIMWitch.log"
+    $lognew = $WPFMISWimFolderTextBox.Text + "\" + $WPFMISWimNameTextBox.Text + ".log"
+    Rename-Item $logold -NewName $lognew -Force -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The log file couldn't be copied and renamed. You can still snag it from the source." -Class Error
+    update-log -Data "Job's done." -Class Information 
+    return
+}
 update-log -Data "Job's done." -Class Information 
 }
-
 
 #Function to assign the target directory
 Function SelectTargetDir {
@@ -527,17 +559,6 @@ $WPFDriverCheckBox.Add_Click({
      
 
 
-#Reference 
- 
-#Adding items to a dropdown/combo box
-    #$vmpicklistView.items.Add([pscustomobject]@{'VMName'=($_).Name;Status=$_.Status;Other="Yes"})
-     
-#Setting the text of a text box to the current PC name    
-    #$WPFtextBox.Text = $env:COMPUTERNAME
-     
-#Adding code to a button, so that when clicked, it pings a system
-# $WPFbutton.Add_Click({ Test-connection -count 1 -ComputerName $WPFtextBox.Text
-# })
 #===========================================================================
 # Commands before forms load
 #===========================================================================
@@ -556,14 +577,5 @@ $WPFDriverCheckBox.Add_Click({
 
 
  $Form.ShowDialog() | out-null
- 
 
-
-
- #===========================================================================
- # Scratch pad below
- #===========================================================================
-
- # Get-WindowsImage -ImagePath install.wim -Index 1
-#  This will list the relevant info 
 
