@@ -211,7 +211,7 @@ update-log -Data "JSON file selected" -Class Information
 
 #Function to select the paths for the driver fields
 Function SelectDriverSource($DriverTextBoxNumber) {
-write-host $DriverTextBoxNumber
+#write-host $DriverTextBoxNumber
 Add-Type -AssemblyName System.Windows.Forms
 $browser = New-Object System.Windows.Forms.FolderBrowserDialog
 $browser.Description = "Select the Driver Source folder"
@@ -221,10 +221,10 @@ $DriverTextBoxNumber.Text = $DriverDir
 update-log -Data "Driver path selected" -Class Information
 }
 
-
-
 #Function for the Make it So button
 Function MakeItSo {
+
+#$WPFLogging.Items[1].IsSelected = $true
 
 #check for working directory, make if does not exist, delete files if they exist
 $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
@@ -297,6 +297,8 @@ catch
 
 
 #Inject Autopilot JSON file
+if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
+
 update-log -Data "Injecting JSON file" -Class Information
 
 try
@@ -315,8 +317,14 @@ catch
     return  
 }
 
+}
+else{
+update-log -Data "JSON not selected. Skipping JSON Injection" -Class Information
+}
 
 #Inject Drivers
+
+If ($WPFDriverCheckBox.IsChecked -eq $true){
 update-log -Data "The driver function needs to be updated. There's no error handling" -Class Information 
 update-log -Data "it will attempt to inject whatever it finds. Good luck. -D" -Class Information 
 Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir1TextBox.text -Recurse
@@ -329,6 +337,12 @@ Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir4TextBox.t
 update-log -Data "Injecting drivers from path 4" -Class Information 
 Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir5TextBox.text -Recurse 
 update-log -Data "Injecting drivers from path 5" -Class Information 
+}
+Else
+{
+update-log -Data "Drivers were not selected for injection. Skipping." -Class Information 
+}
+
 
 #Copy log to mounted WIM
 try
