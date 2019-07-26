@@ -325,18 +325,12 @@ update-log -Data "JSON not selected. Skipping JSON Injection" -Class Information
 #Inject Drivers
 
 If ($WPFDriverCheckBox.IsChecked -eq $true){
-update-log -Data "The driver function needs to be updated. There's no error handling" -Class Information 
-update-log -Data "it will attempt to inject whatever it finds. Good luck. -D" -Class Information 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir1TextBox.text -Recurse
-update-log -Data "Injecting drivers from path 1" -Class Information 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir2TextBox.text -Recurse 
-update-log -Data "Injecting drivers from path 2" -Class Information 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir3TextBox.text -Recurse 
-update-log -Data "Injecting drivers from path 3" -Class Information 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir4TextBox.text -Recurse 
-update-log -Data "Injecting drivers from path 4" -Class Information 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir5TextBox.text -Recurse 
-update-log -Data "Injecting drivers from path 5" -Class Information 
+
+DriverInjection -Folder $WPFDriverDir1TextBox.text
+DriverInjection -Folder $WPFDriverDir2TextBox.text
+DriverInjection -Folder $WPFDriverDir3TextBox.text
+DriverInjection -Folder $WPFDriverDir4TextBox.text
+DriverInjection -Folder $WPFDriverDir5TextBox.text
 }
 Else
 {
@@ -484,6 +478,20 @@ if ($FileExist -eq $False) {
     Else{
      Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
      New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"}
+}
+
+#Function for injecting drivers into the mounted WIM
+Function DriverInjection($Folder)
+{
+try{
+Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $Folder -Recurse -ErrorAction Stop
+}
+catch
+{
+update-log -Data "Drivers not found in folder. Continuing..." -Class Information 
+return
+}
+update-log -Data "Drivers have been injected." -Class Information 
 }
 
 #===========================================================================
