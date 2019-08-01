@@ -225,10 +225,12 @@ update-log -Data "Driver path selected" -Class Information
 Function MakeItSo {
 
 #Check if new file name is valid, also append file extension if neccessary
-# $WPFMISWimNameTextBox.Text this is the variable for the new name. Work with this
+
+
 
 if ($WPFMISWimNameTextBox.Text -eq "")
 {
+$WPFLogging.Focus()
 update-log -Data "Enter a valid file name and then try again" -Class Error
 return 
 }
@@ -236,17 +238,20 @@ return
 
 if ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name")
 {
+$WPFLogging.Focus()
 update-log -Data "Enter a valid file name and then try again" -Class Error
 return 
 }
 
 If ($WPFMISWimNameTextBox.Text -like "*.wim")
 {
+$WPFLogging.Focus()
 update-log -Data "New WIM name is valid" -Class Information
 }
 
 If($WPFMISWimNameTextBox.Text -notlike "*.wim")
 {
+$WPFLogging.Focus()
 $WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
 update-log -Data "Appending new file name with an extension" -Class Information
 }
