@@ -224,7 +224,34 @@ update-log -Data "Driver path selected" -Class Information
 #Function for the Make it So button
 Function MakeItSo {
 
-#$WPFLogging.Items[1].IsSelected = $true
+#Check if new file name is valid, also append file extension if neccessary
+# $WPFMISWimNameTextBox.Text this is the variable for the new name. Work with this
+
+if ($WPFMISWimNameTextBox.Text -eq "")
+{
+update-log -Data "Enter a valid file name and then try again" -Class Error
+return 
+}
+
+
+if ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name")
+{
+update-log -Data "Enter a valid file name and then try again" -Class Error
+return 
+}
+
+If ($WPFMISWimNameTextBox.Text -like "*.wim")
+{
+update-log -Data "New WIM name is valid" -Class Information
+}
+
+If($WPFMISWimNameTextBox.Text -notlike "*.wim")
+{
+$WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
+update-log -Data "Appending new file name with an extension" -Class Information
+}
+
+
 
 #check for working directory, make if does not exist, delete files if they exist
 $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
@@ -484,7 +511,7 @@ if ($FileExist -eq $False) {
 Function DriverInjection($Folder)
 {
 try{
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $Folder -Recurse -ErrorAction Stop
+Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $Folder -Recurse -loglevel verbose -ErrorAction Stop
 }
 catch
 {
