@@ -159,6 +159,7 @@ $browser.Description = "Select the mount folder"
 $null = $browser.ShowDialog()
 $MountDir = $browser.SelectedPath
 $WPFMISMountTextBox.text = $MountDir #I SCREWED UP THIS VARIABLE
+update-log -Data "Mount directory selected" -Class Information
 
 }
 
@@ -171,9 +172,21 @@ $SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 }
 $null = $SourceWIM.ShowDialog()
 $WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
-$ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index 1
+
+try
+{
+    $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index 1 -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM file selected may be borked. Try a different one" -Class Warning
+    Return
+}
+
+
+update-log -Data "WIM file selected" -Class Information
 $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
-#$WPFSourceWimArchTextBox.text = $ImageInfo.Architecture
 $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
 $WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
 $WPFSourceWimLangTextBox.text = $ImageInfo.Languages
@@ -193,62 +206,234 @@ $JSON = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 }
 $null = $JSON.ShowDialog()
 $WPFJSONTextBox.Text = $JSON.FileName
+update-log -Data "JSON file selected" -Class Information
 }
 
 #Function to select the paths for the driver fields
 Function SelectDriverSource($DriverTextBoxNumber) {
-write-host $DriverTextBoxNumber
+#write-host $DriverTextBoxNumber
 Add-Type -AssemblyName System.Windows.Forms
 $browser = New-Object System.Windows.Forms.FolderBrowserDialog
 $browser.Description = "Select the Driver Source folder"
 $null = $browser.ShowDialog()
 $DriverDir = $browser.SelectedPath
 $DriverTextBoxNumber.Text = $DriverDir
+update-log -Data "Driver path selected" -Class Information
 }
-
-
 
 #Function for the Make it So button
 Function MakeItSo {
 
+#Check if new file name is valid, also append file extension if neccessary
+
+
+
+if ($WPFMISWimNameTextBox.Text -eq "")
+{
+$WPFLogging.Focus()
+update-log -Data "Enter a valid file name and then try again" -Class Error
+return 
+}
+
+
+if ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name")
+{
+$WPFLogging.Focus()
+update-log -Data "Enter a valid file name and then try again" -Class Error
+return 
+}
+
+If ($WPFMISWimNameTextBox.Text -like "*.wim")
+{
+$WPFLogging.Focus()
+update-log -Data "New WIM name is valid" -Class Information
+}
+
+If($WPFMISWimNameTextBox.Text -notlike "*.wim")
+{
+$WPFLogging.Focus()
+$WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
+update-log -Data "Appending new file name with an extension" -Class Information
+}
+
+
+
 #check for working directory, make if does not exist, delete files if they exist
 $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
-if ($FolderExist = $False) {
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging}
+update-log -Data "Checking to see if the staging path exists..." -Class Information
+
+try
+{
+    if ($FolderExist = $False) {
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging -ErrorAction Stop
+        update-log -Data "Path did not exist, but it does now :)" -Class Information -ErrorAction Stop}
     Else{
-    Remove-Item –path c:\WIMWitch\Staging\* -Recurse}
+        Remove-Item –path c:\WIMWitch\Staging\* -Recurse -ErrorAction Stop
+        update-log -Data "The path existed, and it has been purged." -Class Information -ErrorAction Stop}
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
+    return
+}
+
 
 
 #Copy source WIM
-Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging"
+update-log -Data "Copying source WIM to the staging folder" -Class Information
+
+try
+{
+    Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging" -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -Data "The file couldn't be copied. No idea what happened" -class Error
+    return
+}
+
+update-log -Data "Source WIM has been copied to the source folder" -Class Information
 
 #Rename copied source WiM
+
+try
+{
+    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim -ErrorAction Stop
+    Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The copied source file couldn't be renamed. This shouldn't have happened." -Class Error
+    Update-Log -data "Go delete the WIM from C:\WIMWitch\Staging\, then try again" -Class Error
+    return
+}
+
+update-log -Data "Copied source WIM has been renamed" -Class Information
 $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text
-$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1
+update-log -Data "Mounting source WIM" -Class Information
+
+try
+{
+    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM couldn't be mounted. Make sure the mount directory is empty" -Class Error
+    Update-Log -Data "and that it isn't an active mount point" -Class Error
+    return
+}
 
 
 #Inject Autopilot JSON file
-$autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
-Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir
+if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
 
+update-log -Data "Injecting JSON file" -Class Information
 
-
-#Inject Drivers
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir1TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir2TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir3TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir4TextBox.text -Recurse 
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $WPFDriverDir5TextBox.text -Recurse 
-
-
-#Dismount, commit, and move WIM
-Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save
-Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text
-
+try
+{
+    $autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
+    Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "JSON file couldn't be copied. Check to see if the correct SKU" -Class Error
+    Update-Log -Data "of Windows has been selected" -Class Error
+    Update-log -Data "The WIM is still mounted. You'll need to clean that up manually until" -Class Error
+    Update-Log -data "I get around to handling that error more betterer" -Class Error
+    Update-Log -data "- <3 Donna" -Class Error
+    return  
 }
 
+}
+else{
+update-log -Data "JSON not selected. Skipping JSON Injection" -Class Information
+}
+
+#Inject Drivers
+
+If ($WPFDriverCheckBox.IsChecked -eq $true){
+
+DriverInjection -Folder $WPFDriverDir1TextBox.text
+DriverInjection -Folder $WPFDriverDir2TextBox.text
+DriverInjection -Folder $WPFDriverDir3TextBox.text
+DriverInjection -Folder $WPFDriverDir4TextBox.text
+DriverInjection -Folder $WPFDriverDir5TextBox.text
+}
+Else
+{
+update-log -Data "Drivers were not selected for injection. Skipping." -Class Information 
+}
+
+
+#Copy log to mounted WIM
+try
+{
+    update-log -Data "Attempting to copy log to mounted image" -Class Information 
+    $mountlogdir = $WPFMISMountTextBox.Text + "\windows\"
+    Copy-Item C:\WIMWitch\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
+    $CopyLogExist = Test-Path $mountlogdir\WIMWitch.log -PathType Leaf
+    if ($CopyLogExist -eq $true) {update-log -Data "Log filed copied successfully" -Class Information}
+}
+catch
+{
+   Update-Log -data $_.Exception.Message -class Error
+   update-log -data "Coudn't copy the log file to the mounted image." -class Error
+}
+
+#Dismount, commit, and move WIM
+
+update-log -Data "Dismounting WIM file, committing changes" -Class Information 
+try
+{
+    Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM couldn't save. You will have to manually discard the" -Class Error
+    Update-Log -data "mounted image manually" -Class Error
+    return
+}
+
+update-log -Data "WIM dismounted" -Class Information 
+
+try
+{
+    Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The WIM couldn't be copied. You can still retrieve it from staging path." -Class Error
+    Update-Log -data "The file will be deleted when the tool is rerun." -Class Error
+    return
+}
+update-log -Data "Moved saved WIM to target directory" -Class Information 
+
+
+#Copy log here
+try
+{
+    update-log -Data "Copying build log to target folder" -Class Information 
+    Copy-Item -Path C:\WIMWitch\logging\WIMWitch.log -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+    $logold = $WPFMISWimFolderTextBox.Text + "\WIMWitch.log"
+    $lognew = $WPFMISWimFolderTextBox.Text + "\" + $WPFMISWimNameTextBox.Text + ".log"
+    Rename-Item $logold -NewName $lognew -Force -ErrorAction Stop
+}
+catch
+{
+    Update-Log -data $_.Exception.Message -class Error
+    Update-Log -data "The log file couldn't be copied and renamed. You can still snag it from the source." -Class Error
+    update-log -Data "Job's done." -Class Information 
+    return
+}
+update-log -Data "Job's done." -Class Information 
+}
 
 #Function to assign the target directory
 Function SelectTargetDir {
@@ -259,7 +444,7 @@ $browser.Description = "Select the target folder"
 $null = $browser.ShowDialog()
 $TargetDir = $browser.SelectedPath
 $WPFMISWimFolderTextBox.text = $TargetDir #I SCREWED UP THIS VARIABLE
-
+update-log -Data "Target directory selected" -Class Information 
 }
 
 #Function to enable logging
@@ -312,6 +497,7 @@ Function Update-Log
             }
         Default {}
     }
+    $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 }
 
 #Removes old log and creates if does not exist
@@ -324,6 +510,20 @@ if ($FileExist -eq $False) {
     Else{
      Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
      New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"}
+}
+
+#Function for injecting drivers into the mounted WIM
+Function DriverInjection($Folder)
+{
+try{
+Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $Folder -Recurse -loglevel verbose -ErrorAction Stop
+}
+catch
+{
+update-log -Data "Drivers not found in folder. Continuing..." -Class Information 
+return
+}
+update-log -Data "Drivers have been injected." -Class Information 
 }
 
 #===========================================================================
@@ -413,17 +613,6 @@ $WPFDriverCheckBox.Add_Click({
      
 
 
-#Reference 
- 
-#Adding items to a dropdown/combo box
-    #$vmpicklistView.items.Add([pscustomobject]@{'VMName'=($_).Name;Status=$_.Status;Other="Yes"})
-     
-#Setting the text of a text box to the current PC name    
-    #$WPFtextBox.Text = $env:COMPUTERNAME
-     
-#Adding code to a button, so that when clicked, it pings a system
-# $WPFbutton.Add_Click({ Test-connection -count 1 -ComputerName $WPFtextBox.Text
-# })
 #===========================================================================
 # Commands before forms load
 #===========================================================================
@@ -442,14 +631,5 @@ $WPFDriverCheckBox.Add_Click({
 
 
  $Form.ShowDialog() | out-null
- 
 
-
-
- #===========================================================================
- # Scratch pad below
- #===========================================================================
-
- # Get-WindowsImage -ImagePath install.wim -Index 1
-#  This will list the relevant info 
 
