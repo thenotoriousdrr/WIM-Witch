@@ -69,6 +69,9 @@
     <Compile Include="JSONTab.xaml.cs">
       <DependentUpon>JSONTab.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Logging.xaml.cs">
+      <DependentUpon>Logging.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MakeItSo.xaml.cs">
       <DependentUpon>MakeItSo.xaml</DependentUpon>
     </Compile>
@@ -89,6 +92,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="JSONTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Logging.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
