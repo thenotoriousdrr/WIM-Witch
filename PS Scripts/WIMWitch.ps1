@@ -1,4 +1,7 @@
-﻿#Your XAML goes here :)
+﻿
+
+
+#Your XAML goes here :)
 $inputXML = @"
 <Window x:Class="WIM_Witch_Tabbed.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -172,6 +175,11 @@ $SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 }
 $null = $SourceWIM.ShowDialog()
 $WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
+
+#Selec the index
+$ImageFull = @(get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text)
+$a = $ImageFull | Out-GridView -Title "Choose an Image Index" -Passthru
+$IndexNumber = $a.ImageIndex
 
 try
 {
