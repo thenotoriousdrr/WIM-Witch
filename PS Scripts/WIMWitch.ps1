@@ -1,7 +1,4 @@
-﻿
-
-
-#Your XAML goes here :)
+﻿#Your XAML goes here :)
 $inputXML = @"
 <Window x:Class="WIM_Witch_Tabbed.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -13,11 +10,10 @@ $inputXML = @"
         Title="WIM Witch" Height="500" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="34*"/>
-            <ColumnDefinition Width="165*"/>
+            <ColumnDefinition Width="128*"/>
         </Grid.ColumnDefinitions>
         <TabControl Grid.ColumnSpan="2" Margin="0,0,0.2,-0.2">
-            <TabItem Header="Source WIM" Margin="0" Width="75">
+            <TabItem Header="Source WIM" Margin="0" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="359*"/>
@@ -42,7 +38,34 @@ $inputXML = @"
                     <Label Content="Languages" HorizontalAlignment="Left" Height="30" Margin="22,267,0,0" VerticalAlignment="Top" Width="68"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="JSON" Margin="-2,0,3,0" Width="75">
+            <TabItem Header="Updates" Height="20" Width="100">
+                <Grid>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,183,0,0" TextWrapping="Wrap" Text="Version of OSDBuilder Installed:" VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="194,182,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Button x:Name="UpdateOSDBUpdateButton" Content="Update OSDBuilder" HorizontalAlignment="Left" Margin="194,236,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Currently downloaded updates by version and download date. Check the versions that need updating and hit the button&#xA;" VerticalAlignment="Top" Width="335"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,187,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,212,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,237,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,262,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
+                    <TextBox x:Name="Updates1903TextBox" HorizontalAlignment="Left" Height="23" Margin="467,187,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
+                    <TextBox x:Name="Updates1809TextBox" HorizontalAlignment="Left" Height="23" Margin="467,212,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
+                    <TextBox x:Name="Updates1803TextBox" HorizontalAlignment="Left" Height="23" Margin="467,237,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
+                    <TextBox x:Name="Updates1709TextBox" HorizontalAlignment="Left" Height="23" Margin="467,262,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. " VerticalAlignment="Top" Height="23" Width="353"/>
+                    <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top" ClickMode="Press"/>
+                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="394,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="394,214,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="394,239,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="394,264,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Update" HorizontalAlignment="Left" Margin="510,304,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Make sure to update OSDBuilder by using the button below. Note that updating OSDBuilder may cause PowerShell to close" VerticalAlignment="Top" Height="34" Width="321"/>
+                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="194,210,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,210,0,0" TextWrapping="Wrap" Text="Current Version of OSDBuilder:" VerticalAlignment="Top"/>
+
+                </Grid>
+            </TabItem>
+            <TabItem Header="JSON" Margin="-2,0,3,0" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="733*"/>
@@ -55,7 +78,7 @@ $inputXML = @"
 
                 </Grid>
             </TabItem>
-            <TabItem Header="Drivers" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
+            <TabItem Header="Drivers" Height="20" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="733*"/>
@@ -76,7 +99,7 @@ $inputXML = @"
 
                 </Grid>
             </TabItem>
-            <TabItem Header="Make It So" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
+            <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
 
@@ -87,26 +110,28 @@ $inputXML = @"
                     <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="430,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647" Grid.Column="1"/>
                     <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="5.508,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500" Grid.Column="1"/>
                     <TextBox x:Name="MISDriverTextBox" HorizontalAlignment="Left" Height="23" Margin="122,345,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
-                    <Label Content="Drivers Selected?" HorizontalAlignment="Left" Height="30" Margin="19,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
+                    <Label Content="Drivers Selected?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
                     <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="122,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
-                    <Label Content="JSON Selected?" HorizontalAlignment="Left" Margin="19,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
+                    <Label Content="JSON Selected?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
                     <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="New WIM Folder" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
                     <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="310,339,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
                     <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="Select Mount Path" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <Label Content="Mount Path" HorizontalAlignment="Left" Margin="5,194,0,0" VerticalAlignment="Top" Height="25" Width="100" Grid.Column="1"/>
                     <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
+                    <Label Content="Updates Selected?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
+                    <TextBox x:Name="MISUpdatesTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
 
                 </Grid>
             </TabItem>
-            <TabItem x:Name="Logging" Header="Logging" HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="75">
+            <TabItem x:Name="Logging" Header="Logging" Height="20" Width="100">
                 <Grid>
-               
-                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Log rolls downstairs, alone or in pairs, rolls over your neighbor's dog. It fits on your back. It's great for a snack It's Log, Log, Log!" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Logging" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
                     <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
-            
                 </Grid>
             </TabItem>
+
+
 
 
 
@@ -114,6 +139,12 @@ $inputXML = @"
 
     </Grid>
 </Window>
+
+
+
+
+
+
 
 "@ 
  
@@ -183,7 +214,7 @@ $IndexNumber = $a.ImageIndex
 
 try
 {
-    $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index 1 -ErrorAction Stop
+    $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index $IndexNumber -ErrorAction Stop
 }
 catch
 {
@@ -534,11 +565,81 @@ return
 update-log -Data "Drivers have been injected." -Class Information 
 }
 
+#Function to retrieve OSDBuilder Version 
+Function Get-OSDBInstallation{
+try
+{
+Import-Module -name osdbuilder -ErrorAction Stop
+}
+catch
+{
+write-host "Not installed"
+$WPFUpdatesOSDBVersion.Text = "Not Installed"
+Return
+}
+try
+{
+$OSDBVersion = get-module -name osdbuilder -ErrorAction Stop
+$WPFUpdatesOSDBVersion.Text = $OSDBVersion.Version
+Return
+}
+catch
+{
+write-host "Whatever you were hoping for, you didn’t get :)"
+Return
+}
+}
+
+#Function to retrieve current OSDBuilder Version
+Function Get-OSDBCurrentVer{
+try
+{
+$OSDBCurrentVer = find-module -name osdbuilder -ErrorAction Stop
+$WPFUpdatesOSDBCurrentVerTextBox.Text = $OSDBCurrentVer.version
+Return
+}
+catch
+{
+$WPFUpdatesOSDBCurrentVerTextBox.Text = "Network Error"
+Return
+}
+}
+
+#Function to update or install OSDBuilder
+Function update-OSDB{
+if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
+try{
+Install-Module -Name OSDBuilder -ForceImport-Module -Name OSDBuilder -Force -ErrorAction Stop
+Return
+}
+catch
+{
+$WPFUpdatesOSDBVersion.Text = "Inst Fail"
+Return
+}
+}
+
+If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
+try
+{
+OSDBuilder -Update -ErrorAction Stop
+get-OSDBInstallation
+return
+}
+catch
+{
+$WPFUpdatesOSDBCurrentVerTextBox.Text = "OSDB Err"
+Return
+}
+}
+}
+
 #===========================================================================
 # Run commands to reset values of files, etc.
 #===========================================================================
 Set-Logging #Clears out old logs from previous builds
-
+Get-OSDBInstallation #Sets OSDBuilder version info
+Get-OSDBCurrentVer #Discovers current version of OSDBuilder
 
 #===========================================================================
 # Set default values for certain variables
@@ -549,6 +650,9 @@ $WPFMISJSONTextBox.Text = "False"
 
 #Set the value of the Driver field in the Make It So tab
 $WPFMISDriverTextBox.Text = "False"
+
+#Set the value of the Updates field in the Make It So tab
+$WPFMISUpdatesTextBox.Text = "False"
 
 #Set the path and name for logging
 $Log = "C:\WIMWitch\logging\WIMWitch.log"
@@ -578,6 +682,9 @@ $WPFDriverDir5Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriv
 
 #Make it So Button, which builds the WIM file
 $WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
+
+#Update OSDBuilder Button
+$WPFUpdateOSDBUpdateButton.Add_Click({update-OSDB}) 
 
 #Logging window
 $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
@@ -615,6 +722,40 @@ $WPFDriverCheckBox.Add_Click({
         $WPFMISDriverTextBox.Text = "False"
         }
     })
+
+#Enable Updates Selection
+$WPFUpdatesEnableCheckBox.Add_Click({
+If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
+    #$WPFUpdatesOSDBVersion.IsEnabled = $True
+    $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+    $WPFUpdates1903TextBox.IsEnabled = $True
+    $WPFUpdates1809TextBox.IsEnabled = $True
+    $WPFUpdates1803TextBox.IsEnabled = $True
+    $WPFUpdates1709TextBox.IsEnabled = $True
+    $WPFUpdatesDownloadNewButton.IsEnabled = $True
+    $WPFUpdates1903CheckBox.IsEnabled = $True
+    $WPFUpdates1809CheckBox.IsEnabled = $True
+    $WPFUpdates1803CheckBox.IsEnabled = $True
+    $WPFUpdates1709CheckBox.IsEnabled = $True
+    $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+    $WPFMISUpdatesTextBox.Text = "True"
+}
+else{
+   # $WPFUpdatesOSDBVersion.IsEnabled = $False
+    $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+    $WPFUpdates1903TextBox.IsEnabled = $False
+    $WPFUpdates1809TextBox.IsEnabled = $False
+    $WPFUpdates1803TextBox.IsEnabled = $False
+    $WPFUpdates1709TextBox.IsEnabled = $False
+    $WPFUpdatesDownloadNewButton.IsEnabled = $False
+    $WPFUpdates1903CheckBox.IsEnabled = $False
+    $WPFUpdates1809CheckBox.IsEnabled = $False
+    $WPFUpdates1803CheckBox.IsEnabled = $False
+    $WPFUpdates1709CheckBox.IsEnabled = $False
+    $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+    $WPFMISUpdatesTextBox.Text = "False"
+}
+})
 
 #===========================================================================
 
