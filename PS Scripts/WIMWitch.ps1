@@ -43,25 +43,24 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="20,183,0,0" TextWrapping="Wrap" Text="Version of OSDBuilder Installed:" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="194,182,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <Button x:Name="UpdateOSDBUpdateButton" Content="Update OSDBuilder" HorizontalAlignment="Left" Margin="194,236,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Currently downloaded updates by version and download date. Check the versions that need updating and hit the button&#xA;" VerticalAlignment="Top" Width="335"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 you wish to download current patches for&#xA;" VerticalAlignment="Top" Width="335"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,187,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,212,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,237,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,262,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
-                    <TextBox x:Name="Updates1903TextBox" HorizontalAlignment="Left" Height="23" Margin="467,187,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
-                    <TextBox x:Name="Updates1809TextBox" HorizontalAlignment="Left" Height="23" Margin="467,212,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
-                    <TextBox x:Name="Updates1803TextBox" HorizontalAlignment="Left" Height="23" Margin="467,237,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
-                    <TextBox x:Name="Updates1709TextBox" HorizontalAlignment="Left" Height="23" Margin="467,262,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="118" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="497,187,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="569,187,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="638,187,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. " VerticalAlignment="Top" Height="23" Width="353"/>
                     <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top" ClickMode="Press"/>
                     <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="394,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="394,214,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="394,239,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="394,264,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Update" HorizontalAlignment="Left" Margin="510,304,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Make sure to update OSDBuilder by using the button below. Note that updating OSDBuilder may cause PowerShell to close" VerticalAlignment="Top" Height="34" Width="321"/>
+                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="472,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="544,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="613,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Update" HorizontalAlignment="Left" Margin="626,241,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Make sure to update OSDBuilder by using the button below. Updating OSDBuilder will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
                     <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="194,210,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,210,0,0" TextWrapping="Wrap" Text="Current Version of OSDBuilder:" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,283,0,0" TextWrapping="Wrap" Text="OSDBuilder is out of date. Please click &quot;Update OSDBuilder&quot; to update." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
+                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="394,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Visibility="Hidden"/>
+                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="387,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
 
                 </Grid>
             </TabItem>
@@ -130,21 +129,10 @@ $inputXML = @"
                     <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
                 </Grid>
             </TabItem>
-
-
-
-
-
-        </TabControl>
+           </TabControl>
 
     </Grid>
 </Window>
-
-
-
-
-
-
 
 "@ 
  
@@ -573,7 +561,6 @@ Import-Module -name osdbuilder -ErrorAction Stop
 }
 catch
 {
-write-host "Not installed"
 $WPFUpdatesOSDBVersion.Text = "Not Installed"
 Return
 }
@@ -610,6 +597,7 @@ Function update-OSDB{
 if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
 try{
 Install-Module -Name OSDBuilder -ForceImport-Module -Name OSDBuilder -Force -ErrorAction Stop
+$WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 Return
 }
 catch
@@ -623,6 +611,7 @@ If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
 try
 {
 OSDBuilder -Update -ErrorAction Stop
+$WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 get-OSDBInstallation
 return
 }
@@ -634,12 +623,85 @@ Return
 }
 }
 
+#Function to check for superceded updates
+Function check-superceded{
+                $OSDUpdates = @()
+                $OSDUpdates = Get-DownOSDBuilder -UpdateOS 'Windows 10' -updatearch x64
+                $OSDBuilderPath = "C:\OSDBuilder"
+                $ExistingUpdates = @()
+               
+                if (!(Test-Path "$OSDBuilderPath\Content\OSDUpdate")) {New-Item $OSDBuilderPath\Content\OSDUpdate -ItemType Directory -Force | Out-Null}
+                $ExistingUpdates = Get-ChildItem -Path "$OSDBuilderPath\Content\OSDUpdate\*\*" -Directory
+                
+                $SupersededUpdates = @()
+                foreach ($Update in $ExistingUpdates) {
+                    if ($OSDUpdates.Title -NotContains $Update.Name) {$SupersededUpdates += $Update.FullName}
+                   
+                }
+                    foreach ($Update in $SupersededUpdates) {
+                    #Set Variable to show that superceded updates exist and to prompt user to update  
+                    $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
+                }
+}
+
+#Function to compare OSDBuilder Versions
+Function compare-OSDBuilderVer{
+if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
+Return
+}
+If ($WPFUpdatesOSDBVersion.Text -eq $WPFUpdatesOSDBCurrentVerTextBox.Text){
+Return
+}
+$WPFUpdatesOSDBOutOfDateTextBlock.Visability = "Visible"
+Return
+}
+
+#Function to download new patches
+Function download-patches($buildnum){
+Write-host "downloading" $buildnum
+try{
+#Download the updates
+Get-DownOSDBuilder -UpdateOS 'Windows 10' -updatearch x64 -UpdateBuild $buildnum -download -WebClient -ErrorAction Stop
+Return
+}
+catch
+{
+write-host "Couldn't get updates for" $buildnum
+return
+}
+}
+ 
+#Function to remove superceded updates and initate new patch download
+Function update-patchsource{
+
+#Purge superceded updates
+
+try{
+write-host "starting purge"
+#Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
+}
+catch
+{
+write-host "Updates not superceded"
+Return
+}
+write-host "attempting to start download function"
+If ($WPFUpdates1903CheckBox.IsChecked -eq $true){download-patches -buildnum 1903}
+If ($WPFUpdates1809CheckBox.IsChecked -eq $true){download-patches -buildnum 1809}
+If ($WPFUpdates1803CheckBox.IsChecked -eq $true){download-patches -buildnum 1803}
+If ($WPFUpdates1709CheckBox.IsChecked -eq $true){download-patches -buildnum 1709}
+
+}
+
 #===========================================================================
-# Run commands to reset values of files, etc.
+# Run commands to set values of files and variables, etc.
 #===========================================================================
 Set-Logging #Clears out old logs from previous builds
 Get-OSDBInstallation #Sets OSDBuilder version info
 Get-OSDBCurrentVer #Discovers current version of OSDBuilder
+compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+check-superceded #checks to see if superceded patches exist
+
 
 #===========================================================================
 # Set default values for certain variables
@@ -686,6 +748,9 @@ $WPFMISMakeItSoButton.Add_Click({MakeItSo})
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click({update-OSDB}) 
 
+#Update patch source
+$WPFUpdatesDownloadNewButton.Add_Click({update-patchsource})
+
 #Logging window
 $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 
@@ -728,10 +793,10 @@ $WPFUpdatesEnableCheckBox.Add_Click({
 If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
     #$WPFUpdatesOSDBVersion.IsEnabled = $True
     $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-    $WPFUpdates1903TextBox.IsEnabled = $True
-    $WPFUpdates1809TextBox.IsEnabled = $True
-    $WPFUpdates1803TextBox.IsEnabled = $True
-    $WPFUpdates1709TextBox.IsEnabled = $True
+   # $WPFUpdates1903TextBox.IsEnabled = $True
+   # $WPFUpdates1809TextBox.IsEnabled = $True
+   # $WPFUpdates1803TextBox.IsEnabled = $True
+   # $WPFUpdates1709TextBox.IsEnabled = $True
     $WPFUpdatesDownloadNewButton.IsEnabled = $True
     $WPFUpdates1903CheckBox.IsEnabled = $True
     $WPFUpdates1809CheckBox.IsEnabled = $True
