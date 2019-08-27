@@ -36,8 +36,6 @@ $inputXML = @"
                     <Label Content="Version" HorizontalAlignment="Left" Height="30" Margin="22,211,0,0" VerticalAlignment="Top" Width="68"/>
                     <Label Content="Patch Level" HorizontalAlignment="Left" Height="30" Margin="22,239,0,0" VerticalAlignment="Top" Width="68"/>
                     <Label Content="Languages" HorizontalAlignment="Left" Height="30" Margin="22,267,0,0" VerticalAlignment="Top" Width="68"/>
-                    <TextBox x:Name="SourceWimIndexTextBox" HorizontalAlignment="Left" Height="23" Margin="94,297,0,0" TextWrapping="Wrap" Text="Index" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
-                    <Label Content="Index" HorizontalAlignment="Left" Height="30" Margin="22,297,0,0" VerticalAlignment="Top" Width="68"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Updates" Height="20" Width="100">
@@ -131,7 +129,7 @@ $inputXML = @"
                     <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
                 </Grid>
             </TabItem>
-        </TabControl>
+           </TabControl>
 
     </Grid>
 </Window>
@@ -201,13 +199,10 @@ $WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
 $ImageFull = @(get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text)
 $a = $ImageFull | Out-GridView -Title "Choose an Image Index" -Passthru
 $IndexNumber = $a.ImageIndex
-write-host $IndexNumber
 
 try
 {
-    #I don't think the following line does shit
     $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index $IndexNumber -ErrorAction Stop
-    
 }
 catch
 {
@@ -218,15 +213,10 @@ catch
 
 
 update-log -Data "WIM file selected" -Class Information
-$ImageIndex = $IndexNumber
-write-host "ImageIndex is" $ImageIndex
-write-host "IndexNumber is" $IndexNumber
-
 $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
 $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
 $WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
 $WPFSourceWimLangTextBox.text = $ImageInfo.Languages
-$WPFSourceWimIndexTextBox.text = $ImageIndex
 if ($ImageInfo.Architecture -eq 9) {
     $WPFSourceWimArchTextBox.text = 'x64'}
     Else{
@@ -354,8 +344,7 @@ update-log -Data "Mounting source WIM" -Class Information
 
 try
 {
-   write-host $IndexNumber
-    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index $WPFSourceWimIndexTextBox.text -ErrorAction Stop
+    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop
 }
 catch
 {
@@ -407,18 +396,6 @@ Else
 update-log -Data "Drivers were not selected for injection. Skipping." -Class Information 
 }
 
-
-#Apply Updates
-If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
-
-
-
-    Apply-Updates -class "SSU" 
-    Apply-Updates -class "LCU"
-    Apply-Updates -class "AdobeSU"
-    Apply-Updates -class "DotNet"
-    Apply-Updates -class "DotNetCU"
-}
 
 #Copy log to mounted WIM
 try
@@ -580,7 +557,7 @@ update-log -Data "Drivers have been injected." -Class Information
 Function Get-OSDBInstallation{
 try
 {
-Import-Module -name OSDUpdate -ErrorAction Stop
+Import-Module -name osdbuilder -ErrorAction Stop
 }
 catch
 {
@@ -589,7 +566,7 @@ Return
 }
 try
 {
-$OSDBVersion = get-module -name OSDUpdate -ErrorAction Stop
+$OSDBVersion = get-module -name osdbuilder -ErrorAction Stop
 $WPFUpdatesOSDBVersion.Text = $OSDBVersion.Version
 Return
 }
@@ -604,7 +581,7 @@ Return
 Function Get-OSDBCurrentVer{
 try
 {
-$OSDBCurrentVer = find-module -name OSDUpdate -ErrorAction Stop
+$OSDBCurrentVer = find-module -name osdbuilder -ErrorAction Stop
 $WPFUpdatesOSDBCurrentVerTextBox.Text = $OSDBCurrentVer.version
 Return
 }
@@ -619,7 +596,7 @@ Return
 Function update-OSDB{
 if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
 try{
-Import-Module -Name OSDUpdate -Force -ErrorAction Stop
+Install-Module -Name OSDBuilder -ForceImport-Module -Name OSDBuilder -Force -ErrorAction Stop
 $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 Return
 }
@@ -633,7 +610,7 @@ Return
 If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
 try
 {
-OSDUpdate -Update -ErrorAction Stop
+OSDBuilder -Update -ErrorAction Stop
 $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 get-OSDBInstallation
 return
@@ -647,43 +624,25 @@ Return
 }
 
 #Function to check for superceded updates
-Function check-superceded($action){
-$path = "C:\WIMWitch\updates\"  #sets base path
-$Children = Get-ChildItem -Path $path  #query sub directories
-
-    foreach ($Children in $Children){
-    $path1 = $path + $Children  
-    $kids = Get-ChildItem -Path $path1
-  
- 
-    foreach ($kids in $kids){
-        $path2 = $path1 + '\' + $kids
-        $sprout = get-childitem -path $path2
-        
-        foreach ($sprout in $sprout) {
-            $path3 = $path2 + '\' + $sprout
-            $fileinfo = get-childitem -path $path3
-            
-            $StillCurrent = Get-OSDUpdate | Where-Object {$_.FileName -eq $fileinfo}
-            If ($StillCurrent -eq $null){
-                write-host $fileinfo "no longer current"
-                if ($action -eq 'delete'){
-                    Write-Host "Deleting" $path3
-                    remove-item -path $path3 -Recurse -Force}
-                if ($action -eq 'audit'){
-                    write-host "set variable"
+Function check-superceded{
+                $OSDUpdates = @()
+                $OSDUpdates = Get-DownOSDBuilder -UpdateOS 'Windows 10' -updatearch x64
+                $OSDBuilderPath = "C:\OSDBuilder"
+                $ExistingUpdates = @()
+               
+                if (!(Test-Path "$OSDBuilderPath\Content\OSDUpdate")) {New-Item $OSDBuilderPath\Content\OSDUpdate -ItemType Directory -Force | Out-Null}
+                $ExistingUpdates = Get-ChildItem -Path "$OSDBuilderPath\Content\OSDUpdate\*\*" -Directory
+                
+                $SupersededUpdates = @()
+                foreach ($Update in $ExistingUpdates) {
+                    if ($OSDUpdates.Title -NotContains $Update.Name) {$SupersededUpdates += $Update.FullName}
+                   
+                }
+                    foreach ($Update in $SupersededUpdates) {
+                    #Set Variable to show that superceded updates exist and to prompt user to update  
                     $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
-
-                    Return}
-                 }   
-            else{
-                write-host $fileinfo "is stil current"
-                }    
-             }
-        }
-    }
+                }
 }
-
 
 #Function to compare OSDBuilder Versions
 Function compare-OSDBuilderVer{
@@ -698,58 +657,39 @@ Return
 }
 
 #Function to download new patches
-Function download-patches($build){
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\SSU
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\AdobeSU
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\LCU
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNet
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNetCU
+Function download-patches($buildnum){
+Write-host "downloading" $buildnum
+try{
+#Download the updates
+Get-DownOSDBuilder -UpdateOS 'Windows 10' -updatearch x64 -UpdateBuild $buildnum -download -WebClient -ErrorAction Stop
+Return
+}
+catch
+{
+write-host "Couldn't get updates for" $buildnum
+return
+}
 }
  
 #Function to remove superceded updates and initate new patch download
 Function update-patchsource{
 
-
+#Purge superceded updates
 
 try{
 write-host "starting purge"
 #Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
-
-Check-Superseded -action delete -ErrorAction Stop
-} 
+}
 catch
 {
 write-host "Updates not superceded"
 Return
 }
 write-host "attempting to start download function"
-If ($WPFUpdates1903CheckBox.IsChecked -eq $true){download-patches -build 1903}
-If ($WPFUpdates1809CheckBox.IsChecked -eq $true){download-patches -build 1809}
-If ($WPFUpdates1803CheckBox.IsChecked -eq $true){download-patches -build 1803}
-If ($WPFUpdates1709CheckBox.IsChecked -eq $true){download-patches -build 1709}
-
-}
-
-#Function to apply updates to mounted WIM
-
-Function Apply-Updates($class){
-
-#$Imageversion = Get-WindowsImage -ImagePath D:\Images\install.wim -Index 3
-
-$WPFSourceWimVerTextBox.text
-
-If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$buildnum = 1903}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$buildnum = 1809}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$buildnum = 1803}
-If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$buildnum = 1709}
-
-
-$path = 'C:\wimwitch\updates\' + $buildnum +'\' + $class + '\'
-$Children = Get-ChildItem -Path $path
-foreach ($Children in $Children){
-$compound = $path+$Children
-Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound 
-}
+If ($WPFUpdates1903CheckBox.IsChecked -eq $true){download-patches -buildnum 1903}
+If ($WPFUpdates1809CheckBox.IsChecked -eq $true){download-patches -buildnum 1809}
+If ($WPFUpdates1803CheckBox.IsChecked -eq $true){download-patches -buildnum 1803}
+If ($WPFUpdates1709CheckBox.IsChecked -eq $true){download-patches -buildnum 1709}
 
 }
 
@@ -757,10 +697,10 @@ Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound
 # Run commands to set values of files and variables, etc.
 #===========================================================================
 Set-Logging #Clears out old logs from previous builds
-#Get-OSDBInstallation #Sets OSDBuilder version info
-#Get-OSDBCurrentVer #Discovers current version of OSDBuilder
-#compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
-#check-superceded #checks to see if superceded patches exist
+Get-OSDBInstallation #Sets OSDBuilder version info
+Get-OSDBCurrentVer #Discovers current version of OSDBuilder
+compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+check-superceded #checks to see if superceded patches exist
 
 
 #===========================================================================
@@ -778,8 +718,6 @@ $WPFMISUpdatesTextBox.Text = "False"
 
 #Set the path and name for logging
 $Log = "C:\WIMWitch\logging\WIMWitch.log"
-
-
 
 #===========================================================================
 # Section for Buttons to call functions
