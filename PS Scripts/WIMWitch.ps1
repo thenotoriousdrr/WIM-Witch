@@ -100,7 +100,18 @@ $inputXML = @"
 
                 </Grid>
             </TabItem>
-            <TabItem Header="Make It So" Height="20" Width="100">
+            <TabItem Header ="AppX" Height="20" Width="100">
+                <Grid>
+                    <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Click select to choose which App-X packages to remove from the WIM" Margin="21,85,25.2,22.8" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="21,65,0,0" TextWrapping="Wrap" Text="Selected APPX Packages to remove:" VerticalAlignment="Top" Height="15" Width="194"/>
+                    <CheckBox x:Name="AppxCheckBox" Content="Enable AppX removal" HorizontalAlignment="Left" Margin="21,33,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+
+                </Grid>
+
+            </TabItem>
+
+                      <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
 
@@ -122,9 +133,12 @@ $inputXML = @"
                     <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
                     <Label Content="Updates Selected?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISUpdatesTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
+                    <Label Content="AppX Removal?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,280,0,0" VerticalAlignment="Top" Width="109"/>
+                    <TextBox x:Name="MISAppxTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
 
                 </Grid>
             </TabItem>
+
             <TabItem x:Name="Logging" Header="Logging" Height="20" Width="100">
                 <Grid>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Logging" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
@@ -135,6 +149,7 @@ $inputXML = @"
 
     </Grid>
 </Window>
+
 
 "@ 
  
@@ -419,6 +434,11 @@ If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
     Apply-Updates -class "DotNet"
     Apply-Updates -class "DotNetCU"
 }
+
+#Remove AppX Packages
+if ($WPFAppxCheckBox.IsChecked -eq $true){remove-appx}
+
+
 
 #Copy log to mounted WIM
 try
@@ -731,7 +751,6 @@ If ($WPFUpdates1709CheckBox.IsChecked -eq $true){download-patches -build 1709}
 }
 
 #Function to apply updates to mounted WIM
-
 Function Apply-Updates($class){
 
 #$Imageversion = Get-WindowsImage -ImagePath D:\Images\install.wim -Index 3
@@ -751,6 +770,70 @@ $compound = $path+$Children
 Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound 
 }
 
+}
+
+#Function to select AppX packages to yank
+Function Select-Appx{
+$appx1903 = @("Microsoft.BingWeather_4.25.20211.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.DesktopAppInstaller_2019.125.2243.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.GetHelp_10.1706.13331.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.Getstarted_7.3.20251.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.HEIFImageExtension_1.0.13472.0_x64__8wekyb3d8bbwe"
+"Microsoft.Messaging_2019.125.32.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.Microsoft3DViewer_5.1902.20012.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.MicrosoftOfficeHub_18.1901.1141.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.MicrosoftSolitaireCollection_4.2.11280.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.MicrosoftStickyNotes_3.1.53.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.MixedReality.Portal_2000.19010.1151.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.MSPaint_2019.213.1858.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.Office.OneNote_16001.11126.20076.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.OneConnect_5.1902.361.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.People_2019.123.2346.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.Print3D_3.3.311.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.ScreenSketch_2018.1214.231.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c,"
+"Microsoft.StorePurchaseApp_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.VP9VideoExtensions_1.0.13333.0_x64__8wekyb3d8bbwe"
+"Microsoft.Wallet_2.4.18324.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WebMediaExtensions_1.0.13321.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WebpImageExtension_1.0.12821.0_x64__8wekyb3d8bbwe"
+"Microsoft.Windows.Photos_2019.18114.19418.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsAlarms_2019.105.629.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsCalculator_2019.105.612.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsCamera_2018.826.78.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.windowscommunicationsapps_16005.11029.20108.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsFeedbackHub_2019.226.2324.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsMaps_2019.108.627.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsSoundRecorder_2019.105.618.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.WindowsStore_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.Xbox.TCUI_1.23.28002.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.XboxApp_48.48.7001.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.XboxGameOverlay_1.32.17005.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.XboxGamingOverlay_2.26.14003.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.XboxIdentityProvider_12.50.6001.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.YourPhone_2018.1128.231.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.ZuneMusic_2019.18111.17311.0_neutral_~_8wekyb3d8bbwe"
+"Microsoft.ZuneVideo_2019.18111.17311.0_neutral_~_8wekyb3d8bbwe")
+
+
+If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$exappxs = write-output $appx1903 | out-gridview -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$exappxs = write-output $appx1809 | out-gridview -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$exappxs = write-output $appx1803 | out-gridview -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$exappxs = write-output $appx1709 | out-gridview -passthru}
+
+$WPFAppxTextBox.Text = $exappxs
+
+}
+
+function remove-appx{
+write-host "exappxs"
+write-host $exappxs
+
+foreach ($exappx in $exappxs){
+Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx 
+write-host $exappx}
+return
 }
 
 #===========================================================================
@@ -775,6 +858,8 @@ $WPFMISDriverTextBox.Text = "False"
 
 #Set the value of the Updates field in the Make It So tab
 $WPFMISUpdatesTextBox.Text = "False"
+
+$WPFMISAppxTextBox.Text = "False"
 
 #Set the path and name for logging
 $Log = "C:\WIMWitch\logging\WIMWitch.log"
@@ -815,6 +900,9 @@ $WPFUpdatesDownloadNewButton.Add_Click({update-patchsource})
 
 #Logging window
 $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
+
+#Select Appx packages to remove
+$WPFAppxButton.Add_Click({Select-Appx})
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -883,6 +971,18 @@ else{
     $WPFMISUpdatesTextBox.Text = "False"
 }
 })
+
+#Enable AppX Selection
+$WPFAppxCheckBox.Add_Click({
+    If ($WPFAppxCheckBox.IsChecked -eq $true){
+        $WPFAppxButton.IsEnabled = $True
+        $WPFMISAppxTextBox.Text = "True"}
+        
+        else{
+        $WPFAppxButton.IsEnabled = $False}
+        #$WPFMISJSONTextBox.Text = "False"}
+    })
+ 
 
 #===========================================================================
 
