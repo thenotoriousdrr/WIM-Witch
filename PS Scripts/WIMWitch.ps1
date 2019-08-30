@@ -149,8 +149,6 @@ $inputXML = @"
 
     </Grid>
 </Window>
-
-
 "@ 
  
 $inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
@@ -182,7 +180,7 @@ write-host "Found the following interactable elements from our form" -Foreground
 get-variable WPF*
 }
  
-Get-FormVariables
+#Get-FormVariables
 
 
 #===========================================================================
@@ -199,7 +197,6 @@ $null = $browser.ShowDialog()
 $MountDir = $browser.SelectedPath
 $WPFMISMountTextBox.text = $MountDir #I SCREWED UP THIS VARIABLE
 update-log -Data "Mount directory selected" -Class Information
-
 }
 
 #Function to select Source WIM
@@ -212,18 +209,17 @@ $SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 $null = $SourceWIM.ShowDialog()
 $WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
 
-#Selec the index
+#Select the index
 $ImageFull = @(get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text)
 $a = $ImageFull | Out-GridView -Title "Choose an Image Index" -Passthru
 $IndexNumber = $a.ImageIndex
-write-host $IndexNumber
+#write-host $IndexNumber
 
 try
 {
     #I don't think the following line does shit
     $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index $IndexNumber -ErrorAction Stop
-    
-}
+  }
 catch
 {
     Update-Log -data $_.Exception.Message -class Error
@@ -234,8 +230,8 @@ catch
 
 update-log -Data "WIM file selected" -Class Information
 $ImageIndex = $IndexNumber
-write-host "ImageIndex is" $ImageIndex
-write-host "IndexNumber is" $IndexNumber
+#write-host "ImageIndex is" $ImageIndex
+#write-host "IndexNumber is" $IndexNumber
 
 $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
 $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
@@ -274,12 +270,9 @@ update-log -Data "Driver path selected" -Class Information
 }
 
 #Function for the Make it So button
-Function MakeItSo {
+Function MakeItSo ($appx){
 
 #Check if new file name is valid, also append file extension if neccessary
-
-
-
 if ($WPFMISWimNameTextBox.Text -eq "")
 {
 $WPFLogging.Focus()
@@ -308,8 +301,6 @@ $WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
 update-log -Data "Appending new file name with an extension" -Class Information
 }
 
-
-
 #check for working directory, make if does not exist, delete files if they exist
 $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
 update-log -Data "Checking to see if the staging path exists..." -Class Information
@@ -329,8 +320,6 @@ catch
     Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
     return
 }
-
-
 
 #Copy source WIM
 update-log -Data "Copying source WIM to the staging folder" -Class Information
@@ -354,6 +343,7 @@ try
 {
     $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim -ErrorAction Stop
     Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text -ErrorAction Stop
+    update-log -Data "Copied source WIM has been renamed" -Class Information
 }
 catch
 {
@@ -363,14 +353,20 @@ catch
     return
 }
 
-update-log -Data "Copied source WIM has been renamed" -Class Information
+#Remove the unwanted indexes
+
+remove-indexes
+
+
+
+#Mount the WIM File
 $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
 update-log -Data "Mounting source WIM" -Class Information
 
 try
 {
-   write-host $IndexNumber
-    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index $WPFSourceWimIndexTextBox.text -ErrorAction Stop
+   #write-host $IndexNumber
+    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop
 }
 catch
 {
@@ -379,6 +375,7 @@ catch
     Update-Log -Data "and that it isn't an active mount point" -Class Error
     return
 }
+
 
 
 #Inject Autopilot JSON file
@@ -422,7 +419,6 @@ Else
 update-log -Data "Drivers were not selected for injection. Skipping." -Class Information 
 }
 
-
 #Apply Updates
 If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
 
@@ -436,9 +432,10 @@ If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
 }
 
 #Remove AppX Packages
-if ($WPFAppxCheckBox.IsChecked -eq $true){remove-appx}
+if ($WPFAppxCheckBox.IsChecked -eq $true){
 
-
+remove-appx -array $appx
+}
 
 #Copy log to mounted WIM
 try
@@ -704,7 +701,6 @@ $Children = Get-ChildItem -Path $path  #query sub directories
     }
 }
 
-
 #Function to compare OSDBuilder Versions
 Function compare-OSDBuilderVer{
 if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
@@ -767,6 +763,7 @@ $path = 'C:\wimwitch\updates\' + $buildnum +'\' + $class + '\'
 $Children = Get-ChildItem -Path $path
 foreach ($Children in $Children){
 $compound = $path+$Children
+update-log -Data "Applying $Children" -Class Information
 Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound 
 }
 
@@ -895,40 +892,39 @@ $appx1803 = @(
 "Microsoft.ZuneMusic_2019.17112.19011.0_neutral_~_8wekyb3d8bbwe"               
 "Microsoft.ZuneVideo_2019.17112.19011.0_neutral_~_8wekyb3d8bbwe" )
 $appx1709 = @( 
-"Microsoft.BingWeather_4.21.2492.0_neutral_~_8wekyb3d8bbwe"                    
-"Microsoft.DesktopAppInstaller_1.8.4001.0_neutral_~_8wekyb3d8bbwe"             
-"Microsoft.GetHelp_10.1706.1811.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.Getstarted_5.11.1641.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.Messaging_2017.815.2052.0_neutral_~_8wekyb3d8bbwe"                  
-"Microsoft.Microsoft3DViewer_1.1707.26019.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.MicrosoftOfficeHub_2017.715.118.0_neutral_~_8wekyb3d8bbwe"          
-"Microsoft.MicrosoftSolitaireCollection_3.17.8162.0_neutral_~_8wekyb3d8bbwe"   
-"Microsoft.MicrosoftStickyNotes_1.8.2.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.MSPaint_2.1709.4027.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.Office.OneNote_2015.8366.57611.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.OneConnect_3.1708.2224.0_neutral_~_8wekyb3d8bbwe"                   
-"Microsoft.People_2017.823.2207.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.Print3D_1.0.2422.0_neutral_~_8wekyb3d8bbwe"                         
-"Microsoft.SkypeApp_11.18.596.0_neutral_~_kzf8qxf38zg5c"                       
-"Microsoft.StorePurchaseApp_11706.1707.7104.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.Wallet_1.0.16328.0_neutral_~_8wekyb3d8bbwe"                         
-"Microsoft.Windows.Photos_2017.37071.16410.0_neutral_~_8wekyb3d8bbwe"          
-"Microsoft.WindowsAlarms_2017.828.2050.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.WindowsCalculator_2017.828.2012.0_neutral_~_8wekyb3d8bbwe"          
-"Microsoft.WindowsCamera_2017.727.20.0_neutral_~_8wekyb3d8bbwe"                
-"Microsoft.windowscommunicationsapps_2015.8241.41275.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsFeedbackHub_1.1705.2121.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.WindowsMaps_2017.814.2249.0_neutral_~_8wekyb3d8bbwe"                
-"Microsoft.WindowsSoundRecorder_2017.605.2103.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.WindowsStore_11706.1002.94.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.Xbox.TCUI_1.8.24001.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.XboxApp_31.32.16002.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.XboxGameOverlay_1.20.25002.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.XboxIdentityProvider_2017.605.1240.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.ZuneMusic_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe"               
+"Microsoft.BingWeather_4.21.2492.0_neutral_~_8wekyb3d8bbwe",                    
+"Microsoft.DesktopAppInstaller_1.8.4001.0_neutral_~_8wekyb3d8bbwe",             
+"Microsoft.GetHelp_10.1706.1811.0_neutral_~_8wekyb3d8bbwe",                     
+"Microsoft.Getstarted_5.11.1641.0_neutral_~_8wekyb3d8bbwe",                     
+"Microsoft.Messaging_2017.815.2052.0_neutral_~_8wekyb3d8bbwe",                  
+"Microsoft.Microsoft3DViewer_1.1707.26019.0_neutral_~_8wekyb3d8bbwe",           
+"Microsoft.MicrosoftOfficeHub_2017.715.118.0_neutral_~_8wekyb3d8bbwe",          
+"Microsoft.MicrosoftSolitaireCollection_3.17.8162.0_neutral_~_8wekyb3d8bbwe",   
+"Microsoft.MicrosoftStickyNotes_1.8.2.0_neutral_~_8wekyb3d8bbwe",               
+"Microsoft.MSPaint_2.1709.4027.0_neutral_~_8wekyb3d8bbwe",                      
+"Microsoft.Office.OneNote_2015.8366.57611.0_neutral_~_8wekyb3d8bbwe",           
+"Microsoft.OneConnect_3.1708.2224.0_neutral_~_8wekyb3d8bbwe",                   
+"Microsoft.People_2017.823.2207.0_neutral_~_8wekyb3d8bbwe",                     
+"Microsoft.Print3D_1.0.2422.0_neutral_~_8wekyb3d8bbwe",                         
+"Microsoft.SkypeApp_11.18.596.0_neutral_~_kzf8qxf38zg5c",                       
+"Microsoft.StorePurchaseApp_11706.1707.7104.0_neutral_~_8wekyb3d8bbwe",         
+"Microsoft.Wallet_1.0.16328.0_neutral_~_8wekyb3d8bbwe",                         
+"Microsoft.Windows.Photos_2017.37071.16410.0_neutral_~_8wekyb3d8bbwe",          
+"Microsoft.WindowsAlarms_2017.828.2050.0_neutral_~_8wekyb3d8bbwe",              
+"Microsoft.WindowsCalculator_2017.828.2012.0_neutral_~_8wekyb3d8bbwe",          
+"Microsoft.WindowsCamera_2017.727.20.0_neutral_~_8wekyb3d8bbwe",                
+"Microsoft.windowscommunicationsapps_2015.8241.41275.0_neutral_~_8wekyb3d8bbwe",
+"Microsoft.WindowsFeedbackHub_1.1705.2121.0_neutral_~_8wekyb3d8bbwe",           
+"Microsoft.WindowsMaps_2017.814.2249.0_neutral_~_8wekyb3d8bbwe",                
+"Microsoft.WindowsSoundRecorder_2017.605.2103.0_neutral_~_8wekyb3d8bbwe",       
+"Microsoft.WindowsStore_11706.1002.94.0_neutral_~_8wekyb3d8bbwe",               
+"Microsoft.Xbox.TCUI_1.8.24001.0_neutral_~_8wekyb3d8bbwe",                      
+"Microsoft.XboxApp_31.32.16002.0_neutral_~_8wekyb3d8bbwe",                      
+"Microsoft.XboxGameOverlay_1.20.25002.0_neutral_~_8wekyb3d8bbwe",               
+"Microsoft.XboxIdentityProvider_2017.605.1240.0_neutral_~_8wekyb3d8bbwe",       
+"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe",       
+"Microsoft.ZuneMusic_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe",               
 "Microsoft.ZuneVideo_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe" )
-
 
 If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$exappxs = write-output $appx1903 | out-gridview -passthru}
 If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$exappxs = write-output $appx1809 | out-gridview -passthru}
@@ -936,27 +932,48 @@ If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$exappxs = write-output $
 If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$exappxs = write-output $appx1709 | out-gridview -passthru}
 
 $WPFAppxTextBox.Text = $exappxs
-
+return $exappxs
 }
 
 #Function to remove appx packages
-function remove-appx{
-write-host "exappxs"
-write-host $exappxs
+function remove-appx($array){
+$exappxs = $array
 
 foreach ($exappx in $exappxs){
 Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx 
-write-host $exappx}
+update-log -data "Removing $exappx" -Class Information
+#write-host "removing" $exappx "from the WIM"
+}
 return
+}
+
+#Function to remove unwanted image indexes
+Function remove-indexes{
+Update-Log -Data "Attempting to remove unwanted image indexes" -Class Information
+$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
+Update-Log -Data "Found Image $wimname" -Class Information
+$IndexesAll = Get-WindowsImage -ImagePath $wimname | foreach { $_.ImageName }
+$IndexSelected = $WPFSourceWIMImgDesTextBox.Text
+foreach ($Index in $IndexesAll){
+Update-Log -data "$Index is being evaluated"
+If ($Index -eq $IndexSelected){
+    Update-Log -Data "$Index is the index we want to keep. Skipping." -Class Information
+        }
+    else{
+    update-log -data "Deleting $Index from WIM" -Class Information
+    Remove-WindowsImage -ImagePath $wimname -Name $Index -InformationAction SilentlyContinue
+
+    }
+}
 }
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
 Set-Logging #Clears out old logs from previous builds
-#Get-OSDBInstallation #Sets OSDBuilder version info
-#Get-OSDBCurrentVer #Discovers current version of OSDBuilder
-#compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+Get-OSDBInstallation #Sets OSDBuilder version info
+Get-OSDBCurrentVer #Discovers current version of OSDBuilder
+compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
 #check-superceded #checks to see if superceded patches exist
 
 
@@ -1004,7 +1021,8 @@ $WPFDriverDir4Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriv
 $WPFDriverDir5Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir5TextBox}) 
 
 #Make it So Button, which builds the WIM file
-$WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
+#$WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
+$WPFMISMakeItSoButton.Add_Click({MakeItSo -appx $global:SelectedAppx}) 
 
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click({update-OSDB}) 
@@ -1016,7 +1034,7 @@ $WPFUpdatesDownloadNewButton.Add_Click({update-patchsource})
 $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 
 #Select Appx packages to remove
-$WPFAppxButton.Add_Click({Select-Appx})
+$WPFAppxButton.Add_Click({$global:SelectedAppx = Select-Appx})
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -1055,12 +1073,7 @@ $WPFDriverCheckBox.Add_Click({
 #Enable Updates Selection
 $WPFUpdatesEnableCheckBox.Add_Click({
 If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
-    #$WPFUpdatesOSDBVersion.IsEnabled = $True
     $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-   # $WPFUpdates1903TextBox.IsEnabled = $True
-   # $WPFUpdates1809TextBox.IsEnabled = $True
-   # $WPFUpdates1803TextBox.IsEnabled = $True
-   # $WPFUpdates1709TextBox.IsEnabled = $True
     $WPFUpdatesDownloadNewButton.IsEnabled = $True
     $WPFUpdates1903CheckBox.IsEnabled = $True
     $WPFUpdates1809CheckBox.IsEnabled = $True
@@ -1072,10 +1085,6 @@ If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
 else{
    # $WPFUpdatesOSDBVersion.IsEnabled = $False
     $WPFUpdateOSDBUpdateButton.IsEnabled = $False
-    #$WPFUpdates1903TextBox.IsEnabled = $False
-    #$WPFUpdates1809TextBox.IsEnabled = $False
-    #$WPFUpdates1803TextBox.IsEnabled = $False
-    #$WPFUpdates1709TextBox.IsEnabled = $False
     $WPFUpdatesDownloadNewButton.IsEnabled = $False
     $WPFUpdates1903CheckBox.IsEnabled = $False
     $WPFUpdates1809CheckBox.IsEnabled = $False
@@ -1091,10 +1100,8 @@ $WPFAppxCheckBox.Add_Click({
     If ($WPFAppxCheckBox.IsChecked -eq $true){
         $WPFAppxButton.IsEnabled = $True
         $WPFMISAppxTextBox.Text = "True"}
-        
-        else{
+       else{
         $WPFAppxButton.IsEnabled = $False}
-        #$WPFMISJSONTextBox.Text = "False"}
     })
  
 
