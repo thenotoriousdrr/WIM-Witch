@@ -582,15 +582,20 @@ if ($FileExist -eq $False) {
 #Function for injecting drivers into the mounted WIM
 Function DriverInjection($Folder)
 {
+update-log -data "Applying drivers from $folder" -class Information
+Function ApplyDriver($drivertoapply){
 try{
-Add-WindowsDriver -path $WPFMISMountTextBox.text -Driver $Folder -Recurse -loglevel verbose -ErrorAction Stop
+   add-windowsdriver -Path $WPFMISMountTextBox.Text -Driver $drivertoapply -ErrorAction Stop
+   Update-Log -Data "Applied $drivertoapply" -Class Information
 }
 catch
 {
-update-log -Data "Drivers not found in folder. Continuing..." -Class Information 
-return
+update-log -Data "Couldn't apply $drivertoapply" -Class Warning
 }
-update-log -Data "Drivers have been injected." -Class Information 
+
+}
+Get-ChildItem $Folder -Recurse -Filter "*inf" | ForEach-Object {applydriver $_.FullName}
+update-log -Data "Completed driver injection from $folder" -Class Information 
 }
 
 #Function to retrieve OSDBuilder Version 
