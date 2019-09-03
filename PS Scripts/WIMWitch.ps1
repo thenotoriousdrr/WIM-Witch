@@ -176,7 +176,7 @@ $xaml.SelectNodes("//*[@Name]") | %{"trying item $($_.Name)";
  
 Function Get-FormVariables{
 if ($global:ReadmeDisplay -ne $true){Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow;$global:ReadmeDisplay=$true}
-write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
+#write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
 get-variable WPF*
 }
  
@@ -217,7 +217,7 @@ $IndexNumber = $a.ImageIndex
 
 try
 {
-    #I don't think the following line does shit
+    #Gets WIM metadata to populate fields on the Source tab.
     $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index $IndexNumber -ErrorAction Stop
   }
 catch
@@ -228,10 +228,10 @@ catch
 }
 
 
-update-log -Data "WIM file selected" -Class Information
+update-log -Data "WIM file selected -" -Class Information
+Update-Log -data $SourceWIM.FileName -Class Information
 $ImageIndex = $IndexNumber
-#write-host "ImageIndex is" $ImageIndex
-#write-host "IndexNumber is" $IndexNumber
+
 
 $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
 $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
@@ -255,6 +255,7 @@ $JSON = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 $null = $JSON.ShowDialog()
 $WPFJSONTextBox.Text = $JSON.FileName
 update-log -Data "JSON file selected" -Class Information
+update-log -data $JSON.FileName -Class Information
 }
 
 #Function to select the paths for the driver fields
@@ -354,14 +355,13 @@ catch
 }
 
 #Remove the unwanted indexes
-
 remove-indexes
-
-
 
 #Mount the WIM File
 $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-update-log -Data "Mounting source WIM" -Class Information
+update-log -Data "Mounting source WIM $wimname" -Class Information
+update-log -Data "to mount point:" -Class Information
+update-log -data $WPFMISMountTextBox.Text -Class Information
 
 try
 {
@@ -514,8 +514,7 @@ $WPFMISWimFolderTextBox.text = $TargetDir #I SCREWED UP THIS VARIABLE
 update-log -Data "Target directory selected" -Class Information 
 }
 
-#Function to enable logging
-#Syntax = update-log -Data "Hello this is a test" -Class Warning
+#Function to enable logging and folder check
 Function Update-Log
 {
     Param(
@@ -570,19 +569,50 @@ Function Update-Log
 #Removes old log and creates if does not exist
 Function Set-Logging{
 
+#logging folder
 $FileExist = Test-Path -Path C:\WIMWitch\logging\WIMWitch.Log -PathType Leaf
 if ($FileExist -eq $False) {
     New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging
-    New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"}
+    New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" |Out-Null}
     Else{
      Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
-     New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"}
+     New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"|Out-Null}
+
+#updates folder
+$FileExist = Test-Path -Path C:\WIMWitch\updates #-PathType Leaf
+if ($FileExist -eq $False) {
+    Update-Log -Data "Updates folder does not exist. Creating..." -Class Warning
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\updates
+    Update-Log -Data "Updates folder created" -Class Information
+    }
+   
+if ($FileExist -eq $True){Update-Log -Data "Updates folder exists" -Class Information}
+
+#staging folder
+$FileExist = Test-Path -Path C:\WIMWitch\Staging #-PathType Leaf
+if ($FileExist -eq $False) {
+    Update-Log -Data "Staging folder does not exist. Creating..." -Class Warning
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging
+    Update-Log -Data "Staging folder created" -Class Information
+    }
+
+if ($FileExist -eq $True){Update-Log -Data "Staging folder exists" -Class Information}
+
+#Mount folder
+$FileExist = Test-Path -Path C:\WIMWitch\Mount #-PathType Leaf
+if ($FileExist -eq $False) {
+    Update-Log -Data "Mount folder does not exist. Creating..." -Class Warning
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Mount
+    Update-Log -Data "Mount folder created" -Class Information
+    }
+
+if ($FileExist -eq $True){Update-Log -Data "Mount folder exists" -Class Information}
 }
 
 #Function for injecting drivers into the mounted WIM
 Function DriverInjection($Folder)
 {
-update-log -data "Applying drivers from $folder" -class Information
+
 Function ApplyDriver($drivertoapply){
 try{
    add-windowsdriver -Path $WPFMISMountTextBox.Text -Driver $drivertoapply -ErrorAction Stop
@@ -594,12 +624,23 @@ update-log -Data "Couldn't apply $drivertoapply" -Class Warning
 }
 
 }
+ 
+#This filters out invalid paths, such as the default value
+$testpath = Test-Path $folder -PathType Container
+If ($testpath -eq $false){return}
+
+If ($testpath -eq $true){
+
+update-log -data "Applying drivers from $folder" -class Information
+
 Get-ChildItem $Folder -Recurse -Filter "*inf" | ForEach-Object {applydriver $_.FullName}
 update-log -Data "Completed driver injection from $folder" -Class Information 
+}
 }
 
 #Function to retrieve OSDBuilder Version 
 Function Get-OSDBInstallation{
+update-log -Data "Getting OSD Installation information" -Class Information
 try
 {
 Import-Module -name OSDUpdate -ErrorAction Stop
@@ -624,6 +665,7 @@ Return
 
 #Function to retrieve current OSDBuilder Version
 Function Get-OSDBCurrentVer{
+Update-Log -Data "Getting the currently OSD Update module version installed" -Class Information
 try
 {
 $OSDBCurrentVer = find-module -name OSDUpdate -ErrorAction Stop
@@ -655,7 +697,7 @@ Return
 If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
 try
 {
-OSDUpdate -Update -ErrorAction Stop
+Update-ModuleOSDUpdate -ErrorAction Stop
 $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 get-OSDBInstallation
 return
@@ -670,6 +712,7 @@ Return
 
 #Function to check for superceded updates
 Function check-superceded($action){
+Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
 $path = "C:\WIMWitch\updates\"  #sets base path
 $Children = Get-ChildItem -Path $path  #query sub directories
 
@@ -708,6 +751,7 @@ $Children = Get-ChildItem -Path $path  #query sub directories
 
 #Function to compare OSDBuilder Versions
 Function compare-OSDBuilderVer{
+Update-Log -data "Comparing OSD Update module versions" -Class Information
 if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
 Return
 }
@@ -736,7 +780,7 @@ try{
 write-host "starting purge"
 #Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
 
-Check-Superseded -action delete -ErrorAction Stop
+Check-Superceded -action delete -ErrorAction Stop
 } 
 catch
 {
@@ -975,7 +1019,7 @@ If ($Index -eq $IndexSelected){
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
-Set-Logging #Clears out old logs from previous builds
+Set-Logging #Clears out old logs from previous builds and checks for other folders
 Get-OSDBInstallation #Sets OSDBuilder version info
 Get-OSDBCurrentVer #Discovers current version of OSDBuilder
 compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
