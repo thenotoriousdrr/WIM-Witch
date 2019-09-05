@@ -7,12 +7,12 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch" Height="500" Width="800">
+        Title="WIM Witch v0.9 Beta" Height="500" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
         </Grid.ColumnDefinitions>
-        <TabControl Grid.ColumnSpan="2" Margin="0,0,0.2,-0.2">
+        <TabControl Grid.ColumnSpan="2" Margin="0,0,0.2,-0.2" Background="#FFC4BBDF">
             <TabItem Header="Source WIM" Margin="0" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -24,7 +24,7 @@ $inputXML = @"
                     </Grid.RowDefinitions>
                     <TextBox x:Name="SourceWIMSelectWIMTextBox" HorizontalAlignment="Left" Height="25" Margin="26,98,0,0" TextWrapping="Wrap" Text="Select WIM File" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.ColumnSpan="2"/>
                     <Label Content="Source Wim " HorizontalAlignment="Left" Height="25" Margin="26,70,0,0" VerticalAlignment="Top" Width="100"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the path to the driver source that contains the drivers that will be injected by DISM." VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the WIM file, and then Edition, that will serve as the base for the custom WIM." VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
                     <Button x:Name="SourceWIMSelectButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="92.281,142,0,0" VerticalAlignment="Top" Width="75" Grid.Column="1"/>
                     <TextBox x:Name="SourceWIMImgDesTextBox" HorizontalAlignment="Left" Height="23" Margin="94,155,0,0" TextWrapping="Wrap" Text="ImageDescription" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
                     <TextBox x:Name="SourceWimArchTextBox" HorizontalAlignment="Left" Height="23" Margin="94,183,0,0" TextWrapping="Wrap" Text="Architecture" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
@@ -42,10 +42,10 @@ $inputXML = @"
             </TabItem>
             <TabItem Header="Updates" Height="20" Width="100">
                 <Grid>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,183,0,0" TextWrapping="Wrap" Text="Version of OSDBuilder Installed:" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,183,0,0" TextWrapping="Wrap" Text="Installed version of OSD Update:" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="194,182,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <Button x:Name="UpdateOSDBUpdateButton" Content="Update OSDBuilder" HorizontalAlignment="Left" Margin="194,236,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 you wish to download current patches for&#xA;" VerticalAlignment="Top" Width="335"/>
+                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="194,236,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 to download current patches for. Updating will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,187,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="497,187,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="569,187,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
@@ -57,16 +57,16 @@ $inputXML = @"
                     <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="544,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                     <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="613,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                     <Button x:Name="UpdatesDownloadNewButton" Content="Update" HorizontalAlignment="Left" Margin="626,241,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Make sure to update OSDBuilder by using the button below. Updating OSDBuilder will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSD Update by using the button below. Updating OSD Update will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
                     <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="194,210,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,210,0,0" TextWrapping="Wrap" Text="Current Version of OSDBuilder:" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,210,0,0" TextWrapping="Wrap" Text="Current Version of OSD Update:" VerticalAlignment="Top"/>
                     <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,283,0,0" TextWrapping="Wrap" Text="OSDBuilder is out of date. Please click &quot;Update OSDBuilder&quot; to update." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
                     <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="394,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Visibility="Hidden"/>
                     <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="387,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
 
                 </Grid>
             </TabItem>
-            <TabItem Header="JSON" Margin="-2,0,3,0" Width="100">
+            <TabItem Header="Autopilot" Margin="-2,0,3,0" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="733*"/>
@@ -87,7 +87,7 @@ $inputXML = @"
                     <TextBox x:Name="DriverDir1TextBox" HorizontalAlignment="Left" Height="25" Margin="26,144,0,0" TextWrapping="Wrap" Text="Select Driver Source Folder" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Label x:Name="DirverDirLabel" Content="Driver Source" HorizontalAlignment="Left" Height="25" Margin="26,114,0,0" VerticalAlignment="Top" Width="100"/>
                     <Button x:Name="DriverDir1Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,144,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the path to the driver source that contains the drivers that will be injected by DISM." VerticalAlignment="Top" Height="42" Width="353"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the path to the driver source(s) that contains the drivers that will be injected." VerticalAlignment="Top" Height="42" Width="353"/>
                     <CheckBox x:Name="DriverCheckBox" Content="Enable Driver Injection" HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top"/>
                     <TextBox x:Name="DriverDir2TextBox" HorizontalAlignment="Left" Height="25" Margin="26,189,0,0" TextWrapping="Wrap" Text="Select Driver Source Folder" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Button x:Name="DriverDir2Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,189,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
@@ -100,18 +100,18 @@ $inputXML = @"
 
                 </Grid>
             </TabItem>
-            <TabItem Header ="AppX" Height="20" Width="100">
+            <TabItem Header ="App Removal" Height="20" Width="100">
                 <Grid>
-                    <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Click select to choose which App-X packages to remove from the WIM" Margin="21,85,25.2,22.8" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="21,65,0,0" TextWrapping="Wrap" Text="Selected APPX Packages to remove:" VerticalAlignment="Top" Height="15" Width="194"/>
-                    <CheckBox x:Name="AppxCheckBox" Content="Enable AppX removal" HorizontalAlignment="Left" Margin="21,33,0,0" VerticalAlignment="Top"/>
-                    <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Select the apps to remove..." Margin="21,85,252.2,22.8"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="21,65,0,0" TextWrapping="Wrap" Text="Selected app packages to remove:" VerticalAlignment="Top" Height="15" Width="194"/>
+                    <CheckBox x:Name="AppxCheckBox" Content="Enable app removal" HorizontalAlignment="Left" Margin="21,33,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75"/>
 
                 </Grid>
 
             </TabItem>
 
-                      <TabItem Header="Make It So" Height="20" Width="100">
+            <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
 
@@ -122,23 +122,22 @@ $inputXML = @"
                     <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="430,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647" Grid.Column="1"/>
                     <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="5.508,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500" Grid.Column="1"/>
                     <TextBox x:Name="MISDriverTextBox" HorizontalAlignment="Left" Height="23" Margin="122,345,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
-                    <Label Content="Drivers Selected?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
+                    <Label Content="Driver injection?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
                     <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="122,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
-                    <Label Content="JSON Selected?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
-                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="New WIM Folder" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <Label Content="JSON injection?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
+                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
                     <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="310,339,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
-                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="Select Mount Path" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <Label Content="Mount Path" HorizontalAlignment="Left" Margin="5,194,0,0" VerticalAlignment="Top" Height="25" Width="100" Grid.Column="1"/>
                     <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
-                    <Label Content="Updates Selected?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
+                    <Label Content="Update injection?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISUpdatesTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
-                    <Label Content="AppX Removal?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,280,0,0" VerticalAlignment="Top" Width="109"/>
+                    <Label Content="App removal?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
 
                 </Grid>
             </TabItem>
-
             <TabItem x:Name="Logging" Header="Logging" Height="20" Width="100">
                 <Grid>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Logging" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
@@ -149,10 +148,13 @@ $inputXML = @"
 
     </Grid>
 </Window>
+
+
 "@ 
  
 $inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
 [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
 [xml]$XAML = $inputXML
 #Read XAML
  
@@ -226,10 +228,10 @@ catch
     Update-Log -data "The WIM file selected may be borked. Try a different one" -Class Warning
     Return
 }
-
-
-update-log -Data "WIM file selected -" -Class Information
-Update-Log -data $SourceWIM.FileName -Class Information
+$text = "WIM file selected: " + $SourceWIM.FileName
+Update-Log -data $text -Class Information
+#update-log -Data "WIM file selected -" -Class Information
+#Update-Log -data $SourceWIM.FileName -Class Information
 $ImageIndex = $IndexNumber
 
 
@@ -254,8 +256,11 @@ $JSON = New-Object System.Windows.Forms.OpenFileDialog -Property @{
 }
 $null = $JSON.ShowDialog()
 $WPFJSONTextBox.Text = $JSON.FileName
-update-log -Data "JSON file selected" -Class Information
-update-log -data $JSON.FileName -Class Information
+
+$text = "JSON file selected: " + $JSON.FileName
+
+update-log -Data $text -Class Information
+#update-log -data $JSON.FileName -Class Information
 }
 
 #Function to select the paths for the driver fields
@@ -267,7 +272,9 @@ $browser.Description = "Select the Driver Source folder"
 $null = $browser.ShowDialog()
 $DriverDir = $browser.SelectedPath
 $DriverTextBoxNumber.Text = $DriverDir
-update-log -Data "Driver path selected" -Class Information
+
+
+update-log -Data "Driver path selected: $DriverDir" -Class Information
 }
 
 #Function for the Make it So button
@@ -422,19 +429,22 @@ update-log -Data "Drivers were not selected for injection. Skipping." -Class Inf
 #Apply Updates
 If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
 
-
-
     Apply-Updates -class "SSU" 
     Apply-Updates -class "LCU"
     Apply-Updates -class "AdobeSU"
     Apply-Updates -class "DotNet"
     Apply-Updates -class "DotNetCU"
 }
+Else
+{
+Update-Log -Data "Updates not enabled" -Class Information
+}
 
 #Remove AppX Packages
-if ($WPFAppxCheckBox.IsChecked -eq $true){
-
-remove-appx -array $appx
+if ($WPFAppxCheckBox.IsChecked -eq $true){remove-appx -array $appx}
+Else
+{
+Update-Log -Data "App removal not enabled" -Class Information
 }
 
 #Copy log to mounted WIM
@@ -544,6 +554,7 @@ Function Update-Log
     [string]$Class = "Information"
 
     )
+    
     $global:ScriptLogFilePath = $Log
     $LogString = "$(Get-Date) $Class  -  $Data"
     $HostString = "$(Get-Date) $Class  -  $Data"
@@ -566,23 +577,29 @@ Function Update-Log
     $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 }
 
-#Removes old log and creates if does not exist
+#Removes old log and creates all folders if does not exist
 Function Set-Logging{
 
 #logging folder
 $FileExist = Test-Path -Path C:\WIMWitch\logging\WIMWitch.Log -PathType Leaf
 if ($FileExist -eq $False) {
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging
-    New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" |Out-Null}
+    #update-log -data "Logging folder does not exist" -class Warning
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging |Out-Null
+    New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" |Out-Null
+    #update-log -data "Logging folder and log created successfully" -Class Information 
+    }
     Else{
      Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
-     New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"|Out-Null}
+     New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"|Out-Null
+     #Update-Log -Data "Logging started successfully" -Class Information
+     }
+#$log = C:\WIMWitch\logging\WIMWitch.Log
 
 #updates folder
 $FileExist = Test-Path -Path C:\WIMWitch\updates #-PathType Leaf
 if ($FileExist -eq $False) {
     Update-Log -Data "Updates folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\updates
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\updates |Out-Null
     Update-Log -Data "Updates folder created" -Class Information
     }
    
@@ -592,7 +609,7 @@ if ($FileExist -eq $True){Update-Log -Data "Updates folder exists" -Class Inform
 $FileExist = Test-Path -Path C:\WIMWitch\Staging #-PathType Leaf
 if ($FileExist -eq $False) {
     Update-Log -Data "Staging folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging |Out-Null
     Update-Log -Data "Staging folder created" -Class Information
     }
 
@@ -602,11 +619,21 @@ if ($FileExist -eq $True){Update-Log -Data "Staging folder exists" -Class Inform
 $FileExist = Test-Path -Path C:\WIMWitch\Mount #-PathType Leaf
 if ($FileExist -eq $False) {
     Update-Log -Data "Mount folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Mount
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Mount |Out-Null
     Update-Log -Data "Mount folder created" -Class Information
     }
 
 if ($FileExist -eq $True){Update-Log -Data "Mount folder exists" -Class Information}
+
+#Completed WIMs folder
+$FileExist = Test-Path -Path C:\WIMWitch\CompletedWIMs #-PathType Leaf
+if ($FileExist -eq $False) {
+    Update-Log -Data "CompletedWIMs folder does not exist. Creating..." -Class Warning
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\CompletedWIMs |Out-Null
+    Update-Log -Data "CompletedWIMs folder created" -Class Information
+    }
+
+if ($FileExist -eq $True){Update-Log -Data "CompletedWIMs folder exists" -Class Information}
 }
 
 #Function for injecting drivers into the mounted WIM
@@ -648,28 +675,33 @@ Import-Module -name OSDUpdate -ErrorAction Stop
 catch
 {
 $WPFUpdatesOSDBVersion.Text = "Not Installed"
+Update-Log -Data "OSD Update is not installed" -Class Warning
 Return
 }
 try
 {
 $OSDBVersion = get-module -name OSDUpdate -ErrorAction Stop
 $WPFUpdatesOSDBVersion.Text = $OSDBVersion.Version
+$text = $osdbversion.version
+Update-Log -data "Installed version of OSD Update is $text" -Class Information
 Return
 }
 catch
 {
-write-host "Whatever you were hoping for, you didn’t get :)"
+Update-Log -Data "Whatever you were hoping for, you didn’t get :)" -Class Error
 Return
 }
 }
 
 #Function to retrieve current OSDBuilder Version
 Function Get-OSDBCurrentVer{
-Update-Log -Data "Getting the currently OSD Update module version installed" -Class Information
+Update-Log -Data "Checking for the most current OSD Update version available" -Class Information
 try
 {
 $OSDBCurrentVer = find-module -name OSDUpdate -ErrorAction Stop
 $WPFUpdatesOSDBCurrentVerTextBox.Text = $OSDBCurrentVer.version
+$text = $OSDBCurrentVer.version
+update-log -data "$text is the most current version" -class Information
 Return
 }
 catch
@@ -682,22 +714,38 @@ Return
 #Function to update or install OSDBuilder
 Function update-OSDB{
 if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
+Update-Log -Data "Attempting to install and import OSD Update" -Class Information
 try{
+Install-Module OSDUpdate -Force -ErrorAction Stop
+#Write-Host "Installed module"
+Update-Log -data "OSD Update module has been installed" -Class Information
 Import-Module -Name OSDUpdate -Force -ErrorAction Stop
+#Write-Host "Imported module"
+Update-Log -Data "OSD Update module has been imported" -Class Information
+Update-Log -Data "****************************************************************************" -Class Warning
+Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
+Update-Log -Data "****************************************************************************" -Class Warning
 $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 Return
 }
 catch
 {
 $WPFUpdatesOSDBVersion.Text = "Inst Fail"
+Update-Log -Data "Couldn't install OSD Update" -Class Error
+Update-Log -data $_.Exception.Message -class Error
 Return
 }
 }
 
 If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
+Update-Log "Attempting to update OSD Update" -class Information
 try
 {
 Update-ModuleOSDUpdate -ErrorAction Stop
+Update-Log -Data "Updated OSD Update" -Class Information
+Update-Log -Data "****************************************************************************" -Class Warning
+Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
+Update-Log -Data "****************************************************************************" -Class Warning
 $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
 get-OSDBInstallation
 return
@@ -719,7 +767,6 @@ $Children = Get-ChildItem -Path $path  #query sub directories
     foreach ($Children in $Children){
     $path1 = $path + $Children  
     $kids = Get-ChildItem -Path $path1
-  
  
     foreach ($kids in $kids){
         $path2 = $path1 + '\' + $kids
@@ -731,18 +778,18 @@ $Children = Get-ChildItem -Path $path  #query sub directories
             
             $StillCurrent = Get-OSDUpdate | Where-Object {$_.FileName -eq $fileinfo}
             If ($StillCurrent -eq $null){
-                write-host $fileinfo "no longer current"
+                update-log -data "$fileinfo no longer current" -Class Warning
                 if ($action -eq 'delete'){
-                    Write-Host "Deleting" $path3
+                    Update-Log -data "Deleting $path3" -class Warning
                     remove-item -path $path3 -Recurse -Force}
                 if ($action -eq 'audit'){
-                    write-host "set variable"
+                    #write-host "set variable"
                     $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
 
                     Return}
                  }   
             else{
-                write-host $fileinfo "is stil current"
+                Update-Log -data "$fileinfo is stil current" -Class Information
                 }    
              }
         }
@@ -756,19 +803,28 @@ if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
 Return
 }
 If ($WPFUpdatesOSDBVersion.Text -eq $WPFUpdatesOSDBCurrentVerTextBox.Text){
+Update-Log -Data "OSD Update is up to date" -class Information
 Return
 }
 $WPFUpdatesOSDBOutOfDateTextBlock.Visibility = "Visible"
+Update-Log -Data "OSD Update appears to be out of date. Run the upgrade function from within WIM Witch to resolve" -class Warning
+
 Return
 }
 
 #Function to download new patches
 Function download-patches($build){
+Update-Log -Data "Downloading SSU updates for Windows 10 $build" -Class Information
 Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\SSU
+Update-Log -Data "Downloading AdobeSU updates for Windows 10 $build" -Class Information
 Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\AdobeSU
+Update-Log -Data "Downloading LCU updates for Windows 10 $build" -Class Information
 Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\LCU
+Update-Log -Data "Downloading .Net updates for Windows 10 $build" -Class Information
 Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNet
+Update-Log -Data "Downloading .Net CU updates for Windows 10 $build" -Class Information
 Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNetCU
+Update-Log -Data "Downloading completed for Windows 10 $build" -Class Information
 }
  
 #Function to remove superceded updates and initate new patch download
@@ -777,17 +833,17 @@ Function update-patchsource{
 
 
 try{
-write-host "starting purge"
+#write-host "starting purge"
 #Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
-
+#Update-Log -Data "Deleting superseded updates..." -Class Warning
 Check-Superceded -action delete -ErrorAction Stop
 } 
 catch
 {
-write-host "Updates not superceded"
+Update-Log -Data "Updates not superceded" -Class Information
 Return
 }
-write-host "attempting to start download function"
+Update-Log -Data "attempting to start download function" -Class Information
 If ($WPFUpdates1903CheckBox.IsChecked -eq $true){download-patches -build 1903}
 If ($WPFUpdates1809CheckBox.IsChecked -eq $true){download-patches -build 1809}
 If ($WPFUpdates1803CheckBox.IsChecked -eq $true){download-patches -build 1803}
@@ -980,8 +1036,18 @@ If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$exappxs = write-output $
 If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$exappxs = write-output $appx1803 | out-gridview -passthru}
 If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$exappxs = write-output $appx1709 | out-gridview -passthru}
 
+if ($exappxs -eq $null){
+    Update-Log -Data "No apps were selected" -Class Warning
+    }
+if ($exappxs -ne $null){
+Update-Log -data "The following apps were selected for removal:" -Class Information
+Foreach ($exappx in $exappxs){
+    Update-Log -Data $exappx -Class Information
+}
+
 $WPFAppxTextBox.Text = $exappxs
 return $exappxs
+}
 }
 
 #Function to remove appx packages
@@ -1019,11 +1085,16 @@ If ($Index -eq $IndexSelected){
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
+#Set the path and name for logging
+$Log = "C:\WIMWitch\logging\WIMWitch.log"
+
 Set-Logging #Clears out old logs from previous builds and checks for other folders
 Get-OSDBInstallation #Sets OSDBuilder version info
 Get-OSDBCurrentVer #Discovers current version of OSDBuilder
 compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
-#check-superceded #checks to see if superceded patches exist
+check-superceded #checks to see if superceded patches exist
+
+update-log -data "Starting WIM Witch GUI" -class Information
 
 
 #===========================================================================
@@ -1041,8 +1112,7 @@ $WPFMISUpdatesTextBox.Text = "False"
 
 $WPFMISAppxTextBox.Text = "False"
 
-#Set the path and name for logging
-$Log = "C:\WIMWitch\logging\WIMWitch.log"
+
 
 
 
