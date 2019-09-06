@@ -7,7 +7,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9 Beta" Height="500" Width="800">
+        Title="WIM Witch v0.9.2 Beta" Height="500" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
@@ -71,11 +71,24 @@ $inputXML = @"
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="733*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="JSONTextBox" HorizontalAlignment="Left" Height="25" Margin="26,144,0,0" TextWrapping="Wrap" Text="Select JSON File" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
-                    <Label x:Name="JSONLabel" Content="Source JSON" HorizontalAlignment="Left" Height="25" Margin="26,114,0,0" VerticalAlignment="Top" Width="100"/>
-                    <Button x:Name="JSONButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="451,193,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <TextBox x:Name="JSONTextBox" HorizontalAlignment="Left" Height="25" Margin="26,130,0,0" TextWrapping="Wrap" Text="Select JSON File" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <Label x:Name="JSONLabel" Content="Source JSON" HorizontalAlignment="Left" Height="25" Margin="26,104,0,0" VerticalAlignment="Top" Width="100"/>
+                    <Button x:Name="JSONButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="451,165,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select a JSON file for use in deploying Autopilot systems. The file will be copied to processing folder during the build" VerticalAlignment="Top" Height="42" Width="353"/>
                     <CheckBox x:Name="JSONEnableCheckBox" Content="Enable Autopilot " HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top" ClickMode="Press"/>
+                    <TextBox x:Name="ZtdCorrelationId" HorizontalAlignment="Left" Height="23" Margin="129,176,0,0" TextWrapping="Wrap" Text="Select JSON File..." VerticalAlignment="Top" Width="236" IsEnabled="False"/>
+                    <TextBox x:Name="CloudAssignedTenantDomain" HorizontalAlignment="Left" Height="23" Margin="129,204,0,0" TextWrapping="Wrap" Text="Select JSON File..." VerticalAlignment="Top" Width="236" IsEnabled="False"/>
+                    <TextBox x:Name="Comment_File" HorizontalAlignment="Left" Height="23" Margin="129,232,0,0" TextWrapping="Wrap" Text="Select JSON File..." VerticalAlignment="Top" Width="236" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="24,178,0,0" TextWrapping="Wrap" Text="ZTD ID#" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="24,204,0,0" TextWrapping="Wrap" Text="Tenant Name" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="24,233,0,0" TextWrapping="Wrap" Text="Deployment Profile" VerticalAlignment="Top"/>
+                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,375,0,0" TextWrapping="Wrap" Text="Select folder to save new Autopilot profile " VerticalAlignment="Top" Width="499" IsEnabled="False"/>
+                    <TextBox x:Name="JSONTextBoxAADID" HorizontalAlignment="Left" Height="23" Margin="27,331,0,0" TextWrapping="Wrap" Text="User ID for Intune authentication" VerticalAlignment="Top" Width="499"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,275,0,0" TextWrapping="Wrap" Text="To download a new Autopilot profile from Intune, provide an AAD user name and a path to save the file" VerticalAlignment="Top" Height="36" Width="331"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="27,312,0,0" TextWrapping="Wrap" Text="User ID:" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="27,358,0,0" TextWrapping="Wrap" Text="Path to save file:" VerticalAlignment="Top"/>
+                    <Button x:Name="JSONButtonSavePath" Content="Select" HorizontalAlignment="Left" Margin="450,403,0,0" VerticalAlignment="Top" Width="75"/>
+                    <Button x:Name="JSONButtonRetrieve" Content="Retrieve Profile" HorizontalAlignment="Left" Margin="382,275,0,0" VerticalAlignment="Top" Width="130"/>
 
                 </Grid>
             </TabItem>
@@ -144,7 +157,7 @@ $inputXML = @"
                     <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
                 </Grid>
             </TabItem>
-        </TabControl>
+           </TabControl>
 
     </Grid>
 </Window>
@@ -258,10 +271,28 @@ $null = $JSON.ShowDialog()
 $WPFJSONTextBox.Text = $JSON.FileName
 
 $text = "JSON file selected: " + $JSON.FileName
-
 update-log -Data $text -Class Information
-#update-log -data $JSON.FileName -Class Information
+
+try{
+Update-Log -Data "Attempting to parse JSON file..." -Class Information
+$autopilotinfo = Get-Content $WPFJSONTextBox.Text | ConvertFrom-Json
+Update-Log -Data "Successfully parsed JSON file" -Class Information
+$WPFZtdCorrelationId.Text = $autopilotinfo.ZtdCorrelationId
+$WPFCloudAssignedTenantDomain.Text = $autopilotinfo.CloudAssignedTenantDomain
+$WPFComment_File.text = $autopilotinfo.Comment_File
+
 }
+catch{
+$WPFZtdCorrelationId.Text = "Bad file. Try Again."
+$WPFCloudAssignedTenantDomain.Text = "Bad file. Try Again."
+$WPFComment_File.text = "Bad file. Try Again."
+Update-Log -Data "Failed to parse JSON file. Try another"
+return
+
+}
+}
+#update-log -data $JSON.FileName -Class Information
+
 
 #Function to select the paths for the driver fields
 Function SelectDriverSource($DriverTextBoxNumber) {
@@ -738,7 +769,7 @@ Return
 }
 
 If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
-Update-Log "Attempting to update OSD Update" -class Information
+Update-Log -data "Attempting to update OSD Update" -class Information
 try
 {
 Update-ModuleOSDUpdate -ErrorAction Stop
@@ -1031,10 +1062,10 @@ $appx1709 = @(
 "Microsoft.ZuneMusic_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe",               
 "Microsoft.ZuneVideo_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe" )
 
-If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$exappxs = write-output $appx1903 | out-gridview -passthru}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$exappxs = write-output $appx1809 | out-gridview -passthru}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$exappxs = write-output $appx1803 | out-gridview -passthru}
-If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$exappxs = write-output $appx1709 | out-gridview -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$exappxs = write-output $appx1903 | out-gridview -title "Select apps to remove" -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$exappxs = write-output $appx1809 | out-gridview -title "Select apps to remove" -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$exappxs = write-output $appx1803 | out-gridview -title "Select apps to remove" -passthru}
+If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$exappxs = write-output $appx1709 | out-gridview -title "Select apps to remove" -passthru}
 
 if ($exappxs -eq $null){
     Update-Log -Data "No apps were selected" -Class Warning
@@ -1082,6 +1113,68 @@ If ($Index -eq $IndexSelected){
 }
 }
 
+Function SelectNewJSONDir {
+
+Add-Type -AssemblyName System.Windows.Forms
+$browser = New-Object System.Windows.Forms.FolderBrowserDialog
+$browser.Description = "Select the folder to save JSON"
+$null = $browser.ShowDialog()
+$SaveDir = $browser.SelectedPath
+$WPFJSONTextBoxSavePath.text = $SaveDir 
+$text = "Autopilot profile save path selected: $SaveDir" 
+update-log -Data $text -Class Information
+}
+
+#Function to retrieve autopilot profile from intune
+function get-WWAutopilotProfile ($login,$path){
+Update-Log -data "Checking dependencies for Autopilot profile retrieval..." -Class Information
+
+try{
+Import-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -ErrorAction Stop
+Update-Log -Data "NuGet is installed" -Class Information
+}
+catch{
+Update-Log -data "NuGet is not installed. Installing now..." -Class Warning
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+Update-Log -data "NuGet is now installed" -Class Information
+}
+
+try{
+
+Import-Module -name AzureAD -ErrorAction Stop
+Update-Log -data "AzureAD Module is installed" -Class Information
+}
+catch{
+Update-Log -data "AzureAD Module is not installed. Installing now..." -Class Warning
+Install-Module AzureAD -Force
+Update-Log -data "AzureAD is now installed" -class Information
+}
+
+try{
+
+Import-Module -Name WindowsAutopilotIntune -ErrorAction Stop
+Update-Log -data "WindowsAutopilotIntune module is installed" -Class Information
+}
+catch{
+
+Update-Log -data "WindowsAutopilotIntune module is not installed. Installing now..." -Class Warning
+Install-Module WindowsAutopilotIntune -Force
+update-log -data "WindowsAutopilotIntune module is now installed." -class Information
+}
+
+
+Update-Log -data "Connecting to Intune..." -Class Information
+Connect-AutopilotIntune -user $login
+Update-Log -data "Connected to Intune" -Class Information
+
+Update-Log -data "Retrieving profile..." -Class Information
+Get-AutoPilotProfile | Out-GridView -title "Select Autopilot profile" -PassThru | ConvertTo-AutoPilotConfigurationJSON | Out-File $path\AutopilotConfigurationFile.json -Encoding ASCII
+$text = $path + "\AutopilotConfigurationFile.json"
+Update-Log -data "Profile successfully created at $text" -Class Information
+
+
+}
+
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
@@ -1092,7 +1185,7 @@ Set-Logging #Clears out old logs from previous builds and checks for other folde
 Get-OSDBInstallation #Sets OSDBuilder version info
 Get-OSDBCurrentVer #Discovers current version of OSDBuilder
 compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
-check-superceded #checks to see if superceded patches exist
+#check-superceded #checks to see if superceded patches exist
 
 update-log -data "Starting WIM Witch GUI" -class Information
 
@@ -1154,6 +1247,14 @@ $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 
 #Select Appx packages to remove
 $WPFAppxButton.Add_Click({$global:SelectedAppx = Select-Appx})
+
+#Select Autopilot path to save button
+$WPFJSONButtonSavePath.Add_Click({SelectNewJSONDir})
+
+#retrieve autopilot profile from intune
+$WPFJSONButtonRetrieve.Add_click({get-wwautopilotprofile -login $WPFJSONTextBoxAADID.Text -path $WPFJSONTextBoxSavePath.Text})
+
+
 
 #===========================================================================
 # Section for Checkboxes to call functions
