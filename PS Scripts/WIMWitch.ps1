@@ -1,4 +1,42 @@
-﻿#Your XAML goes here :)
+﻿#===========================================================================
+# WIM Witch 
+#===========================================================================
+#
+# Written and maintained by: Donna Ryan
+# Twitter: @TheNotoriousDRR
+# www.TheNotoriousDRR.com
+# www.SCConfigMgr.com
+#
+#===========================================================================
+#
+# WIM Witch is a GUI driven tool used to update and customize WIM files, create WIM configuration templates, and to
+# apply those tempates either with the GUI or programatically for bulk creation.
+#
+# It currently supports the following functions:
+#
+# -Selecting the individual index to import
+# -Autopilot for existing devices 
+# -Retrieve Autopilot deployment profiles from Intune
+# -Multi path driver importation
+# -Injection of updates from a self maintained local update cache
+# -Save and Load Configuration Templates
+# -Removal of AppX Modern Apps
+# 
+#
+#===========================================================================
+#
+# Version 0.9.3
+# 
+# -Added Save and load from XML
+# -Separated Source WIM and JSON function to two parts each. One for select, one for import
+# -Started development of a function to refresh the confirmation text boxes on the MIS tab. Doesn't work yet.
+#
+#
+
+
+
+
+#Your XAML goes here :)
 $inputXML = @"
 <Window x:Class="WIM_Witch_Tabbed.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -7,7 +45,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.2 Beta" Height="500" Width="800">
+        Title="WIM Witch v0.9.3 Beta" Height="500" Width="900">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
@@ -157,11 +195,26 @@ $inputXML = @"
                     <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
                 </Grid>
             </TabItem>
-           </TabControl>
+            <TabItem Header="Save/Load" Height="20" Width="100">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SLSaveFileName" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="Name for saved configuration..." VerticalAlignment="Top" Width="500"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,38,0,0" TextWrapping="Wrap" Text="Provide a name for the saved configuration" VerticalAlignment="Top" Height="42" Width="353"/>
+                    <Button x:Name="SLSaveButton" Content="Save" HorizontalAlignment="Left" Margin="451,127,0,0" VerticalAlignment="Top" Width="75"/>
+                    <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="1" Margin="0,216,0,0" VerticalAlignment="Top" Width="785"/>
+                    <TextBox x:Name="SLLoadTextBox" HorizontalAlignment="Left" Height="23" Margin="26,308,0,0" TextWrapping="Wrap" Text="Select configuration file to load" VerticalAlignment="Top" Width="500"/>
+                    <Button x:Name="SLLoadButton" Content="Load" HorizontalAlignment="Left" Margin="451,351,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,279,0,0" TextWrapping="Wrap" Text="Select configuration file to load" VerticalAlignment="Top" Width="353"/>
+
+                </Grid>
+
+            </TabItem>
+        </TabControl>
 
     </Grid>
 </Window>
-
 
 "@ 
  
@@ -229,7 +282,11 @@ $ImageFull = @(get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text)
 $a = $ImageFull | Out-GridView -Title "Choose an Image Index" -Passthru
 $IndexNumber = $a.ImageIndex
 #write-host $IndexNumber
+import-wiminfo -IndexNumber $IndexNumber
+}
 
+function import-wiminfo($IndexNumber){
+Update-Log -Data "Importing Source WIM Info" -Class Information
 try
 {
     #Gets WIM metadata to populate fields on the Source tab.
@@ -272,7 +329,12 @@ $WPFJSONTextBox.Text = $JSON.FileName
 
 $text = "JSON file selected: " + $JSON.FileName
 update-log -Data $text -Class Information
+Parse-JSON -file $JSON.FileName
 
+}
+
+#Function to parse the JSON file for user valuable info
+Function Parse-JSON($file){
 try{
 Update-Log -Data "Attempting to parse JSON file..." -Class Information
 $autopilotinfo = Get-Content $WPFJSONTextBox.Text | ConvertFrom-Json
@@ -291,7 +353,7 @@ return
 
 }
 }
-#update-log -data $JSON.FileName -Class Information
+
 
 
 #Function to select the paths for the driver fields
@@ -665,6 +727,17 @@ if ($FileExist -eq $False) {
     }
 
 if ($FileExist -eq $True){Update-Log -Data "CompletedWIMs folder exists" -Class Information}
+
+#Configurations XML folder
+$FileExist = Test-Path -Path C:\WIMWitch\Configs #-PathType Leaf
+if ($FileExist -eq $False) {
+    Update-Log -Data "Configs folder does not exist. Creating..." -Class Warning
+    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Configs |Out-Null
+    Update-Log -Data "Configs folder created" -Class Information
+    }
+
+if ($FileExist -eq $True){Update-Log -Data "Configs folder exists" -Class Information}
+
 }
 
 #Function for injecting drivers into the mounted WIM
@@ -1175,6 +1248,125 @@ Update-Log -data "Profile successfully created at $text" -Class Information
 
 }
 
+#Function to save current configuration
+function save-config($filename){
+
+$CurrentConfig = @{
+SourcePath = $WPFSourceWIMSelectWIMTextBox.text
+SourceIndex = $WPFSourceWimIndexTextBox.text
+UpdatesEnabled = $WPFUpdatesEnableCheckBox.IsChecked
+AutopilotEnabled = $WPFJSONEnableCheckBox.IsChecked
+AutopilotPath = $WPFJSONTextBox.text
+DriversEnabled = $WPFDriverCheckBox.IsChecked
+DriverPath1 = $WPFDriverDir1TextBox.text
+DriverPath2 = $WPFDriverDir2TextBox.text
+DriverPath3 = $WPFDriverDir3TextBox.text
+DriverPath4 = $WPFDriverDir4TextBox.text
+DriverPath5 = $WPFDriverDir5TextBox.text
+AppxIsEnabled = $WPFAppxCheckBox.IsChecked
+AppxSelected = $WPFAppxTextBox.Text
+WIMName = $WPFMISWimNameTextBox.text
+WIMPath = $WPFMISWimFolderTextBox.text
+MountPath = $WPFMISMountTextBox.text
+}
+
+Update-Log -data "Saving configuration file $filename" -Class Information
+try{
+$CurrentConfig | Export-Clixml -Path c:\WIMWitch\Configs\$filename -ErrorAction Stop
+update-log -data "file saved" -Class Information
+}
+catch
+{
+Update-Log -data "Couldn't save file" -Class Error 
+}
+
+}
+
+#Function to import configurations from file
+function load-config($filename){
+update-log -data "Importing config from $filename" -Class Information
+try{
+$settings = Import-Clixml -Path $filename -ErrorAction Stop
+update-log -data "Config file read..." -Class Information
+$WPFSourceWIMSelectWIMTextBox.text = $settings.SourcePath
+$WPFSourceWimIndexTextBox.text = $settings.SourceIndex
+$WPFUpdatesEnableCheckBox.IsChecked = $settings.UpdatesEnabled
+$WPFJSONEnableCheckBox.IsChecked = $settings.AutopilotEnabled
+$WPFJSONTextBox.text = $settings.AutopilotPath 
+$WPFDriverCheckBox.IsChecked = $settings.DriversEnabled
+$WPFDriverDir1TextBox.text = $settings.DriverPath1
+$WPFDriverDir2TextBox.text = $settings.DriverPath2
+$WPFDriverDir3TextBox.text = $settings.DriverPath3
+$WPFDriverDir4TextBox.text = $settings.DriverPath4
+$WPFDriverDir5TextBox.text = $settings.DriverPath5
+$WPFAppxCheckBox.IsChecked = $settings.AppxIsEnabled
+$WPFAppxTextBox.Text = $settings.AppxSelected
+$WPFMISWimNameTextBox.text = $settings.WIMName
+$WPFMISWimFolderTextBox.text = $settings.WIMPath
+$WPFMISMountTextBox.text = $settings.MountPath
+update-log -data "Configration set" -class Information
+
+import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
+
+if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
+#Update-Log -data "Parsing Autopilot JSON file" -Class Information
+Parse-JSON -file $WPFJSONTextBox.text 
+}
+
+reset-MISCheckBox
+Update-Log -data "Config file loaded successfully" -Class Information
+}
+
+catch
+{update-log -data "Could not import from $filename" -Class Error}
+
+}
+
+#Function to select configuration file
+Function select-config{
+$SourceXML = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+    InitialDirectory = "C:\WIMWitch\Configs"
+    #InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+    Filter = 'XML (*.XML)|'
+}
+$null = $SourceXML.ShowDialog()
+$WPFSLLoadTextBox.text = $SourceXML.FileName
+load-config -filename $WPFSLLoadTextBox.text
+}
+
+#Function to reset reminder values from check boxes on the MIS tab when loading a config
+#This function is still buggy. It doesn't refresh all or most of the time 
+function reset-MISCheckBox{
+    update-log -data "Refreshing MIS Values..." -class Information
+    If ($WPFJSONEnableCheckBox.IsChecked -eq $true){
+        $WPFJSONButton.IsEnabled = $True
+        $WPFMISJSONTextBox.Text = "True"}
+
+    If ($WPFDriverCheckBox.IsChecked -eq $true){
+        $WPFDriverDir1Button.IsEnabled = $True
+        $WPFDriverDir2Button.IsEnabled = $True
+        $WPFDriverDir3Button.IsEnabled = $True
+        $WPFDriverDir4Button.IsEnabled = $True
+        $WPFDriverDir5Button.IsEnabled = $True
+        $WPFMISDriverTextBox.Text = "True"
+        }
+
+    If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
+        $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+        $WPFUpdatesDownloadNewButton.IsEnabled = $True
+        $WPFUpdates1903CheckBox.IsEnabled = $True
+        $WPFUpdates1809CheckBox.IsEnabled = $True
+        $WPFUpdates1803CheckBox.IsEnabled = $True
+        $WPFUpdates1709CheckBox.IsEnabled = $True
+        $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+        $WPFMISUpdatesTextBox.Text = "True"
+        }
+
+    If ($WPFAppxCheckBox.IsChecked -eq $true){
+        $WPFAppxButton.IsEnabled = $True
+        $WPFMISAppxTextBox.Text = "True"}
+}
+
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
@@ -1182,10 +1374,14 @@ Update-Log -data "Profile successfully created at $text" -Class Information
 $Log = "C:\WIMWitch\logging\WIMWitch.log"
 
 Set-Logging #Clears out old logs from previous builds and checks for other folders
-Get-OSDBInstallation #Sets OSDBuilder version info
-Get-OSDBCurrentVer #Discovers current version of OSDBuilder
-compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+
+#The OSD Update functions. Disable the following four to increase start time. check-superced takes the longest - FYI
+#===========================================================================
+#Get-OSDBInstallation #Sets OSDBuilder version info
+#Get-OSDBCurrentVer #Discovers current version of OSDBuilder
+#compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
 #check-superceded #checks to see if superceded patches exist
+#===========================================================================
 
 update-log -data "Starting WIM Witch GUI" -class Information
 
@@ -1253,6 +1449,11 @@ $WPFJSONButtonSavePath.Add_Click({SelectNewJSONDir})
 
 #retrieve autopilot profile from intune
 $WPFJSONButtonRetrieve.Add_click({get-wwautopilotprofile -login $WPFJSONTextBoxAADID.Text -path $WPFJSONTextBoxSavePath.Text})
+
+#Button to save configuration file
+$WPFSLSaveButton.Add_click({save-config -filename $WPFSLSaveFileName.text})
+
+$WPFSLLoadButton.Add_click({select-config})
 
 
 
