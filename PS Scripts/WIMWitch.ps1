@@ -22,8 +22,12 @@
 # -Save and Load Configuration Templates
 # -Removal of AppX Modern Apps
 # -Create batch jobs for image catalog updating
-# 
 #
+#===========================================================================
+# Version 0.9.5 
+#
+# -Added opening and closing notifications
+# -Cleaned up opening displays
 #===========================================================================
 #
 # Version 0.9.4
@@ -64,7 +68,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.3 Beta" Height="500" Width="900">
+        Title="WIM Witch v0.9.5 Beta" Height="500" Width="900">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
@@ -256,7 +260,7 @@ catch{
 # Load XAML Objects In PowerShell
 #===========================================================================
   
-$xaml.SelectNodes("//*[@Name]") | %{"trying item $($_.Name)";
+$xaml.SelectNodes("//*[@Name]") |%{"trying item $($_.Name)" |out-null;
     try {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name) -ErrorAction Stop}
     catch{throw}
     }
@@ -1398,13 +1402,49 @@ function run-configfile($filename){
     MakeItSo -appx $global:SelectedAppx 
 }
 
+#Function to display text on closing of the script or wpf window
+function display-closingtext{
+#Before you start bitching about write-host, write-output doesn't work with the exiting function. Suggestions are welcome.
+Write-Host " " 
+Write-Host "##########################################################"
+Write-Host " "
+Write-Host "Thank you for using WIM Witch. If you have any questions,"
+Write-Host "comments, or suggestions, please reach out to me!"
+Write-Host " "
+Write-Host "-Donna Ryan" 
+write-host "(creator and lead dev of WIM Witch)"
+Write-Host " "
+Write-Host "twitter: @TheNotoriousDRR"
+Write-Host "www.SCConfigMgr.com"
+Write-Host "www.TheNotoriousDRR.com"
+Write-Host " "
+Write-Host "##########################################################"
+}
+
+#Function to display opening text
+function display-openingtext{
+cls
+Write-Output "##########################################################"
+Write-Output " "
+Write-Output "             ***** Starting WIM Witch *****"
+Write-Output " "
+Write-Output "##########################################################"
+Write-Output " "
+}
+
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
+
+#calls fuction to display the opening text blurb
+display-openingtext
+
 #Set the path and name for logging
 $Log = "C:\WIMWitch\logging\WIMWitch.log"
 
 Set-Logging #Clears out old logs from previous builds and checks for other folders
+
+
 
 #The OSD Update functions. Disable the following four to increase start time. check-superced takes the longest - FYI
 #===========================================================================
@@ -1431,10 +1471,6 @@ $WPFMISDriverTextBox.Text = "False"
 $WPFMISUpdatesTextBox.Text = "False"
 
 $WPFMISAppxTextBox.Text = "False"
-
-
-
-
 
 #===========================================================================
 # Section for Buttons to call functions
@@ -1485,8 +1521,6 @@ $WPFJSONButtonRetrieve.Add_click({get-wwautopilotprofile -login $WPFJSONTextBoxA
 $WPFSLSaveButton.Add_click({save-config -filename $WPFSLSaveFileName.text})
 
 $WPFSLLoadButton.Add_click({select-config})
-
-
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -1563,6 +1597,7 @@ $WPFAppxCheckBox.Add_Click({
 #Runs WIM Witch from a single file, bypassing the GUI
 if (($auto -eq "yes") -and ($autofile -ne $null)) {
     run-configfile -filename $autofile
+    display-closingtext
     exit 0
 }
 
@@ -1575,11 +1610,14 @@ foreach ($file in $files){
 $fullpath = $autopath + '\' + $file
 run-configfile -filename $fullpath}
 Update-Log -Data "Work complete" -Class Information
+display-closingtext
 exit 0
 }
+
+#Closing action for the WPF form
+Register-ObjectEvent -InputObject $form -EventName Closed -Action ({display-closingtext}) |Out-Null
 
 #Start GUI 
 update-log -data "Starting WIM Witch GUI" -class Information
 $Form.ShowDialog() | out-null #This starts the GUI
-
 
