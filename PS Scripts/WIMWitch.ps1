@@ -21,7 +21,15 @@
 # -Injection of updates from a self maintained local update cache
 # -Save and Load Configuration Templates
 # -Removal of AppX Modern Apps
+# -Create batch jobs for image catalog updating
 # 
+#
+#===========================================================================
+#
+# Version 0.9.4
+#
+# -Added ability to run configs from commandline
+# -Added ability to run batch jobs from a single folder where all configs get run
 #
 #===========================================================================
 #
@@ -32,8 +40,19 @@
 # -Started development of a function to refresh the confirmation text boxes on the MIS tab. Doesn't work yet.
 #
 #
+#============================================================================================================
+Param( 
+[parameter(mandatory=$false,HelpMessage="enable auto")] 
+[ValidateSet("yes")] 
+$auto,
 
+[parameter(mandatory=$false,HelpMessage="config file")] 
+$autofile,
 
+[parameter(mandatory=$false,HelpMessage="config path")] 
+#[ValidateSet("c:\wimwitch\configs")]
+$autopath 
+)
 
 
 #Your XAML goes here :)
@@ -354,8 +373,6 @@ return
 }
 }
 
-
-
 #Function to select the paths for the driver fields
 Function SelectDriverSource($DriverTextBoxNumber) {
 #write-host $DriverTextBoxNumber
@@ -397,7 +414,11 @@ update-log -Data "New WIM name is valid" -Class Information
 
 If($WPFMISWimNameTextBox.Text -notlike "*.wim")
 {
-$WPFLogging.Focus()
+#===================================
+#Fix This
+#$WPFLogging.Focus()
+#===================================
+
 $WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
 update-log -Data "Appending new file name with an extension" -Class Information
 }
@@ -466,7 +487,7 @@ update-log -data $WPFMISMountTextBox.Text -Class Information
 try
 {
    #write-host $IndexNumber
-    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop
+    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop |Out-Null
 }
 catch
 {
@@ -560,7 +581,7 @@ catch
 update-log -Data "Dismounting WIM file, committing changes" -Class Information 
 try
 {
-    Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save -ErrorAction Stop
+    Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save -ErrorAction Stop |Out-Null
 }
 catch
 {
@@ -746,7 +767,7 @@ Function DriverInjection($Folder)
 
 Function ApplyDriver($drivertoapply){
 try{
-   add-windowsdriver -Path $WPFMISMountTextBox.Text -Driver $drivertoapply -ErrorAction Stop
+   add-windowsdriver -Path $WPFMISMountTextBox.Text -Driver $drivertoapply -ErrorAction Stop |Out-Null
    Update-Log -Data "Applied $drivertoapply" -Class Information
 }
 catch
@@ -960,7 +981,7 @@ Function Apply-Updates($class){
 
 #$Imageversion = Get-WindowsImage -ImagePath D:\Images\install.wim -Index 3
 
-$WPFSourceWimVerTextBox.text
+#$WPFSourceWimVerTextBox.text <----This line remmed out when testing command line function. Unknown if this breaks GUI
 
 If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$buildnum = 1903}
 If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$buildnum = 1809}
@@ -973,7 +994,7 @@ $Children = Get-ChildItem -Path $path
 foreach ($Children in $Children){
 $compound = $path+$Children
 update-log -Data "Applying $Children" -Class Information
-Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound 
+Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound |Out-Null
 }
 
 }
@@ -1157,11 +1178,10 @@ return $exappxs
 #Function to remove appx packages
 function remove-appx($array){
 $exappxs = $array
-
+update-log -data "Starting AppX removal" -class Information
 foreach ($exappx in $exappxs){
-Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx 
+Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx |Out-Null
 update-log -data "Removing $exappx" -Class Information
-#write-host "removing" $exappx "from the WIM"
 }
 return
 }
@@ -1176,11 +1196,11 @@ $IndexSelected = $WPFSourceWIMImgDesTextBox.Text
 foreach ($Index in $IndexesAll){
 Update-Log -data "$Index is being evaluated"
 If ($Index -eq $IndexSelected){
-    Update-Log -Data "$Index is the index we want to keep. Skipping." -Class Information
+    Update-Log -Data "$Index is the index we want to keep. Skipping." -Class Information |Out-Null
         }
     else{
     update-log -data "Deleting $Index from WIM" -Class Information
-    Remove-WindowsImage -ImagePath $wimname -Name $Index -InformationAction SilentlyContinue
+    Remove-WindowsImage -ImagePath $wimname -Name $Index -InformationAction SilentlyContinue |Out-Null
 
     }
 }
@@ -1300,10 +1320,13 @@ $WPFDriverDir3TextBox.text = $settings.DriverPath3
 $WPFDriverDir4TextBox.text = $settings.DriverPath4
 $WPFDriverDir5TextBox.text = $settings.DriverPath5
 $WPFAppxCheckBox.IsChecked = $settings.AppxIsEnabled
-$WPFAppxTextBox.Text = $settings.AppxSelected
+$WPFAppxTextBox.text = $settings.AppxSelected -split " "
 $WPFMISWimNameTextBox.text = $settings.WIMName
 $WPFMISWimFolderTextBox.text = $settings.WIMPath
 $WPFMISMountTextBox.text = $settings.MountPath
+$global:SelectedAppx = $settings.AppxSelected -split " "
+
+
 update-log -data "Configration set" -class Information
 
 import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
@@ -1367,6 +1390,14 @@ function reset-MISCheckBox{
         $WPFMISAppxTextBox.Text = "True"}
 }
 
+#Function to run WIM Witch from a config file
+function run-configfile($filename){
+    Update-Log -Data "Loading the config file: $filename" -Class Information
+    load-config -filename $filename 
+    Update-Log -Data "Starting auto mode with the config file $filename" -Class Information
+    MakeItSo -appx $global:SelectedAppx 
+}
+
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
@@ -1383,7 +1414,7 @@ Set-Logging #Clears out old logs from previous builds and checks for other folde
 #check-superceded #checks to see if superceded patches exist
 #===========================================================================
 
-update-log -data "Starting WIM Witch GUI" -class Information
+
 
 
 #===========================================================================
@@ -1525,29 +1556,30 @@ $WPFAppxCheckBox.Add_Click({
         $WPFAppxButton.IsEnabled = $False}
     })
  
+#==========================================================
+#Run WIM Witch below
+#==========================================================
 
-#===========================================================================
+#Runs WIM Witch from a single file, bypassing the GUI
+if (($auto -eq "yes") -and ($autofile -ne $null)) {
+    run-configfile -filename $autofile
+    exit 0
+}
 
-     
+if (($auto -eq "yes") -and ($autopath -ne $null)) {
+Update-Log -data "Running batch job from config folder $autopath" -Class Information
+$files = Get-ChildItem -Path $autopath
+Update-Log -data "Setting batch job for the folling configs:" -Class Information
+foreach ($file in $files){Update-Log -Data $file -Class Information}
+foreach ($file in $files){
+$fullpath = $autopath + '\' + $file
+run-configfile -filename $fullpath}
+Update-Log -Data "Work complete" -Class Information
+exit 0
+}
 
-
-#===========================================================================
-# Commands before forms load
-#===========================================================================
-
-
-
-
-
-
-#write-host "To show the form, run the following" -ForegroundColor Cyan
-#'$Form.ShowDialog() | out-null'
-
-#===========================================================================
-# Shows the form
-#===========================================================================
-
-
- $Form.ShowDialog() | out-null
+#Start GUI 
+update-log -data "Starting WIM Witch GUI" -class Information
+$Form.ShowDialog() | out-null #This starts the GUI
 
 
