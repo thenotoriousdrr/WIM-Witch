@@ -23,6 +23,24 @@
 # -Removal of AppX Modern Apps
 # -Create batch jobs for image catalog updating
 #
+#
+#===========================================================================
+# Version 0.9.7
+#
+# -Added function to check and repair mount point folder
+# -Added check to validate existance of Autopilot json file (preflight in MIS)
+# -Preflight for MIS stops if target wim already exists (GUI)
+#   
+#
+#===========================================================================
+# Version 0.9.6
+#
+# -Added commandline support for the following:
+#
+#   -handle superseded update deletion
+#   -downloading of new updates
+#   -update OSDUpdate module
+#
 #===========================================================================
 # Version 0.9.5 
 #
@@ -55,7 +73,27 @@ $autofile,
 
 [parameter(mandatory=$false,HelpMessage="config path")] 
 #[ValidateSet("c:\wimwitch\configs")]
-$autopath 
+$autopath,
+
+[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+[ValidateSet("audit","delete")] 
+$Superseded,
+
+[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+[ValidateSet("update")] 
+$OSDSUS,
+
+#[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+#[ValidateSet("download")] 
+#$newupdates,
+
+[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+[ValidateSet("all","1709","1803","1809","1903")] 
+$DownUpdates,
+
+[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+[ValidateSet("yes")] 
+$updates 
 )
 
 
@@ -68,7 +106,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.5 Beta" Height="500" Width="900">
+        Title="WIM Witch v0.9.6 Beta" Height="500" Width="900">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
@@ -287,6 +325,7 @@ $browser.Description = "Select the mount folder"
 $null = $browser.ShowDialog()
 $MountDir = $browser.SelectedPath
 $WPFMISMountTextBox.text = $MountDir #I SCREWED UP THIS VARIABLE
+check-mountpath -path $WPFMISMountTextBox.text
 update-log -Data "Mount directory selected" -Class Information
 }
 
@@ -395,37 +434,22 @@ update-log -Data "Driver path selected: $DriverDir" -Class Information
 Function MakeItSo ($appx){
 
 #Check if new file name is valid, also append file extension if neccessary
-if ($WPFMISWimNameTextBox.Text -eq "")
+
+###Starting MIS Preflight###
+check-mountpath -path $WPFMISMountTextBox.Text -clean True
+
+if (($WPFMISWimNameTextBox.Text -eq "") -or ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name"))
 {
-$WPFLogging.Focus()
 update-log -Data "Enter a valid file name and then try again" -Class Error
 return 
 }
 
+$checkresult = (check-name) 
+if ($checkresult -eq "stop"){return}
 
-if ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name")
-{
-$WPFLogging.Focus()
-update-log -Data "Enter a valid file name and then try again" -Class Error
-return 
-}
 
-If ($WPFMISWimNameTextBox.Text -like "*.wim")
-{
-$WPFLogging.Focus()
-update-log -Data "New WIM name is valid" -Class Information
-}
 
-If($WPFMISWimNameTextBox.Text -notlike "*.wim")
-{
-#===================================
-#Fix This
-#$WPFLogging.Focus()
-#===================================
 
-$WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
-update-log -Data "Appending new file name with an extension" -Class Information
-}
 
 #check for working directory, make if does not exist, delete files if they exist
 $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
@@ -446,6 +470,21 @@ catch
     Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
     return
 }
+
+if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
+    Update-Log -Data "Validating existance of JSON file..." -Class Information
+    $APJSONExists = (Test-Path $WPFJSONTextBox.Text)
+    if ($APJSONExists -eq $true){Update-Log -Data "JSON exists. Continuing..." -Class Information}
+        else
+        {
+        Update-Log -Data "The Autopilot file could not be verified. Check it and try again." -Class Error
+        return}
+
+}
+
+
+
+#####End of MIS Preflight####
 
 #Copy source WIM
 update-log -Data "Copying source WIM to the staging folder" -Class Information
@@ -483,6 +522,8 @@ catch
 remove-indexes
 
 #Mount the WIM File
+
+
 $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
 update-log -Data "Mounting source WIM $wimname" -Class Information
 update-log -Data "to mount point:" -Class Information
@@ -905,7 +946,7 @@ $Children = Get-ChildItem -Path $path  #query sub directories
             $path3 = $path2 + '\' + $sprout
             $fileinfo = get-childitem -path $path3
             
-            $StillCurrent = Get-OSDUpdate | Where-Object {$_.FileName -eq $fileinfo}
+            $StillCurrent = Get-OSDUpdate | Where-Object {$_.FileName -eq $fileinfo}   
             If ($StillCurrent -eq $null){
                 update-log -data "$fileinfo no longer current" -Class Warning
                 if ($action -eq 'delete'){
@@ -1412,7 +1453,6 @@ Write-Host "Thank you for using WIM Witch. If you have any questions,"
 Write-Host "comments, or suggestions, please reach out to me!"
 Write-Host " "
 Write-Host "-Donna Ryan" 
-write-host "(creator and lead dev of WIM Witch)"
 Write-Host " "
 Write-Host "twitter: @TheNotoriousDRR"
 Write-Host "www.SCConfigMgr.com"
@@ -1427,9 +1467,117 @@ cls
 Write-Output "##########################################################"
 Write-Output " "
 Write-Output "             ***** Starting WIM Witch *****"
-Write-Output " "
+Write-Output "                   version 0.9.7 beta"
 Write-Output "##########################################################"
 Write-Output " "
+}
+
+#Function to check suitability of the proposed mount point folder
+function check-mountpath{
+param(
+[parameter(mandatory=$true,HelpMessage="mount path")] 
+$path,
+
+[parameter(mandatory=$false,HelpMessage="clear out the crapola")] 
+[ValidateSet($true)]
+$clean
+)
+
+
+$IsMountPoint = $null
+$HasFiles = $null
+$currentmounts = get-windowsimage -Mounted
+
+foreach ($currentmount in $currentmounts){
+    if ($currentmount.path -eq $path) {$IsMountPoint = $true} 
+        }
+  
+    if ($IsMountPoint -eq $null){
+        if( (Get-ChildItem $path | Measure-Object).Count -gt 0) {
+            $HasFiles = $true}
+        }
+
+if ($HasFiles -eq $true){
+    Update-Log -Data "Folder is not empty" -Class Warning
+    if ($clean -eq $true){
+        try{
+        Update-Log -Data "Cleaning folder..." -Class Warning
+        Remove-Item -Path $path\* -Recurse -Force -ErrorAction Stop
+        Update-Log -Data "$path cleared" -Class Warning}
+        
+        catch{
+        Update-Log -Data "Couldn't delete contents of $path" -Class Error
+        Update-Log -Data "Select a different folder to continue." -Class Error
+        return
+        }
+     }
+     }
+
+if ($IsMountPoint -eq $true){
+    Update-Log -Data "$path is currently a mount point" -Class Warning
+    if (($IsMountPoint -eq $true) -and ($clean -eq $true)){
+          
+           try{
+            Update-Log -Data "Attempting to dismount image from mount point" -Class Warning
+            Dismount-WindowsImage -Path $path -Discard |Out-Null -ErrorAction Stop
+            $IsMountPoint = $null
+            Update-Log -Data "Dismounting was successful" -Class Warning}   
+            
+            catch{
+            Update-Log -Data "Couldn't completely dismount the folder. Ensure" -Class Error
+            update-log -data "all connections to the path are closed, then try again" -Class Error
+            return}
+          }
+    }
+if (($IsMountPoint -eq $null) -and ($HasFiles -eq $null)){Update-Log -Data "$path is suitable for mounting" -Class Information}
+}
+
+#Function to check the name of the target file and remediate if necessary
+
+function check-name{
+Param( 
+[parameter(mandatory=$false,HelpMessage="what to do")] 
+[ValidateSet("stop","append","backup","overwrite")] 
+$conflict = "stop"
+)
+
+If ($WPFMISWimNameTextBox.Text -like "*.wim")
+{
+$WPFLogging.Focus()
+update-log -Data "New WIM name is valid" -Class Information
+}
+
+If($WPFMISWimNameTextBox.Text -notlike "*.wim")
+{
+
+$WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
+update-log -Data "Appending new file name with an extension" -Class Information
+}
+
+$WIMpath = $WPFMISWimFolderTextBox.text + "\" + $WPFMISWimNameTextBox.Text
+$FileCheck = Test-Path -Path $WIMpath
+
+
+#append,backup,overwrite,stop
+
+if ($FileCheck -eq $false){update-log -data "Target WIM file name not in use. Continuing..." -class Information}
+    else{
+    if ($conflict -eq "append"){
+        Write-Host "Appending action"
+        return}
+    if ($conflict -eq "backup"){
+        Write-Host "backup of old file"
+        return}
+    if ($conflict -eq "overwrite"){
+        Write-Host "overwrite action"
+        return}
+    if ($conflict -eq "stop"){
+        $string = $WPFMISWimNameTextBox.Text + " already exists. Rename the target WIM and try again"
+        update-log -Data $string -Class Error
+        return "stop"
+        }
+    }
+
 }
 
 #===========================================================================
@@ -1448,10 +1596,28 @@ Set-Logging #Clears out old logs from previous builds and checks for other folde
 
 #The OSD Update functions. Disable the following four to increase start time. check-superced takes the longest - FYI
 #===========================================================================
-#Get-OSDBInstallation #Sets OSDBuilder version info
-#Get-OSDBCurrentVer #Discovers current version of OSDBuilder
-#compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+Get-OSDBInstallation #Sets OSDBuilder version info
+Get-OSDBCurrentVer #Discovers current version of OSDBuilder
+compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+
+if ($updates -eq "yes"){
+
+    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")){update-OSDB}
+    
+    if ($Superseded -eq "audit"){check-superceded -action "audit"}
+    if ($Superseded -eq "delete"){check-superceded -action "delete"}
+
+    if ($DownUpdates -ne $null){
+        if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")){download-patches -build 1903}
+        if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")){download-patches -build 1809}
+        if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")){download-patches -build 1803}
+        if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")){download-patches -build 1709}
+        }
+
 #check-superceded #checks to see if superceded patches exist
+    
+}
+
 #===========================================================================
 
 
