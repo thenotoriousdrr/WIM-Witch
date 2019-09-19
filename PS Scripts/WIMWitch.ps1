@@ -30,7 +30,11 @@
 # -Added function to check and repair mount point folder
 # -Added check to validate existance of Autopilot json file (preflight in MIS)
 # -Preflight for MIS stops if target wim already exists (GUI)
-#   
+# -Added appending target wim file name with last write date to prevent conflict (commandline)
+# -Added appending target log file name with last write date to prevent conflict (commandline)   
+# -Name and file extenstion validation for Source wim selections
+# -Catch cancelling the grid view of the indexes for the source WIM
+#
 #
 #===========================================================================
 # Version 0.9.6
@@ -64,36 +68,36 @@
 #
 #============================================================================================================
 Param( 
-[parameter(mandatory=$false,HelpMessage="enable auto")] 
-[ValidateSet("yes")] 
-$auto,
+    [parameter(mandatory = $false, HelpMessage = "enable auto")] 
+    [ValidateSet("yes")] 
+    $auto,
 
-[parameter(mandatory=$false,HelpMessage="config file")] 
-$autofile,
+    [parameter(mandatory = $false, HelpMessage = "config file")] 
+    $autofile,
 
-[parameter(mandatory=$false,HelpMessage="config path")] 
-#[ValidateSet("c:\wimwitch\configs")]
-$autopath,
+    [parameter(mandatory = $false, HelpMessage = "config path")] 
+    #[ValidateSet("c:\wimwitch\configs")]
+    $autopath,
 
-[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-[ValidateSet("audit","delete")] 
-$Superseded,
+    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    [ValidateSet("audit", "delete")] 
+    $Superseded,
 
-[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-[ValidateSet("update")] 
-$OSDSUS,
+    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    [ValidateSet("update")] 
+    $OSDSUS,
 
-#[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-#[ValidateSet("download")] 
-#$newupdates,
+    #[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+    #[ValidateSet("download")] 
+    #$newupdates,
 
-[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-[ValidateSet("all","1709","1803","1809","1903")] 
-$DownUpdates,
+    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    [ValidateSet("all", "1709", "1803", "1809", "1903")] 
+    $DownUpdates,
 
-[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-[ValidateSet("yes")] 
-$updates 
+    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    [ValidateSet("yes")] 
+    $updates 
 )
 
 
@@ -106,7 +110,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.6 Beta" Height="500" Width="900">
+        Title="WIM Witch v0.9.7 Beta" Height="500" Width="900">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
@@ -279,17 +283,17 @@ $inputXML = @"
 
 "@ 
  
-$inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
+$inputXML = $inputXML -replace 'mc:Ignorable="d"', '' -replace "x:N", 'N' -replace '^<Win.*', '<Window'
 [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
 [xml]$XAML = $inputXML
 #Read XAML
  
-$reader=(New-Object System.Xml.XmlNodeReader $xaml)
-try{
-    $Form=[Windows.Markup.XamlReader]::Load( $reader )
+$reader = (New-Object System.Xml.XmlNodeReader $xaml)
+try {
+    $Form = [Windows.Markup.XamlReader]::Load( $reader )
 }
-catch{
+catch {
     Write-Warning "Unable to parse XML, with error: $($Error[0])`n Ensure that there are NO SelectionChanged or TextChanged properties in your textboxes (PowerShell cannot process them)"
     throw
 }
@@ -298,15 +302,15 @@ catch{
 # Load XAML Objects In PowerShell
 #===========================================================================
   
-$xaml.SelectNodes("//*[@Name]") |%{"trying item $($_.Name)" |out-null;
-    try {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name) -ErrorAction Stop}
-    catch{throw}
-    }
+$xaml.SelectNodes("//*[@Name]") | % { "trying item $($_.Name)" | out-null;
+    try { Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name) -ErrorAction Stop }
+    catch { throw }
+}
  
-Function Get-FormVariables{
-if ($global:ReadmeDisplay -ne $true){Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow;$global:ReadmeDisplay=$true}
-#write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
-get-variable WPF*
+Function Get-FormVariables {
+    if ($global:ReadmeDisplay -ne $true) { Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow; $global:ReadmeDisplay = $true }
+    #write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
+    get-variable WPF*
 }
  
 #Get-FormVariables
@@ -319,398 +323,404 @@ get-variable WPF*
 #Funtion to select mounting directory
 Function SelectMountDir {
 
-Add-Type -AssemblyName System.Windows.Forms
-$browser = New-Object System.Windows.Forms.FolderBrowserDialog
-$browser.Description = "Select the mount folder"
-$null = $browser.ShowDialog()
-$MountDir = $browser.SelectedPath
-$WPFMISMountTextBox.text = $MountDir #I SCREWED UP THIS VARIABLE
-check-mountpath -path $WPFMISMountTextBox.text
-update-log -Data "Mount directory selected" -Class Information
+    Add-Type -AssemblyName System.Windows.Forms
+    $browser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $browser.Description = "Select the mount folder"
+    $null = $browser.ShowDialog()
+    $MountDir = $browser.SelectedPath
+    $WPFMISMountTextBox.text = $MountDir #I SCREWED UP THIS VARIABLE
+    check-mountpath -path $WPFMISMountTextBox.text
+    update-log -Data "Mount directory selected" -Class Information
 }
 
 #Function to select Source WIM
 Function SelectSourceWIM {
 
-$SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
-    InitialDirectory = [Environment]::GetFolderPath('Desktop') 
-    Filter = 'WIM (*.wim)|'
+    $SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+        InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+        Filter           = 'WIM (*.wim)|'
+    }
+    $null = $SourceWIM.ShowDialog()
+    $WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
+
+
+    if ($SourceWIM.FileName -notlike "*.wim") {
+        update-log -Data "A WIM file not selected. Please select a valid file to continue." -Class Warning
+        return
+    }
+    #Select the index
+    $ImageFull = @(get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text)
+    $a = $ImageFull | Out-GridView -Title "Choose an Image Index" -Passthru
+    $IndexNumber = $a.ImageIndex
+    #write-host $IndexNumber
+    if ($indexnumber -eq $null) {
+        update-log -Data "Index not selected. Reselect the WIM file to select an index" -Class Warning
+        return
+    }
+
+    import-wiminfo -IndexNumber $IndexNumber
 }
-$null = $SourceWIM.ShowDialog()
-$WPFSourceWIMSelectWIMTextBox.text = $SourceWIM.FileName
 
-#Select the index
-$ImageFull = @(get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text)
-$a = $ImageFull | Out-GridView -Title "Choose an Image Index" -Passthru
-$IndexNumber = $a.ImageIndex
-#write-host $IndexNumber
-import-wiminfo -IndexNumber $IndexNumber
-}
-
-function import-wiminfo($IndexNumber){
-Update-Log -Data "Importing Source WIM Info" -Class Information
-try
-{
-    #Gets WIM metadata to populate fields on the Source tab.
-    $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index $IndexNumber -ErrorAction Stop
-  }
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "The WIM file selected may be borked. Try a different one" -Class Warning
-    Return
-}
-$text = "WIM file selected: " + $SourceWIM.FileName
-Update-Log -data $text -Class Information
-#update-log -Data "WIM file selected -" -Class Information
-#Update-Log -data $SourceWIM.FileName -Class Information
-$ImageIndex = $IndexNumber
+function import-wiminfo($IndexNumber) {
+    Update-Log -Data "Importing Source WIM Info" -Class Information
+    try {
+        #Gets WIM metadata to populate fields on the Source tab.
+        $ImageInfo = get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index $IndexNumber -ErrorAction Stop
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "The WIM file selected may be borked. Try a different one" -Class Warning
+        Return
+    }
+    $text = "WIM file selected: " + $SourceWIM.FileName
+    Update-Log -data $text -Class Information
+    $text = "Edition selected: " + $WPFSourceWIMImgDesTextBox.text
+    Update-Log -data $text -Class Information
+    #update-log -Data "WIM file selected -" -Class Information
+    #Update-Log -data $SourceWIM.FileName -Class Information
+    $ImageIndex = $IndexNumber
 
 
-$WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
-$WPFSourceWimVerTextBox.Text = $ImageInfo.Version
-$WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
-$WPFSourceWimLangTextBox.text = $ImageInfo.Languages
-$WPFSourceWimIndexTextBox.text = $ImageIndex
-if ($ImageInfo.Architecture -eq 9) {
-    $WPFSourceWimArchTextBox.text = 'x64'}
-    Else{
-    $WPFSourceWimArchTextBox.text = 'x86'}
+    $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
+    $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
+    $WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
+    $WPFSourceWimLangTextBox.text = $ImageInfo.Languages
+    $WPFSourceWimIndexTextBox.text = $ImageIndex
+    if ($ImageInfo.Architecture -eq 9) {
+        $WPFSourceWimArchTextBox.text = 'x64'
+    }
+    Else {
+        $WPFSourceWimArchTextBox.text = 'x86'
+    }
 
 }
  
 #Function to Select JSON File
 Function SelectJSONFile {
 
-$JSON = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
-    InitialDirectory = [Environment]::GetFolderPath('Desktop') 
-    Filter = 'JSON (*.JSON)|'
-}
-$null = $JSON.ShowDialog()
-$WPFJSONTextBox.Text = $JSON.FileName
+    $JSON = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+        InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+        Filter           = 'JSON (*.JSON)|'
+    }
+    $null = $JSON.ShowDialog()
+    $WPFJSONTextBox.Text = $JSON.FileName
 
-$text = "JSON file selected: " + $JSON.FileName
-update-log -Data $text -Class Information
-Parse-JSON -file $JSON.FileName
+    $text = "JSON file selected: " + $JSON.FileName
+    update-log -Data $text -Class Information
+    Parse-JSON -file $JSON.FileName
 
 }
 
 #Function to parse the JSON file for user valuable info
-Function Parse-JSON($file){
-try{
-Update-Log -Data "Attempting to parse JSON file..." -Class Information
-$autopilotinfo = Get-Content $WPFJSONTextBox.Text | ConvertFrom-Json
-Update-Log -Data "Successfully parsed JSON file" -Class Information
-$WPFZtdCorrelationId.Text = $autopilotinfo.ZtdCorrelationId
-$WPFCloudAssignedTenantDomain.Text = $autopilotinfo.CloudAssignedTenantDomain
-$WPFComment_File.text = $autopilotinfo.Comment_File
+Function Parse-JSON($file) {
+    try {
+        Update-Log -Data "Attempting to parse JSON file..." -Class Information
+        $autopilotinfo = Get-Content $WPFJSONTextBox.Text | ConvertFrom-Json
+        Update-Log -Data "Successfully parsed JSON file" -Class Information
+        $WPFZtdCorrelationId.Text = $autopilotinfo.ZtdCorrelationId
+        $WPFCloudAssignedTenantDomain.Text = $autopilotinfo.CloudAssignedTenantDomain
+        $WPFComment_File.text = $autopilotinfo.Comment_File
 
-}
-catch{
-$WPFZtdCorrelationId.Text = "Bad file. Try Again."
-$WPFCloudAssignedTenantDomain.Text = "Bad file. Try Again."
-$WPFComment_File.text = "Bad file. Try Again."
-Update-Log -Data "Failed to parse JSON file. Try another"
-return
+    }
+    catch {
+        $WPFZtdCorrelationId.Text = "Bad file. Try Again."
+        $WPFCloudAssignedTenantDomain.Text = "Bad file. Try Again."
+        $WPFComment_File.text = "Bad file. Try Again."
+        Update-Log -Data "Failed to parse JSON file. Try another"
+        return
 
-}
+    }
 }
 
 #Function to select the paths for the driver fields
 Function SelectDriverSource($DriverTextBoxNumber) {
-#write-host $DriverTextBoxNumber
-Add-Type -AssemblyName System.Windows.Forms
-$browser = New-Object System.Windows.Forms.FolderBrowserDialog
-$browser.Description = "Select the Driver Source folder"
-$null = $browser.ShowDialog()
-$DriverDir = $browser.SelectedPath
-$DriverTextBoxNumber.Text = $DriverDir
+    #write-host $DriverTextBoxNumber
+    Add-Type -AssemblyName System.Windows.Forms
+    $browser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $browser.Description = "Select the Driver Source folder"
+    $null = $browser.ShowDialog()
+    $DriverDir = $browser.SelectedPath
+    $DriverTextBoxNumber.Text = $DriverDir
 
 
-update-log -Data "Driver path selected: $DriverDir" -Class Information
+    update-log -Data "Driver path selected: $DriverDir" -Class Information
 }
 
 #Function for the Make it So button
-Function MakeItSo ($appx){
+Function MakeItSo ($appx) {
 
-#Check if new file name is valid, also append file extension if neccessary
+    #Check if new file name is valid, also append file extension if neccessary
 
-###Starting MIS Preflight###
-check-mountpath -path $WPFMISMountTextBox.Text -clean True
+    ###Starting MIS Preflight###
+    check-mountpath -path $WPFMISMountTextBox.Text -clean True
 
-if (($WPFMISWimNameTextBox.Text -eq "") -or ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name"))
-{
-update-log -Data "Enter a valid file name and then try again" -Class Error
-return 
-}
+    if (($WPFMISWimNameTextBox.Text -eq "") -or ($WPFMISWimNameTextBox.Text -eq "Enter Target WIM Name")) {
+        update-log -Data "Enter a valid file name and then try again" -Class Error
+        return 
+    }
 
-$checkresult = (check-name) 
-if ($checkresult -eq "stop"){return}
+    if ($auto -ne "yes") {
+        $checkresult = (check-name) 
+        if ($checkresult -eq "stop") { return }
+    }
 
-
-
-
-
-#check for working directory, make if does not exist, delete files if they exist
-$FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
-update-log -Data "Checking to see if the staging path exists..." -Class Information
-
-try
-{
-    if ($FolderExist = $False) {
-        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging -ErrorAction Stop
-        update-log -Data "Path did not exist, but it does now :)" -Class Information -ErrorAction Stop}
-    Else{
-        Remove-Item –path c:\WIMWitch\Staging\* -Recurse -ErrorAction Stop
-        update-log -Data "The path existed, and it has been purged." -Class Information -ErrorAction Stop}
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
-    return
-}
-
-if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
-    Update-Log -Data "Validating existance of JSON file..." -Class Information
-    $APJSONExists = (Test-Path $WPFJSONTextBox.Text)
-    if ($APJSONExists -eq $true){Update-Log -Data "JSON exists. Continuing..." -Class Information}
-        else
-        {
-        Update-Log -Data "The Autopilot file could not be verified. Check it and try again." -Class Error
-        return}
-
-}
+    if ($auto -eq "yes") {
+        $checkresult = (check-name -conflict append)
+        if ($checkresult -eq "stop") { return }
+    }
 
 
 
-#####End of MIS Preflight####
+    #check for working directory, make if does not exist, delete files if they exist
+    $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
+    update-log -Data "Checking to see if the staging path exists..." -Class Information
 
-#Copy source WIM
-update-log -Data "Copying source WIM to the staging folder" -Class Information
+    try {
+        if ($FolderExist = $False) {
+            New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging -ErrorAction Stop
+            update-log -Data "Path did not exist, but it does now :)" -Class Information -ErrorAction Stop
+        }
+        Else {
+            Remove-Item –path c:\WIMWitch\Staging\* -Recurse -ErrorAction Stop
+            update-log -Data "The path existed, and it has been purged." -Class Information -ErrorAction Stop
+        }
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
+        return
+    }
 
-try
-{
-    Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging" -ErrorAction Stop
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -Data "The file couldn't be copied. No idea what happened" -class Error
-    return
-}
+    if ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
+        Update-Log -Data "Validating existance of JSON file..." -Class Information
+        $APJSONExists = (Test-Path $WPFJSONTextBox.Text)
+        if ($APJSONExists -eq $true) { Update-Log -Data "JSON exists. Continuing..." -Class Information }
+        else {
+            Update-Log -Data "The Autopilot file could not be verified. Check it and try again." -Class Error
+            return
+        }
 
-update-log -Data "Source WIM has been copied to the source folder" -Class Information
-
-#Rename copied source WiM
-
-try
-{
-    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim -ErrorAction Stop
-    Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text -ErrorAction Stop
-    update-log -Data "Copied source WIM has been renamed" -Class Information
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "The copied source file couldn't be renamed. This shouldn't have happened." -Class Error
-    Update-Log -data "Go delete the WIM from C:\WIMWitch\Staging\, then try again" -Class Error
-    return
-}
-
-#Remove the unwanted indexes
-remove-indexes
-
-#Mount the WIM File
-
-
-$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-update-log -Data "Mounting source WIM $wimname" -Class Information
-update-log -Data "to mount point:" -Class Information
-update-log -data $WPFMISMountTextBox.Text -Class Information
-
-try
-{
-   #write-host $IndexNumber
-    Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop |Out-Null
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "The WIM couldn't be mounted. Make sure the mount directory is empty" -Class Error
-    Update-Log -Data "and that it isn't an active mount point" -Class Error
-    return
-}
+    }
 
 
 
-#Inject Autopilot JSON file
-if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
+    #####End of MIS Preflight###################################################################
 
-update-log -Data "Injecting JSON file" -Class Information
+    #Copy source WIM
+    update-log -Data "Copying source WIM to the staging folder" -Class Information
 
-try
-{
-    $autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
-    Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir -ErrorAction Stop
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "JSON file couldn't be copied. Check to see if the correct SKU" -Class Error
-    Update-Log -Data "of Windows has been selected" -Class Error
-    Update-log -Data "The WIM is still mounted. You'll need to clean that up manually until" -Class Error
-    Update-Log -data "I get around to handling that error more betterer" -Class Error
-    Update-Log -data "- <3 Donna" -Class Error
-    return  
-}
+    try {
+        Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging" -ErrorAction Stop
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -Data "The file couldn't be copied. No idea what happened" -class Error
+        return
+    }
 
-}
-else{
-update-log -Data "JSON not selected. Skipping JSON Injection" -Class Information
-}
+    update-log -Data "Source WIM has been copied to the source folder" -Class Information
 
-#Inject Drivers
+    #Rename copied source WiM
 
-If ($WPFDriverCheckBox.IsChecked -eq $true){
+    try {
+        $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim -ErrorAction Stop
+        Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text -ErrorAction Stop
+        update-log -Data "Copied source WIM has been renamed" -Class Information
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "The copied source file couldn't be renamed. This shouldn't have happened." -Class Error
+        Update-Log -data "Go delete the WIM from C:\WIMWitch\Staging\, then try again" -Class Error
+        return
+    }
 
-DriverInjection -Folder $WPFDriverDir1TextBox.text
-DriverInjection -Folder $WPFDriverDir2TextBox.text
-DriverInjection -Folder $WPFDriverDir3TextBox.text
-DriverInjection -Folder $WPFDriverDir4TextBox.text
-DriverInjection -Folder $WPFDriverDir5TextBox.text
-}
-Else
-{
-update-log -Data "Drivers were not selected for injection. Skipping." -Class Information 
-}
+    #Remove the unwanted indexes
+    remove-indexes
 
-#Apply Updates
-If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
-
-    Apply-Updates -class "SSU" 
-    Apply-Updates -class "LCU"
-    Apply-Updates -class "AdobeSU"
-    Apply-Updates -class "DotNet"
-    Apply-Updates -class "DotNetCU"
-}
-Else
-{
-Update-Log -Data "Updates not enabled" -Class Information
-}
-
-#Remove AppX Packages
-if ($WPFAppxCheckBox.IsChecked -eq $true){remove-appx -array $appx}
-Else
-{
-Update-Log -Data "App removal not enabled" -Class Information
-}
-
-#Copy log to mounted WIM
-try
-{
-    update-log -Data "Attempting to copy log to mounted image" -Class Information 
-    $mountlogdir = $WPFMISMountTextBox.Text + "\windows\"
-    Copy-Item C:\WIMWitch\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
-    $CopyLogExist = Test-Path $mountlogdir\WIMWitch.log -PathType Leaf
-    if ($CopyLogExist -eq $true) {update-log -Data "Log filed copied successfully" -Class Information}
-}
-catch
-{
-   Update-Log -data $_.Exception.Message -class Error
-   update-log -data "Coudn't copy the log file to the mounted image." -class Error
-}
-
-#Dismount, commit, and move WIM
-
-update-log -Data "Dismounting WIM file, committing changes" -Class Information 
-try
-{
-    Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save -ErrorAction Stop |Out-Null
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "The WIM couldn't save. You will have to manually discard the" -Class Error
-    Update-Log -data "mounted image manually" -Class Error
-    return
-}
-
-update-log -Data "WIM dismounted" -Class Information 
-
-try
-{
-    Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "The WIM couldn't be copied. You can still retrieve it from staging path." -Class Error
-    Update-Log -data "The file will be deleted when the tool is rerun." -Class Error
-    return
-}
-update-log -Data "Moved saved WIM to target directory" -Class Information 
+    #Mount the WIM File
 
 
-#Copy log here
-try
-{
-    update-log -Data "Copying build log to target folder" -Class Information 
-    Copy-Item -Path C:\WIMWitch\logging\WIMWitch.log -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
-    $logold = $WPFMISWimFolderTextBox.Text + "\WIMWitch.log"
-    $lognew = $WPFMISWimFolderTextBox.Text + "\" + $WPFMISWimNameTextBox.Text + ".log"
-    Rename-Item $logold -NewName $lognew -Force -ErrorAction Stop
-}
-catch
-{
-    Update-Log -data $_.Exception.Message -class Error
-    Update-Log -data "The log file couldn't be copied and renamed. You can still snag it from the source." -Class Error
+    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
+    update-log -Data "Mounting source WIM $wimname" -Class Information
+    update-log -Data "to mount point:" -Class Information
+    update-log -data $WPFMISMountTextBox.Text -Class Information
+
+    try {
+        #write-host $IndexNumber
+        Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "The WIM couldn't be mounted. Make sure the mount directory is empty" -Class Error
+        Update-Log -Data "and that it isn't an active mount point" -Class Error
+        return
+    }
+
+
+
+    #Inject Autopilot JSON file
+    if ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
+
+        update-log -Data "Injecting JSON file" -Class Information
+
+        try {
+            $autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
+            Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir -ErrorAction Stop
+        }
+        catch {
+            Update-Log -data $_.Exception.Message -class Error
+            Update-Log -data "JSON file couldn't be copied. Check to see if the correct SKU" -Class Error
+            Update-Log -Data "of Windows has been selected" -Class Error
+            Update-log -Data "The WIM is still mounted. You'll need to clean that up manually until" -Class Error
+            Update-Log -data "I get around to handling that error more betterer" -Class Error
+            Update-Log -data "- <3 Donna" -Class Error
+            return  
+        }
+
+    }
+    else {
+        update-log -Data "JSON not selected. Skipping JSON Injection" -Class Information
+    }
+
+    #Inject Drivers
+
+    If ($WPFDriverCheckBox.IsChecked -eq $true) {
+
+        DriverInjection -Folder $WPFDriverDir1TextBox.text
+        DriverInjection -Folder $WPFDriverDir2TextBox.text
+        DriverInjection -Folder $WPFDriverDir3TextBox.text
+        DriverInjection -Folder $WPFDriverDir4TextBox.text
+        DriverInjection -Folder $WPFDriverDir5TextBox.text
+    }
+    Else {
+        update-log -Data "Drivers were not selected for injection. Skipping." -Class Information 
+    }
+
+    #Apply Updates
+    If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
+
+        Apply-Updates -class "SSU" 
+        Apply-Updates -class "LCU"
+        Apply-Updates -class "AdobeSU"
+        Apply-Updates -class "DotNet"
+        Apply-Updates -class "DotNetCU"
+    }
+    Else {
+        Update-Log -Data "Updates not enabled" -Class Information
+    }
+
+    #Remove AppX Packages
+    if ($WPFAppxCheckBox.IsChecked -eq $true) { remove-appx -array $appx }
+    Else {
+        Update-Log -Data "App removal not enabled" -Class Information
+    }
+
+    #Copy log to mounted WIM
+    try {
+        update-log -Data "Attempting to copy log to mounted image" -Class Information 
+        $mountlogdir = $WPFMISMountTextBox.Text + "\windows\"
+        Copy-Item C:\WIMWitch\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
+        $CopyLogExist = Test-Path $mountlogdir\WIMWitch.log -PathType Leaf
+        if ($CopyLogExist -eq $true) { update-log -Data "Log filed copied successfully" -Class Information }
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        update-log -data "Coudn't copy the log file to the mounted image." -class Error
+    }
+
+    #Dismount, commit, and move WIM
+
+    update-log -Data "Dismounting WIM file, committing changes" -Class Information 
+    try {
+        Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -save -ErrorAction Stop | Out-Null
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "The WIM couldn't save. You will have to manually discard the" -Class Error
+        Update-Log -data "mounted image manually" -Class Error
+        return
+    }
+
+    update-log -Data "WIM dismounted" -Class Information 
+
+    try {
+        Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "The WIM couldn't be copied. You can still retrieve it from staging path." -Class Error
+        Update-Log -data "The file will be deleted when the tool is rerun." -Class Error
+        return
+    }
+    update-log -Data "Moved saved WIM to target directory" -Class Information 
+
+
+    #Copy log here
+    try {
+        update-log -Data "Copying build log to target folder" -Class Information 
+        Copy-Item -Path C:\WIMWitch\logging\WIMWitch.log -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+        $logold = $WPFMISWimFolderTextBox.Text + "\WIMWitch.log"
+        $lognew = $WPFMISWimFolderTextBox.Text + "\" + $WPFMISWimNameTextBox.Text + ".log"
+        #Put log detection code here
+        if ((test-path -Path $lognew) -eq $true) {
+            Update-Log -Data "A preexisting log file contains the same name. Renaming old log..." -Class Warning
+            replace-name -file $lognew -extension ".log"
+        }
+     
+
+        #Put log detection code here
+ 
+        Rename-Item $logold -NewName $lognew -Force -ErrorAction Stop
+        Update-Log -Data "Log copied successfully" -Class Information
+    }
+    catch {
+        Update-Log -data $_.Exception.Message -class Error
+        Update-Log -data "The log file couldn't be copied and renamed. You can still snag it from the source." -Class Error
+        update-log -Data "Job's done." -Class Information 
+        return
+    }
     update-log -Data "Job's done." -Class Information 
-    return
-}
-update-log -Data "Job's done." -Class Information 
 }
 
 #Function to assign the target directory
 Function SelectTargetDir {
 
-Add-Type -AssemblyName System.Windows.Forms
-$browser = New-Object System.Windows.Forms.FolderBrowserDialog
-$browser.Description = "Select the target folder"
-$null = $browser.ShowDialog()
-$TargetDir = $browser.SelectedPath
-$WPFMISWimFolderTextBox.text = $TargetDir #I SCREWED UP THIS VARIABLE
-update-log -Data "Target directory selected" -Class Information 
+    Add-Type -AssemblyName System.Windows.Forms
+    $browser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $browser.Description = "Select the target folder"
+    $null = $browser.ShowDialog()
+    $TargetDir = $browser.SelectedPath
+    $WPFMISWimFolderTextBox.text = $TargetDir #I SCREWED UP THIS VARIABLE
+    update-log -Data "Target directory selected" -Class Information 
 }
 
 #Function to enable logging and folder check
-Function Update-Log
-{
+Function Update-Log {
     Param(
-    [Parameter(
-        Mandatory=$true, 
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true,
-        Position=0
-    )]
-    [string]$Data,
+        [Parameter(
+            Mandatory = $true, 
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0
+        )]
+        [string]$Data,
 
-    [Parameter(
-        Mandatory=$false, 
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true,
-        Position=0
-    )]
-    [string]$Solution = $Solution,
+        [Parameter(
+            Mandatory = $false, 
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0
+        )]
+        [string]$Solution = $Solution,
 
-    [Parameter(
-        Mandatory=$false, 
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true,
-        Position=1
-    )]
-    [validateset('Information','Warning','Error')]
-    [string]$Class = "Information"
+        [Parameter(
+            Mandatory = $false, 
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1
+        )]
+        [validateset('Information', 'Warning', 'Error')]
+        [string]$Class = "Information"
 
     )
     
@@ -720,706 +730,695 @@ Function Update-Log
 
     
     Add-Content -Path $Log -Value $LogString
-    switch ($Class)
-    {
-        'Information'{
+    switch ($Class) {
+        'Information' {
             Write-Host $HostString -ForegroundColor Gray
-            }
-        'Warning'{
+        }
+        'Warning' {
             Write-Host $HostString -ForegroundColor Yellow
-            }
-        'Error'{
+        }
+        'Error' {
             Write-Host $HostString -ForegroundColor Red
-            }
-        Default {}
+        }
+        Default { }
     }
     $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 }
 
 #Removes old log and creates all folders if does not exist
-Function Set-Logging{
+Function Set-Logging {
 
-#logging folder
-$FileExist = Test-Path -Path C:\WIMWitch\logging\WIMWitch.Log -PathType Leaf
-if ($FileExist -eq $False) {
-    #update-log -data "Logging folder does not exist" -class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging |Out-Null
-    New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" |Out-Null
-    #update-log -data "Logging folder and log created successfully" -Class Information 
+    #logging folder
+    $FileExist = Test-Path -Path C:\WIMWitch\logging\WIMWitch.Log -PathType Leaf
+    if ($FileExist -eq $False) {
+        #update-log -data "Logging folder does not exist" -class Warning
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging | Out-Null
+        New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
+        #update-log -data "Logging folder and log created successfully" -Class Information 
     }
-    Else{
-     Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
-     New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***"|Out-Null
-     #Update-Log -Data "Logging started successfully" -Class Information
-     }
-#$log = C:\WIMWitch\logging\WIMWitch.Log
+    Else {
+        Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
+        New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
+        #Update-Log -Data "Logging started successfully" -Class Information
+    }
+    #$log = C:\WIMWitch\logging\WIMWitch.Log
 
-#updates folder
-$FileExist = Test-Path -Path C:\WIMWitch\updates #-PathType Leaf
-if ($FileExist -eq $False) {
-    Update-Log -Data "Updates folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\updates |Out-Null
-    Update-Log -Data "Updates folder created" -Class Information
+    #updates folder
+    $FileExist = Test-Path -Path C:\WIMWitch\updates #-PathType Leaf
+    if ($FileExist -eq $False) {
+        Update-Log -Data "Updates folder does not exist. Creating..." -Class Warning
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\updates | Out-Null
+        Update-Log -Data "Updates folder created" -Class Information
     }
    
-if ($FileExist -eq $True){Update-Log -Data "Updates folder exists" -Class Information}
+    if ($FileExist -eq $True) { Update-Log -Data "Updates folder exists" -Class Information }
 
-#staging folder
-$FileExist = Test-Path -Path C:\WIMWitch\Staging #-PathType Leaf
-if ($FileExist -eq $False) {
-    Update-Log -Data "Staging folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging |Out-Null
-    Update-Log -Data "Staging folder created" -Class Information
+    #staging folder
+    $FileExist = Test-Path -Path C:\WIMWitch\Staging #-PathType Leaf
+    if ($FileExist -eq $False) {
+        Update-Log -Data "Staging folder does not exist. Creating..." -Class Warning
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging | Out-Null
+        Update-Log -Data "Staging folder created" -Class Information
     }
 
-if ($FileExist -eq $True){Update-Log -Data "Staging folder exists" -Class Information}
+    if ($FileExist -eq $True) { Update-Log -Data "Staging folder exists" -Class Information }
 
-#Mount folder
-$FileExist = Test-Path -Path C:\WIMWitch\Mount #-PathType Leaf
-if ($FileExist -eq $False) {
-    Update-Log -Data "Mount folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Mount |Out-Null
-    Update-Log -Data "Mount folder created" -Class Information
+    #Mount folder
+    $FileExist = Test-Path -Path C:\WIMWitch\Mount #-PathType Leaf
+    if ($FileExist -eq $False) {
+        Update-Log -Data "Mount folder does not exist. Creating..." -Class Warning
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Mount | Out-Null
+        Update-Log -Data "Mount folder created" -Class Information
     }
 
-if ($FileExist -eq $True){Update-Log -Data "Mount folder exists" -Class Information}
+    if ($FileExist -eq $True) { Update-Log -Data "Mount folder exists" -Class Information }
 
-#Completed WIMs folder
-$FileExist = Test-Path -Path C:\WIMWitch\CompletedWIMs #-PathType Leaf
-if ($FileExist -eq $False) {
-    Update-Log -Data "CompletedWIMs folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\CompletedWIMs |Out-Null
-    Update-Log -Data "CompletedWIMs folder created" -Class Information
+    #Completed WIMs folder
+    $FileExist = Test-Path -Path C:\WIMWitch\CompletedWIMs #-PathType Leaf
+    if ($FileExist -eq $False) {
+        Update-Log -Data "CompletedWIMs folder does not exist. Creating..." -Class Warning
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\CompletedWIMs | Out-Null
+        Update-Log -Data "CompletedWIMs folder created" -Class Information
     }
 
-if ($FileExist -eq $True){Update-Log -Data "CompletedWIMs folder exists" -Class Information}
+    if ($FileExist -eq $True) { Update-Log -Data "CompletedWIMs folder exists" -Class Information }
 
-#Configurations XML folder
-$FileExist = Test-Path -Path C:\WIMWitch\Configs #-PathType Leaf
-if ($FileExist -eq $False) {
-    Update-Log -Data "Configs folder does not exist. Creating..." -Class Warning
-    New-Item -ItemType Directory -Force -Path C:\WIMWitch\Configs |Out-Null
-    Update-Log -Data "Configs folder created" -Class Information
+    #Configurations XML folder
+    $FileExist = Test-Path -Path C:\WIMWitch\Configs #-PathType Leaf
+    if ($FileExist -eq $False) {
+        Update-Log -Data "Configs folder does not exist. Creating..." -Class Warning
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Configs | Out-Null
+        Update-Log -Data "Configs folder created" -Class Information
     }
 
-if ($FileExist -eq $True){Update-Log -Data "Configs folder exists" -Class Information}
+    if ($FileExist -eq $True) { Update-Log -Data "Configs folder exists" -Class Information }
 
 }
 
 #Function for injecting drivers into the mounted WIM
-Function DriverInjection($Folder)
-{
+Function DriverInjection($Folder) {
 
-Function ApplyDriver($drivertoapply){
-try{
-   add-windowsdriver -Path $WPFMISMountTextBox.Text -Driver $drivertoapply -ErrorAction Stop |Out-Null
-   Update-Log -Data "Applied $drivertoapply" -Class Information
-}
-catch
-{
-update-log -Data "Couldn't apply $drivertoapply" -Class Warning
-}
+    Function ApplyDriver($drivertoapply) {
+        try {
+            add-windowsdriver -Path $WPFMISMountTextBox.Text -Driver $drivertoapply -ErrorAction Stop | Out-Null
+            Update-Log -Data "Applied $drivertoapply" -Class Information
+        }
+        catch {
+            update-log -Data "Couldn't apply $drivertoapply" -Class Warning
+        }
 
-}
+    }
  
-#This filters out invalid paths, such as the default value
-$testpath = Test-Path $folder -PathType Container
-If ($testpath -eq $false){return}
+    #This filters out invalid paths, such as the default value
+    $testpath = Test-Path $folder -PathType Container
+    If ($testpath -eq $false) { return }
 
-If ($testpath -eq $true){
+    If ($testpath -eq $true) {
 
-update-log -data "Applying drivers from $folder" -class Information
+        update-log -data "Applying drivers from $folder" -class Information
 
-Get-ChildItem $Folder -Recurse -Filter "*inf" | ForEach-Object {applydriver $_.FullName}
-update-log -Data "Completed driver injection from $folder" -Class Information 
-}
+        Get-ChildItem $Folder -Recurse -Filter "*inf" | ForEach-Object { applydriver $_.FullName }
+        update-log -Data "Completed driver injection from $folder" -Class Information 
+    }
 }
 
 #Function to retrieve OSDBuilder Version 
-Function Get-OSDBInstallation{
-update-log -Data "Getting OSD Installation information" -Class Information
-try
-{
-Import-Module -name OSDUpdate -ErrorAction Stop
-}
-catch
-{
-$WPFUpdatesOSDBVersion.Text = "Not Installed"
-Update-Log -Data "OSD Update is not installed" -Class Warning
-Return
-}
-try
-{
-$OSDBVersion = get-module -name OSDUpdate -ErrorAction Stop
-$WPFUpdatesOSDBVersion.Text = $OSDBVersion.Version
-$text = $osdbversion.version
-Update-Log -data "Installed version of OSD Update is $text" -Class Information
-Return
-}
-catch
-{
-Update-Log -Data "Whatever you were hoping for, you didn’t get :)" -Class Error
-Return
-}
+Function Get-OSDBInstallation {
+    update-log -Data "Getting OSD Installation information" -Class Information
+    try {
+        Import-Module -name OSDUpdate -ErrorAction Stop
+    }
+    catch {
+        $WPFUpdatesOSDBVersion.Text = "Not Installed"
+        Update-Log -Data "OSD Update is not installed" -Class Warning
+        Return
+    }
+    try {
+        $OSDBVersion = get-module -name OSDUpdate -ErrorAction Stop
+        $WPFUpdatesOSDBVersion.Text = $OSDBVersion.Version
+        $text = $osdbversion.version
+        Update-Log -data "Installed version of OSD Update is $text" -Class Information
+        Return
+    }
+    catch {
+        Update-Log -Data "Whatever you were hoping for, you didn’t get :)" -Class Error
+        Return
+    }
 }
 
 #Function to retrieve current OSDBuilder Version
-Function Get-OSDBCurrentVer{
-Update-Log -Data "Checking for the most current OSD Update version available" -Class Information
-try
-{
-$OSDBCurrentVer = find-module -name OSDUpdate -ErrorAction Stop
-$WPFUpdatesOSDBCurrentVerTextBox.Text = $OSDBCurrentVer.version
-$text = $OSDBCurrentVer.version
-update-log -data "$text is the most current version" -class Information
-Return
-}
-catch
-{
-$WPFUpdatesOSDBCurrentVerTextBox.Text = "Network Error"
-Return
-}
+Function Get-OSDBCurrentVer {
+    Update-Log -Data "Checking for the most current OSD Update version available" -Class Information
+    try {
+        $OSDBCurrentVer = find-module -name OSDUpdate -ErrorAction Stop
+        $WPFUpdatesOSDBCurrentVerTextBox.Text = $OSDBCurrentVer.version
+        $text = $OSDBCurrentVer.version
+        update-log -data "$text is the most current version" -class Information
+        Return
+    }
+    catch {
+        $WPFUpdatesOSDBCurrentVerTextBox.Text = "Network Error"
+        Return
+    }
 }
 
 #Function to update or install OSDBuilder
-Function update-OSDB{
-if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
-Update-Log -Data "Attempting to install and import OSD Update" -Class Information
-try{
-Install-Module OSDUpdate -Force -ErrorAction Stop
-#Write-Host "Installed module"
-Update-Log -data "OSD Update module has been installed" -Class Information
-Import-Module -Name OSDUpdate -Force -ErrorAction Stop
-#Write-Host "Imported module"
-Update-Log -Data "OSD Update module has been imported" -Class Information
-Update-Log -Data "****************************************************************************" -Class Warning
-Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
-Update-Log -Data "****************************************************************************" -Class Warning
-$WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
-Return
-}
-catch
-{
-$WPFUpdatesOSDBVersion.Text = "Inst Fail"
-Update-Log -Data "Couldn't install OSD Update" -Class Error
-Update-Log -data $_.Exception.Message -class Error
-Return
-}
-}
+Function update-OSDB {
+    if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed") {
+        Update-Log -Data "Attempting to install and import OSD Update" -Class Information
+        try {
+            Install-Module OSDUpdate -Force -ErrorAction Stop
+            #Write-Host "Installed module"
+            Update-Log -data "OSD Update module has been installed" -Class Information
+            Import-Module -Name OSDUpdate -Force -ErrorAction Stop
+            #Write-Host "Imported module"
+            Update-Log -Data "OSD Update module has been imported" -Class Information
+            Update-Log -Data "****************************************************************************" -Class Warning
+            Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
+            Update-Log -Data "****************************************************************************" -Class Warning
+            $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
+            Return
+        }
+        catch {
+            $WPFUpdatesOSDBVersion.Text = "Inst Fail"
+            Update-Log -Data "Couldn't install OSD Update" -Class Error
+            Update-Log -data $_.Exception.Message -class Error
+            Return
+        }
+    }
 
-If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0"){
-Update-Log -data "Attempting to update OSD Update" -class Information
-try
-{
-Update-ModuleOSDUpdate -ErrorAction Stop
-Update-Log -Data "Updated OSD Update" -Class Information
-Update-Log -Data "****************************************************************************" -Class Warning
-Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
-Update-Log -Data "****************************************************************************" -Class Warning
-$WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
-get-OSDBInstallation
-return
-}
-catch
-{
-$WPFUpdatesOSDBCurrentVerTextBox.Text = "OSDB Err"
-Return
-}
-}
+    If ($WPFUpdatesOSDBVersion.Text -gt "1.0.0") {
+        Update-Log -data "Attempting to update OSD Update" -class Information
+        try {
+            Update-ModuleOSDUpdate -ErrorAction Stop
+            Update-Log -Data "Updated OSD Update" -Class Information
+            Update-Log -Data "****************************************************************************" -Class Warning
+            Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
+            Update-Log -Data "****************************************************************************" -Class Warning
+            $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
+            get-OSDBInstallation
+            return
+        }
+        catch {
+            $WPFUpdatesOSDBCurrentVerTextBox.Text = "OSDB Err"
+            Return
+        }
+    }
 }
 
 #Function to check for superceded updates
-Function check-superceded($action){
-Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
-$path = "C:\WIMWitch\updates\"  #sets base path
-$Children = Get-ChildItem -Path $path  #query sub directories
+Function check-superceded($action) {
+    Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
+    $path = "C:\WIMWitch\updates\"  #sets base path
+    $Children = Get-ChildItem -Path $path  #query sub directories
 
-    foreach ($Children in $Children){
-    $path1 = $path + $Children  
-    $kids = Get-ChildItem -Path $path1
+    foreach ($Children in $Children) {
+        $path1 = $path + $Children  
+        $kids = Get-ChildItem -Path $path1
  
-    foreach ($kids in $kids){
-        $path2 = $path1 + '\' + $kids
-        $sprout = get-childitem -path $path2
+        foreach ($kids in $kids) {
+            $path2 = $path1 + '\' + $kids
+            $sprout = get-childitem -path $path2
         
-        foreach ($sprout in $sprout) {
-            $path3 = $path2 + '\' + $sprout
-            $fileinfo = get-childitem -path $path3
+            foreach ($sprout in $sprout) {
+                $path3 = $path2 + '\' + $sprout
+                $fileinfo = get-childitem -path $path3
             
-            $StillCurrent = Get-OSDUpdate | Where-Object {$_.FileName -eq $fileinfo}   
-            If ($StillCurrent -eq $null){
-                update-log -data "$fileinfo no longer current" -Class Warning
-                if ($action -eq 'delete'){
-                    Update-Log -data "Deleting $path3" -class Warning
-                    remove-item -path $path3 -Recurse -Force}
-                if ($action -eq 'audit'){
-                    #write-host "set variable"
-                    $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
+                $StillCurrent = Get-OSDUpdate | Where-Object { $_.FileName -eq $fileinfo }   
+                If ($StillCurrent -eq $null) {
+                    update-log -data "$fileinfo no longer current" -Class Warning
+                    if ($action -eq 'delete') {
+                        Update-Log -data "Deleting $path3" -class Warning
+                        remove-item -path $path3 -Recurse -Force
+                    }
+                    if ($action -eq 'audit') {
+                        #write-host "set variable"
+                        $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
 
-                    Return}
-                 }   
-            else{
-                Update-Log -data "$fileinfo is stil current" -Class Information
+                        Return
+                    }
+                }   
+                else {
+                    Update-Log -data "$fileinfo is stil current" -Class Information
                 }    
-             }
+            }
         }
     }
 }
 
 #Function to compare OSDBuilder Versions
-Function compare-OSDBuilderVer{
-Update-Log -data "Comparing OSD Update module versions" -Class Information
-if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed"){
-Return
-}
-If ($WPFUpdatesOSDBVersion.Text -eq $WPFUpdatesOSDBCurrentVerTextBox.Text){
-Update-Log -Data "OSD Update is up to date" -class Information
-Return
-}
-$WPFUpdatesOSDBOutOfDateTextBlock.Visibility = "Visible"
-Update-Log -Data "OSD Update appears to be out of date. Run the upgrade function from within WIM Witch to resolve" -class Warning
+Function compare-OSDBuilderVer {
+    Update-Log -data "Comparing OSD Update module versions" -Class Information
+    if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed") {
+        Return
+    }
+    If ($WPFUpdatesOSDBVersion.Text -eq $WPFUpdatesOSDBCurrentVerTextBox.Text) {
+        Update-Log -Data "OSD Update is up to date" -class Information
+        Return
+    }
+    $WPFUpdatesOSDBOutOfDateTextBlock.Visibility = "Visible"
+    Update-Log -Data "OSD Update appears to be out of date. Run the upgrade function from within WIM Witch to resolve" -class Warning
 
-Return
+    Return
 }
 
 #Function to download new patches
-Function download-patches($build){
-Update-Log -Data "Downloading SSU updates for Windows 10 $build" -Class Information
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\SSU
-Update-Log -Data "Downloading AdobeSU updates for Windows 10 $build" -Class Information
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\AdobeSU
-Update-Log -Data "Downloading LCU updates for Windows 10 $build" -Class Information
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\LCU
-Update-Log -Data "Downloading .Net updates for Windows 10 $build" -Class Information
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNet
-Update-Log -Data "Downloading .Net CU updates for Windows 10 $build" -Class Information
-Get-OSDUpdate | Where-Object {$_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU'} |Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNetCU
-Update-Log -Data "Downloading completed for Windows 10 $build" -Class Information
+Function download-patches($build) {
+    Update-Log -Data "Downloading SSU updates for Windows 10 $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\SSU
+    Update-Log -Data "Downloading AdobeSU updates for Windows 10 $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\AdobeSU
+    Update-Log -Data "Downloading LCU updates for Windows 10 $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\LCU
+    Update-Log -Data "Downloading .Net updates for Windows 10 $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNet
+    Update-Log -Data "Downloading .Net CU updates for Windows 10 $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNetCU
+    Update-Log -Data "Downloading completed for Windows 10 $build" -Class Information
 }
  
 #Function to remove superceded updates and initate new patch download
-Function update-patchsource{
+Function update-patchsource {
 
 
 
-try{
-#write-host "starting purge"
-#Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
-#Update-Log -Data "Deleting superseded updates..." -Class Warning
-Check-Superceded -action delete -ErrorAction Stop
-} 
-catch
-{
-Update-Log -Data "Updates not superceded" -Class Information
-Return
-}
-Update-Log -Data "attempting to start download function" -Class Information
-If ($WPFUpdates1903CheckBox.IsChecked -eq $true){download-patches -build 1903}
-If ($WPFUpdates1809CheckBox.IsChecked -eq $true){download-patches -build 1809}
-If ($WPFUpdates1803CheckBox.IsChecked -eq $true){download-patches -build 1803}
-If ($WPFUpdates1709CheckBox.IsChecked -eq $true){download-patches -build 1709}
+    try {
+        #write-host "starting purge"
+        #Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
+        #Update-Log -Data "Deleting superseded updates..." -Class Warning
+        Check-Superceded -action delete -ErrorAction Stop
+    } 
+    catch {
+        Update-Log -Data "Updates not superceded" -Class Information
+        Return
+    }
+    Update-Log -Data "attempting to start download function" -Class Information
+    If ($WPFUpdates1903CheckBox.IsChecked -eq $true) { download-patches -build 1903 }
+    If ($WPFUpdates1809CheckBox.IsChecked -eq $true) { download-patches -build 1809 }
+    If ($WPFUpdates1803CheckBox.IsChecked -eq $true) { download-patches -build 1803 }
+    If ($WPFUpdates1709CheckBox.IsChecked -eq $true) { download-patches -build 1709 }
 
 }
 
 #Function to apply updates to mounted WIM
-Function Apply-Updates($class){
+Function Apply-Updates($class) {
 
-#$Imageversion = Get-WindowsImage -ImagePath D:\Images\install.wim -Index 3
+    #$Imageversion = Get-WindowsImage -ImagePath D:\Images\install.wim -Index 3
 
-#$WPFSourceWimVerTextBox.text <----This line remmed out when testing command line function. Unknown if this breaks GUI
+    #$WPFSourceWimVerTextBox.text <----This line remmed out when testing command line function. Unknown if this breaks GUI
 
-If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$buildnum = 1903}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$buildnum = 1809}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$buildnum = 1803}
-If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$buildnum = 1709}
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
 
 
-$path = 'C:\wimwitch\updates\' + $buildnum +'\' + $class + '\'
-$Children = Get-ChildItem -Path $path
-foreach ($Children in $Children){
-$compound = $path+$Children
-update-log -Data "Applying $Children" -Class Information
-Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound |Out-Null
-}
+    $path = 'C:\wimwitch\updates\' + $buildnum + '\' + $class + '\'
+    $Children = Get-ChildItem -Path $path
+    foreach ($Children in $Children) {
+        $compound = $path + $Children
+        update-log -Data "Applying $Children" -Class Information
+        Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound | Out-Null
+    }
 
 }
 
 #Function to select AppX packages to yank
-Function Select-Appx{
-$appx1903 = @("Microsoft.BingWeather_4.25.20211.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.DesktopAppInstaller_2019.125.2243.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.GetHelp_10.1706.13331.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.Getstarted_7.3.20251.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.HEIFImageExtension_1.0.13472.0_x64__8wekyb3d8bbwe"
-"Microsoft.Messaging_2019.125.32.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.Microsoft3DViewer_5.1902.20012.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.MicrosoftOfficeHub_18.1901.1141.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.MicrosoftSolitaireCollection_4.2.11280.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.MicrosoftStickyNotes_3.1.53.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.MixedReality.Portal_2000.19010.1151.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.MSPaint_2019.213.1858.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.Office.OneNote_16001.11126.20076.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.OneConnect_5.1902.361.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.People_2019.123.2346.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.Print3D_3.3.311.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.ScreenSketch_2018.1214.231.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c,"
-"Microsoft.StorePurchaseApp_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.VP9VideoExtensions_1.0.13333.0_x64__8wekyb3d8bbwe"
-"Microsoft.Wallet_2.4.18324.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WebMediaExtensions_1.0.13321.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WebpImageExtension_1.0.12821.0_x64__8wekyb3d8bbwe"
-"Microsoft.Windows.Photos_2019.18114.19418.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsAlarms_2019.105.629.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsCalculator_2019.105.612.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsCamera_2018.826.78.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.windowscommunicationsapps_16005.11029.20108.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsFeedbackHub_2019.226.2324.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsMaps_2019.108.627.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsSoundRecorder_2019.105.618.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsStore_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.Xbox.TCUI_1.23.28002.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.XboxApp_48.48.7001.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.XboxGameOverlay_1.32.17005.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.XboxGamingOverlay_2.26.14003.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.XboxIdentityProvider_12.50.6001.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.YourPhone_2018.1128.231.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.ZuneMusic_2019.18111.17311.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.ZuneVideo_2019.18111.17311.0_neutral_~_8wekyb3d8bbwe")
-$appx1809 = @(
-"Microsoft.BingWeather_4.25.12127.0_neutral_~_8wekyb3d8bbwe"                   
-"Microsoft.DesktopAppInstaller_2018.720.2137.0_neutral_~_8wekyb3d8bbwe"        
-"Microsoft.GetHelp_10.1706.10441.0_neutral_~_8wekyb3d8bbwe"                    
-"Microsoft.Getstarted_6.13.11581.0_neutral_~_8wekyb3d8bbwe"                    
-"Microsoft.HEIFImageExtension_1.0.11792.0_x64__8wekyb3d8bbwe"                  
-"Microsoft.Messaging_2018.727.1430.0_neutral_~_8wekyb3d8bbwe"                  
-"Microsoft.Microsoft3DViewer_4.1808.15012.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.MicrosoftOfficeHub_2017.1219.520.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.MicrosoftSolitaireCollection_4.1.5252.0_neutral_~_8wekyb3d8bbwe"    
-"Microsoft.MicrosoftStickyNotes_2.0.13.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.MixedReality.Portal_2000.18081.1242.0_neutral_~_8wekyb3d8bbwe"      
-"Microsoft.MSPaint_4.1807.12027.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.Office.OneNote_16001.10228.20003.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.OneConnect_5.1807.1991.0_neutral_~_8wekyb3d8bbwe"                   
-"Microsoft.People_2018.516.2011.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.Print3D_3.0.1521.0_neutral_~_8wekyb3d8bbwe"                         
-"Microsoft.ScreenSketch_2018.731.48.0_neutral_~_8wekyb3d8bbwe"                 
-"Microsoft.SkypeApp_14.26.95.0_neutral_~_kzf8qxf38zg5c"                        
-"Microsoft.StorePurchaseApp_11805.1001.813.0_neutral_~_8wekyb3d8bbwe"          
-"Microsoft.VP9VideoExtensions_1.0.12342.0_x64__8wekyb3d8bbwe"                  
-"Microsoft.Wallet_2.2.18179.0_neutral_~_8wekyb3d8bbwe"                         
-"Microsoft.WebMediaExtensions_1.0.12341.0_neutral_~_8wekyb3d8bbwe"             
-"Microsoft.WebpImageExtension_1.0.11551.0_x64__8wekyb3d8bbwe"                  
-"Microsoft.Windows.Photos_2018.18051.21218.0_neutral_~_8wekyb3d8bbwe"          
-"Microsoft.WindowsAlarms_2018.516.2059.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.WindowsCalculator_2018.501.612.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.WindowsCamera_2018.425.120.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.windowscommunicationsapps_2015.9330.21365.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsFeedbackHub_2018.822.2.0_neutral_~_8wekyb3d8bbwe"            
-"Microsoft.WindowsMaps_2018.523.2143.0_neutral_~_8wekyb3d8bbwe"                
-"Microsoft.WindowsSoundRecorder_2018.713.2154.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.WindowsStore_11805.1001.4913.0_neutral_~_8wekyb3d8bbwe"             
-"Microsoft.Xbox.TCUI_1.11.28003.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.XboxApp_41.41.18001.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.XboxGameOverlay_1.32.17005.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.XboxGamingOverlay_2.20.22001.0_neutral_~_8wekyb3d8bbwe"             
-"Microsoft.XboxIdentityProvider_12.44.20001.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.YourPhone_2018.727.2137.0_neutral_~_8wekyb3d8bbwe"                  
-"Microsoft.ZuneMusic_2019.18052.20211.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.ZuneVideo_2019.18052.20211.0_neutral_~_8wekyb3d8bbwe" 
-  )
-$appx1803 = @( 
-"Microsoft.BingWeather_4.22.3254.0_neutral_~_8wekyb3d8bbwe"                    
-"Microsoft.DesktopAppInstaller_1.8.15011.0_neutral_~_8wekyb3d8bbwe"            
-"Microsoft.GetHelp_10.1706.10441.0_neutral_~_8wekyb3d8bbwe"                    
-"Microsoft.Getstarted_6.9.10602.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.Messaging_2018.222.2231.0_neutral_~_8wekyb3d8bbwe"                  
-"Microsoft.Microsoft3DViewer_2.1803.8022.0_neutral_~_8wekyb3d8bbwe"            
-"Microsoft.MicrosoftOfficeHub_2017.1219.520.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.MicrosoftSolitaireCollection_4.0.1301.0_neutral_~_8wekyb3d8bbwe"    
-"Microsoft.MicrosoftStickyNotes_2.0.13.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.MSPaint_3.1803.5027.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.Office.OneNote_2015.8827.20991.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.OneConnect_4.1801.521.0_neutral_~_8wekyb3d8bbwe"                    
-"Microsoft.People_2018.215.110.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.Print3D_2.0.3621.0_neutral_~_8wekyb3d8bbwe"                         
-"Microsoft.SkypeApp_12.13.274.0_neutral_~_kzf8qxf38zg5c"                       
-"Microsoft.StorePurchaseApp_11712.1801.10024.0_neutral_~_8wekyb3d8bbwe"        
-"Microsoft.Wallet_2.1.18009.0_neutral_~_8wekyb3d8bbwe"                         
-"Microsoft.WebMediaExtensions_1.0.3102.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.Windows.Photos_2018.18011.15918.0_neutral_~_8wekyb3d8bbwe"          
-"Microsoft.WindowsAlarms_2018.302.1846.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.WindowsCalculator_2018.302.144.0_neutral_~_8wekyb3d8bbwe"           
-"Microsoft.WindowsCamera_2017.1117.80.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.windowscommunicationsapps_2015.8827.22055.0_neutral_~_8wekyb3d8bbwe"
-"Microsoft.WindowsFeedbackHub_2018.302.2011.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.WindowsMaps_2018.209.2206.0_neutral_~_8wekyb3d8bbwe"                
-"Microsoft.WindowsSoundRecorder_2018.302.1842.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.WindowsStore_11712.1001.2313.0_neutral_~_8wekyb3d8bbwe"             
-"Microsoft.Xbox.TCUI_1.11.28003.0_neutral_~_8wekyb3d8bbwe"                     
-"Microsoft.XboxApp_38.38.14002.0_neutral_~_8wekyb3d8bbwe"                      
-"Microsoft.XboxGameOverlay_1.26.6001.0_neutral_~_8wekyb3d8bbwe"                
-"Microsoft.XboxGamingOverlay_1.15.1001.0_neutral_~_8wekyb3d8bbwe"              
-"Microsoft.XboxIdentityProvider_12.36.15002.0_neutral_~_8wekyb3d8bbwe"         
-"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"       
-"Microsoft.ZuneMusic_2019.17112.19011.0_neutral_~_8wekyb3d8bbwe"               
-"Microsoft.ZuneVideo_2019.17112.19011.0_neutral_~_8wekyb3d8bbwe" )
-$appx1709 = @( 
-"Microsoft.BingWeather_4.21.2492.0_neutral_~_8wekyb3d8bbwe",                    
-"Microsoft.DesktopAppInstaller_1.8.4001.0_neutral_~_8wekyb3d8bbwe",             
-"Microsoft.GetHelp_10.1706.1811.0_neutral_~_8wekyb3d8bbwe",                     
-"Microsoft.Getstarted_5.11.1641.0_neutral_~_8wekyb3d8bbwe",                     
-"Microsoft.Messaging_2017.815.2052.0_neutral_~_8wekyb3d8bbwe",                  
-"Microsoft.Microsoft3DViewer_1.1707.26019.0_neutral_~_8wekyb3d8bbwe",           
-"Microsoft.MicrosoftOfficeHub_2017.715.118.0_neutral_~_8wekyb3d8bbwe",          
-"Microsoft.MicrosoftSolitaireCollection_3.17.8162.0_neutral_~_8wekyb3d8bbwe",   
-"Microsoft.MicrosoftStickyNotes_1.8.2.0_neutral_~_8wekyb3d8bbwe",               
-"Microsoft.MSPaint_2.1709.4027.0_neutral_~_8wekyb3d8bbwe",                      
-"Microsoft.Office.OneNote_2015.8366.57611.0_neutral_~_8wekyb3d8bbwe",           
-"Microsoft.OneConnect_3.1708.2224.0_neutral_~_8wekyb3d8bbwe",                   
-"Microsoft.People_2017.823.2207.0_neutral_~_8wekyb3d8bbwe",                     
-"Microsoft.Print3D_1.0.2422.0_neutral_~_8wekyb3d8bbwe",                         
-"Microsoft.SkypeApp_11.18.596.0_neutral_~_kzf8qxf38zg5c",                       
-"Microsoft.StorePurchaseApp_11706.1707.7104.0_neutral_~_8wekyb3d8bbwe",         
-"Microsoft.Wallet_1.0.16328.0_neutral_~_8wekyb3d8bbwe",                         
-"Microsoft.Windows.Photos_2017.37071.16410.0_neutral_~_8wekyb3d8bbwe",          
-"Microsoft.WindowsAlarms_2017.828.2050.0_neutral_~_8wekyb3d8bbwe",              
-"Microsoft.WindowsCalculator_2017.828.2012.0_neutral_~_8wekyb3d8bbwe",          
-"Microsoft.WindowsCamera_2017.727.20.0_neutral_~_8wekyb3d8bbwe",                
-"Microsoft.windowscommunicationsapps_2015.8241.41275.0_neutral_~_8wekyb3d8bbwe",
-"Microsoft.WindowsFeedbackHub_1.1705.2121.0_neutral_~_8wekyb3d8bbwe",           
-"Microsoft.WindowsMaps_2017.814.2249.0_neutral_~_8wekyb3d8bbwe",                
-"Microsoft.WindowsSoundRecorder_2017.605.2103.0_neutral_~_8wekyb3d8bbwe",       
-"Microsoft.WindowsStore_11706.1002.94.0_neutral_~_8wekyb3d8bbwe",               
-"Microsoft.Xbox.TCUI_1.8.24001.0_neutral_~_8wekyb3d8bbwe",                      
-"Microsoft.XboxApp_31.32.16002.0_neutral_~_8wekyb3d8bbwe",                      
-"Microsoft.XboxGameOverlay_1.20.25002.0_neutral_~_8wekyb3d8bbwe",               
-"Microsoft.XboxIdentityProvider_2017.605.1240.0_neutral_~_8wekyb3d8bbwe",       
-"Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe",       
-"Microsoft.ZuneMusic_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe",               
-"Microsoft.ZuneVideo_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe" )
+Function Select-Appx {
+    $appx1903 = @("Microsoft.BingWeather_4.25.20211.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.DesktopAppInstaller_2019.125.2243.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.GetHelp_10.1706.13331.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.Getstarted_7.3.20251.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.HEIFImageExtension_1.0.13472.0_x64__8wekyb3d8bbwe"
+        "Microsoft.Messaging_2019.125.32.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.Microsoft3DViewer_5.1902.20012.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.MicrosoftOfficeHub_18.1901.1141.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.MicrosoftSolitaireCollection_4.2.11280.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.MicrosoftStickyNotes_3.1.53.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.MixedReality.Portal_2000.19010.1151.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.MSPaint_2019.213.1858.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.Office.OneNote_16001.11126.20076.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.OneConnect_5.1902.361.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.People_2019.123.2346.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.Print3D_3.3.311.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.ScreenSketch_2018.1214.231.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c,"
+        "Microsoft.StorePurchaseApp_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.VP9VideoExtensions_1.0.13333.0_x64__8wekyb3d8bbwe"
+        "Microsoft.Wallet_2.4.18324.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WebMediaExtensions_1.0.13321.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WebpImageExtension_1.0.12821.0_x64__8wekyb3d8bbwe"
+        "Microsoft.Windows.Photos_2019.18114.19418.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsAlarms_2019.105.629.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsCalculator_2019.105.612.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsCamera_2018.826.78.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.windowscommunicationsapps_16005.11029.20108.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsFeedbackHub_2019.226.2324.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsMaps_2019.108.627.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsSoundRecorder_2019.105.618.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsStore_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.Xbox.TCUI_1.23.28002.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.XboxApp_48.48.7001.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.XboxGameOverlay_1.32.17005.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.XboxGamingOverlay_2.26.14003.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.XboxIdentityProvider_12.50.6001.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.YourPhone_2018.1128.231.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.ZuneMusic_2019.18111.17311.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.ZuneVideo_2019.18111.17311.0_neutral_~_8wekyb3d8bbwe")
+    $appx1809 = @(
+        "Microsoft.BingWeather_4.25.12127.0_neutral_~_8wekyb3d8bbwe"                   
+        "Microsoft.DesktopAppInstaller_2018.720.2137.0_neutral_~_8wekyb3d8bbwe"        
+        "Microsoft.GetHelp_10.1706.10441.0_neutral_~_8wekyb3d8bbwe"                    
+        "Microsoft.Getstarted_6.13.11581.0_neutral_~_8wekyb3d8bbwe"                    
+        "Microsoft.HEIFImageExtension_1.0.11792.0_x64__8wekyb3d8bbwe"                  
+        "Microsoft.Messaging_2018.727.1430.0_neutral_~_8wekyb3d8bbwe"                  
+        "Microsoft.Microsoft3DViewer_4.1808.15012.0_neutral_~_8wekyb3d8bbwe"           
+        "Microsoft.MicrosoftOfficeHub_2017.1219.520.0_neutral_~_8wekyb3d8bbwe"         
+        "Microsoft.MicrosoftSolitaireCollection_4.1.5252.0_neutral_~_8wekyb3d8bbwe"    
+        "Microsoft.MicrosoftStickyNotes_2.0.13.0_neutral_~_8wekyb3d8bbwe"              
+        "Microsoft.MixedReality.Portal_2000.18081.1242.0_neutral_~_8wekyb3d8bbwe"      
+        "Microsoft.MSPaint_4.1807.12027.0_neutral_~_8wekyb3d8bbwe"                     
+        "Microsoft.Office.OneNote_16001.10228.20003.0_neutral_~_8wekyb3d8bbwe"         
+        "Microsoft.OneConnect_5.1807.1991.0_neutral_~_8wekyb3d8bbwe"                   
+        "Microsoft.People_2018.516.2011.0_neutral_~_8wekyb3d8bbwe"                     
+        "Microsoft.Print3D_3.0.1521.0_neutral_~_8wekyb3d8bbwe"                         
+        "Microsoft.ScreenSketch_2018.731.48.0_neutral_~_8wekyb3d8bbwe"                 
+        "Microsoft.SkypeApp_14.26.95.0_neutral_~_kzf8qxf38zg5c"                        
+        "Microsoft.StorePurchaseApp_11805.1001.813.0_neutral_~_8wekyb3d8bbwe"          
+        "Microsoft.VP9VideoExtensions_1.0.12342.0_x64__8wekyb3d8bbwe"                  
+        "Microsoft.Wallet_2.2.18179.0_neutral_~_8wekyb3d8bbwe"                         
+        "Microsoft.WebMediaExtensions_1.0.12341.0_neutral_~_8wekyb3d8bbwe"             
+        "Microsoft.WebpImageExtension_1.0.11551.0_x64__8wekyb3d8bbwe"                  
+        "Microsoft.Windows.Photos_2018.18051.21218.0_neutral_~_8wekyb3d8bbwe"          
+        "Microsoft.WindowsAlarms_2018.516.2059.0_neutral_~_8wekyb3d8bbwe"              
+        "Microsoft.WindowsCalculator_2018.501.612.0_neutral_~_8wekyb3d8bbwe"           
+        "Microsoft.WindowsCamera_2018.425.120.0_neutral_~_8wekyb3d8bbwe"               
+        "Microsoft.windowscommunicationsapps_2015.9330.21365.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsFeedbackHub_2018.822.2.0_neutral_~_8wekyb3d8bbwe"            
+        "Microsoft.WindowsMaps_2018.523.2143.0_neutral_~_8wekyb3d8bbwe"                
+        "Microsoft.WindowsSoundRecorder_2018.713.2154.0_neutral_~_8wekyb3d8bbwe"       
+        "Microsoft.WindowsStore_11805.1001.4913.0_neutral_~_8wekyb3d8bbwe"             
+        "Microsoft.Xbox.TCUI_1.11.28003.0_neutral_~_8wekyb3d8bbwe"                     
+        "Microsoft.XboxApp_41.41.18001.0_neutral_~_8wekyb3d8bbwe"                      
+        "Microsoft.XboxGameOverlay_1.32.17005.0_neutral_~_8wekyb3d8bbwe"               
+        "Microsoft.XboxGamingOverlay_2.20.22001.0_neutral_~_8wekyb3d8bbwe"             
+        "Microsoft.XboxIdentityProvider_12.44.20001.0_neutral_~_8wekyb3d8bbwe"         
+        "Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"       
+        "Microsoft.YourPhone_2018.727.2137.0_neutral_~_8wekyb3d8bbwe"                  
+        "Microsoft.ZuneMusic_2019.18052.20211.0_neutral_~_8wekyb3d8bbwe"               
+        "Microsoft.ZuneVideo_2019.18052.20211.0_neutral_~_8wekyb3d8bbwe" 
+    )
+    $appx1803 = @( 
+        "Microsoft.BingWeather_4.22.3254.0_neutral_~_8wekyb3d8bbwe"                    
+        "Microsoft.DesktopAppInstaller_1.8.15011.0_neutral_~_8wekyb3d8bbwe"            
+        "Microsoft.GetHelp_10.1706.10441.0_neutral_~_8wekyb3d8bbwe"                    
+        "Microsoft.Getstarted_6.9.10602.0_neutral_~_8wekyb3d8bbwe"                     
+        "Microsoft.Messaging_2018.222.2231.0_neutral_~_8wekyb3d8bbwe"                  
+        "Microsoft.Microsoft3DViewer_2.1803.8022.0_neutral_~_8wekyb3d8bbwe"            
+        "Microsoft.MicrosoftOfficeHub_2017.1219.520.0_neutral_~_8wekyb3d8bbwe"         
+        "Microsoft.MicrosoftSolitaireCollection_4.0.1301.0_neutral_~_8wekyb3d8bbwe"    
+        "Microsoft.MicrosoftStickyNotes_2.0.13.0_neutral_~_8wekyb3d8bbwe"              
+        "Microsoft.MSPaint_3.1803.5027.0_neutral_~_8wekyb3d8bbwe"                      
+        "Microsoft.Office.OneNote_2015.8827.20991.0_neutral_~_8wekyb3d8bbwe"           
+        "Microsoft.OneConnect_4.1801.521.0_neutral_~_8wekyb3d8bbwe"                    
+        "Microsoft.People_2018.215.110.0_neutral_~_8wekyb3d8bbwe"                      
+        "Microsoft.Print3D_2.0.3621.0_neutral_~_8wekyb3d8bbwe"                         
+        "Microsoft.SkypeApp_12.13.274.0_neutral_~_kzf8qxf38zg5c"                       
+        "Microsoft.StorePurchaseApp_11712.1801.10024.0_neutral_~_8wekyb3d8bbwe"        
+        "Microsoft.Wallet_2.1.18009.0_neutral_~_8wekyb3d8bbwe"                         
+        "Microsoft.WebMediaExtensions_1.0.3102.0_neutral_~_8wekyb3d8bbwe"              
+        "Microsoft.Windows.Photos_2018.18011.15918.0_neutral_~_8wekyb3d8bbwe"          
+        "Microsoft.WindowsAlarms_2018.302.1846.0_neutral_~_8wekyb3d8bbwe"              
+        "Microsoft.WindowsCalculator_2018.302.144.0_neutral_~_8wekyb3d8bbwe"           
+        "Microsoft.WindowsCamera_2017.1117.80.0_neutral_~_8wekyb3d8bbwe"               
+        "Microsoft.windowscommunicationsapps_2015.8827.22055.0_neutral_~_8wekyb3d8bbwe"
+        "Microsoft.WindowsFeedbackHub_2018.302.2011.0_neutral_~_8wekyb3d8bbwe"         
+        "Microsoft.WindowsMaps_2018.209.2206.0_neutral_~_8wekyb3d8bbwe"                
+        "Microsoft.WindowsSoundRecorder_2018.302.1842.0_neutral_~_8wekyb3d8bbwe"       
+        "Microsoft.WindowsStore_11712.1001.2313.0_neutral_~_8wekyb3d8bbwe"             
+        "Microsoft.Xbox.TCUI_1.11.28003.0_neutral_~_8wekyb3d8bbwe"                     
+        "Microsoft.XboxApp_38.38.14002.0_neutral_~_8wekyb3d8bbwe"                      
+        "Microsoft.XboxGameOverlay_1.26.6001.0_neutral_~_8wekyb3d8bbwe"                
+        "Microsoft.XboxGamingOverlay_1.15.1001.0_neutral_~_8wekyb3d8bbwe"              
+        "Microsoft.XboxIdentityProvider_12.36.15002.0_neutral_~_8wekyb3d8bbwe"         
+        "Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe"       
+        "Microsoft.ZuneMusic_2019.17112.19011.0_neutral_~_8wekyb3d8bbwe"               
+        "Microsoft.ZuneVideo_2019.17112.19011.0_neutral_~_8wekyb3d8bbwe" )
+    $appx1709 = @( 
+        "Microsoft.BingWeather_4.21.2492.0_neutral_~_8wekyb3d8bbwe",                    
+        "Microsoft.DesktopAppInstaller_1.8.4001.0_neutral_~_8wekyb3d8bbwe",             
+        "Microsoft.GetHelp_10.1706.1811.0_neutral_~_8wekyb3d8bbwe",                     
+        "Microsoft.Getstarted_5.11.1641.0_neutral_~_8wekyb3d8bbwe",                     
+        "Microsoft.Messaging_2017.815.2052.0_neutral_~_8wekyb3d8bbwe",                  
+        "Microsoft.Microsoft3DViewer_1.1707.26019.0_neutral_~_8wekyb3d8bbwe",           
+        "Microsoft.MicrosoftOfficeHub_2017.715.118.0_neutral_~_8wekyb3d8bbwe",          
+        "Microsoft.MicrosoftSolitaireCollection_3.17.8162.0_neutral_~_8wekyb3d8bbwe",   
+        "Microsoft.MicrosoftStickyNotes_1.8.2.0_neutral_~_8wekyb3d8bbwe",               
+        "Microsoft.MSPaint_2.1709.4027.0_neutral_~_8wekyb3d8bbwe",                      
+        "Microsoft.Office.OneNote_2015.8366.57611.0_neutral_~_8wekyb3d8bbwe",           
+        "Microsoft.OneConnect_3.1708.2224.0_neutral_~_8wekyb3d8bbwe",                   
+        "Microsoft.People_2017.823.2207.0_neutral_~_8wekyb3d8bbwe",                     
+        "Microsoft.Print3D_1.0.2422.0_neutral_~_8wekyb3d8bbwe",                         
+        "Microsoft.SkypeApp_11.18.596.0_neutral_~_kzf8qxf38zg5c",                       
+        "Microsoft.StorePurchaseApp_11706.1707.7104.0_neutral_~_8wekyb3d8bbwe",         
+        "Microsoft.Wallet_1.0.16328.0_neutral_~_8wekyb3d8bbwe",                         
+        "Microsoft.Windows.Photos_2017.37071.16410.0_neutral_~_8wekyb3d8bbwe",          
+        "Microsoft.WindowsAlarms_2017.828.2050.0_neutral_~_8wekyb3d8bbwe",              
+        "Microsoft.WindowsCalculator_2017.828.2012.0_neutral_~_8wekyb3d8bbwe",          
+        "Microsoft.WindowsCamera_2017.727.20.0_neutral_~_8wekyb3d8bbwe",                
+        "Microsoft.windowscommunicationsapps_2015.8241.41275.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsFeedbackHub_1.1705.2121.0_neutral_~_8wekyb3d8bbwe",           
+        "Microsoft.WindowsMaps_2017.814.2249.0_neutral_~_8wekyb3d8bbwe",                
+        "Microsoft.WindowsSoundRecorder_2017.605.2103.0_neutral_~_8wekyb3d8bbwe",       
+        "Microsoft.WindowsStore_11706.1002.94.0_neutral_~_8wekyb3d8bbwe",               
+        "Microsoft.Xbox.TCUI_1.8.24001.0_neutral_~_8wekyb3d8bbwe",                      
+        "Microsoft.XboxApp_31.32.16002.0_neutral_~_8wekyb3d8bbwe",                      
+        "Microsoft.XboxGameOverlay_1.20.25002.0_neutral_~_8wekyb3d8bbwe",               
+        "Microsoft.XboxIdentityProvider_2017.605.1240.0_neutral_~_8wekyb3d8bbwe",       
+        "Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe",       
+        "Microsoft.ZuneMusic_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe",               
+        "Microsoft.ZuneVideo_2019.17063.24021.0_neutral_~_8wekyb3d8bbwe" )
 
-If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*"){$exappxs = write-output $appx1903 | out-gridview -title "Select apps to remove" -passthru}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*"){$exappxs = write-output $appx1809 | out-gridview -title "Select apps to remove" -passthru}
-If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*"){$exappxs = write-output $appx1803 | out-gridview -title "Select apps to remove" -passthru}
-If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*"){$exappxs = write-output $appx1709 | out-gridview -title "Select apps to remove" -passthru}
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $exappxs = write-output $appx1903 | out-gridview -title "Select apps to remove" -passthru }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $exappxs = write-output $appx1809 | out-gridview -title "Select apps to remove" -passthru }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $exappxs = write-output $appx1803 | out-gridview -title "Select apps to remove" -passthru }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $exappxs = write-output $appx1709 | out-gridview -title "Select apps to remove" -passthru }
 
-if ($exappxs -eq $null){
-    Update-Log -Data "No apps were selected" -Class Warning
+    if ($exappxs -eq $null) {
+        Update-Log -Data "No apps were selected" -Class Warning
     }
-if ($exappxs -ne $null){
-Update-Log -data "The following apps were selected for removal:" -Class Information
-Foreach ($exappx in $exappxs){
-    Update-Log -Data $exappx -Class Information
-}
+    if ($exappxs -ne $null) {
+        Update-Log -data "The following apps were selected for removal:" -Class Information
+        Foreach ($exappx in $exappxs) {
+            Update-Log -Data $exappx -Class Information
+        }
 
-$WPFAppxTextBox.Text = $exappxs
-return $exappxs
-}
+        $WPFAppxTextBox.Text = $exappxs
+        return $exappxs
+    }
 }
 
 #Function to remove appx packages
-function remove-appx($array){
-$exappxs = $array
-update-log -data "Starting AppX removal" -class Information
-foreach ($exappx in $exappxs){
-Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx |Out-Null
-update-log -data "Removing $exappx" -Class Information
-}
-return
+function remove-appx($array) {
+    $exappxs = $array
+    update-log -data "Starting AppX removal" -class Information
+    foreach ($exappx in $exappxs) {
+        Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx | Out-Null
+        update-log -data "Removing $exappx" -Class Information
+    }
+    return
 }
 
 #Function to remove unwanted image indexes
-Function remove-indexes{
-Update-Log -Data "Attempting to remove unwanted image indexes" -Class Information
-$wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
-Update-Log -Data "Found Image $wimname" -Class Information
-$IndexesAll = Get-WindowsImage -ImagePath $wimname | foreach { $_.ImageName }
-$IndexSelected = $WPFSourceWIMImgDesTextBox.Text
-foreach ($Index in $IndexesAll){
-Update-Log -data "$Index is being evaluated"
-If ($Index -eq $IndexSelected){
-    Update-Log -Data "$Index is the index we want to keep. Skipping." -Class Information |Out-Null
+Function remove-indexes {
+    Update-Log -Data "Attempting to remove unwanted image indexes" -Class Information
+    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
+    Update-Log -Data "Found Image $wimname" -Class Information
+    $IndexesAll = Get-WindowsImage -ImagePath $wimname | foreach { $_.ImageName }
+    $IndexSelected = $WPFSourceWIMImgDesTextBox.Text
+    foreach ($Index in $IndexesAll) {
+        Update-Log -data "$Index is being evaluated"
+        If ($Index -eq $IndexSelected) {
+            Update-Log -Data "$Index is the index we want to keep. Skipping." -Class Information | Out-Null
         }
-    else{
-    update-log -data "Deleting $Index from WIM" -Class Information
-    Remove-WindowsImage -ImagePath $wimname -Name $Index -InformationAction SilentlyContinue |Out-Null
+        else {
+            update-log -data "Deleting $Index from WIM" -Class Information
+            Remove-WindowsImage -ImagePath $wimname -Name $Index -InformationAction SilentlyContinue | Out-Null
 
+        }
     }
-}
 }
 
 Function SelectNewJSONDir {
 
-Add-Type -AssemblyName System.Windows.Forms
-$browser = New-Object System.Windows.Forms.FolderBrowserDialog
-$browser.Description = "Select the folder to save JSON"
-$null = $browser.ShowDialog()
-$SaveDir = $browser.SelectedPath
-$WPFJSONTextBoxSavePath.text = $SaveDir 
-$text = "Autopilot profile save path selected: $SaveDir" 
-update-log -Data $text -Class Information
+    Add-Type -AssemblyName System.Windows.Forms
+    $browser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $browser.Description = "Select the folder to save JSON"
+    $null = $browser.ShowDialog()
+    $SaveDir = $browser.SelectedPath
+    $WPFJSONTextBoxSavePath.text = $SaveDir 
+    $text = "Autopilot profile save path selected: $SaveDir" 
+    update-log -Data $text -Class Information
 }
 
 #Function to retrieve autopilot profile from intune
-function get-WWAutopilotProfile ($login,$path){
-Update-Log -data "Checking dependencies for Autopilot profile retrieval..." -Class Information
+function get-WWAutopilotProfile ($login, $path) {
+    Update-Log -data "Checking dependencies for Autopilot profile retrieval..." -Class Information
 
-try{
-Import-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -ErrorAction Stop
-Update-Log -Data "NuGet is installed" -Class Information
-}
-catch{
-Update-Log -data "NuGet is not installed. Installing now..." -Class Warning
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-Update-Log -data "NuGet is now installed" -Class Information
-}
+    try {
+        Import-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -ErrorAction Stop
+        Update-Log -Data "NuGet is installed" -Class Information
+    }
+    catch {
+        Update-Log -data "NuGet is not installed. Installing now..." -Class Warning
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+        Update-Log -data "NuGet is now installed" -Class Information
+    }
 
-try{
+    try {
 
-Import-Module -name AzureAD -ErrorAction Stop
-Update-Log -data "AzureAD Module is installed" -Class Information
-}
-catch{
-Update-Log -data "AzureAD Module is not installed. Installing now..." -Class Warning
-Install-Module AzureAD -Force
-Update-Log -data "AzureAD is now installed" -class Information
-}
+        Import-Module -name AzureAD -ErrorAction Stop
+        Update-Log -data "AzureAD Module is installed" -Class Information
+    }
+    catch {
+        Update-Log -data "AzureAD Module is not installed. Installing now..." -Class Warning
+        Install-Module AzureAD -Force
+        Update-Log -data "AzureAD is now installed" -class Information
+    }
 
-try{
+    try {
 
-Import-Module -Name WindowsAutopilotIntune -ErrorAction Stop
-Update-Log -data "WindowsAutopilotIntune module is installed" -Class Information
-}
-catch{
+        Import-Module -Name WindowsAutopilotIntune -ErrorAction Stop
+        Update-Log -data "WindowsAutopilotIntune module is installed" -Class Information
+    }
+    catch {
 
-Update-Log -data "WindowsAutopilotIntune module is not installed. Installing now..." -Class Warning
-Install-Module WindowsAutopilotIntune -Force
-update-log -data "WindowsAutopilotIntune module is now installed." -class Information
-}
+        Update-Log -data "WindowsAutopilotIntune module is not installed. Installing now..." -Class Warning
+        Install-Module WindowsAutopilotIntune -Force
+        update-log -data "WindowsAutopilotIntune module is now installed." -class Information
+    }
 
 
-Update-Log -data "Connecting to Intune..." -Class Information
-Connect-AutopilotIntune -user $login
-Update-Log -data "Connected to Intune" -Class Information
+    Update-Log -data "Connecting to Intune..." -Class Information
+    Connect-AutopilotIntune -user $login
+    Update-Log -data "Connected to Intune" -Class Information
 
-Update-Log -data "Retrieving profile..." -Class Information
-Get-AutoPilotProfile | Out-GridView -title "Select Autopilot profile" -PassThru | ConvertTo-AutoPilotConfigurationJSON | Out-File $path\AutopilotConfigurationFile.json -Encoding ASCII
-$text = $path + "\AutopilotConfigurationFile.json"
-Update-Log -data "Profile successfully created at $text" -Class Information
+    Update-Log -data "Retrieving profile..." -Class Information
+    Get-AutoPilotProfile | Out-GridView -title "Select Autopilot profile" -PassThru | ConvertTo-AutoPilotConfigurationJSON | Out-File $path\AutopilotConfigurationFile.json -Encoding ASCII
+    $text = $path + "\AutopilotConfigurationFile.json"
+    Update-Log -data "Profile successfully created at $text" -Class Information
 
 
 }
 
 #Function to save current configuration
-function save-config($filename){
+function save-config($filename) {
 
-$CurrentConfig = @{
-SourcePath = $WPFSourceWIMSelectWIMTextBox.text
-SourceIndex = $WPFSourceWimIndexTextBox.text
-UpdatesEnabled = $WPFUpdatesEnableCheckBox.IsChecked
-AutopilotEnabled = $WPFJSONEnableCheckBox.IsChecked
-AutopilotPath = $WPFJSONTextBox.text
-DriversEnabled = $WPFDriverCheckBox.IsChecked
-DriverPath1 = $WPFDriverDir1TextBox.text
-DriverPath2 = $WPFDriverDir2TextBox.text
-DriverPath3 = $WPFDriverDir3TextBox.text
-DriverPath4 = $WPFDriverDir4TextBox.text
-DriverPath5 = $WPFDriverDir5TextBox.text
-AppxIsEnabled = $WPFAppxCheckBox.IsChecked
-AppxSelected = $WPFAppxTextBox.Text
-WIMName = $WPFMISWimNameTextBox.text
-WIMPath = $WPFMISWimFolderTextBox.text
-MountPath = $WPFMISMountTextBox.text
-}
+    $CurrentConfig = @{
+        SourcePath       = $WPFSourceWIMSelectWIMTextBox.text
+        SourceIndex      = $WPFSourceWimIndexTextBox.text
+        UpdatesEnabled   = $WPFUpdatesEnableCheckBox.IsChecked
+        AutopilotEnabled = $WPFJSONEnableCheckBox.IsChecked
+        AutopilotPath    = $WPFJSONTextBox.text
+        DriversEnabled   = $WPFDriverCheckBox.IsChecked
+        DriverPath1      = $WPFDriverDir1TextBox.text
+        DriverPath2      = $WPFDriverDir2TextBox.text
+        DriverPath3      = $WPFDriverDir3TextBox.text
+        DriverPath4      = $WPFDriverDir4TextBox.text
+        DriverPath5      = $WPFDriverDir5TextBox.text
+        AppxIsEnabled    = $WPFAppxCheckBox.IsChecked
+        AppxSelected     = $WPFAppxTextBox.Text
+        WIMName          = $WPFMISWimNameTextBox.text
+        WIMPath          = $WPFMISWimFolderTextBox.text
+        MountPath        = $WPFMISMountTextBox.text
+    }
 
-Update-Log -data "Saving configuration file $filename" -Class Information
-try{
-$CurrentConfig | Export-Clixml -Path c:\WIMWitch\Configs\$filename -ErrorAction Stop
-update-log -data "file saved" -Class Information
-}
-catch
-{
-Update-Log -data "Couldn't save file" -Class Error 
-}
+    Update-Log -data "Saving configuration file $filename" -Class Information
+    try {
+        $CurrentConfig | Export-Clixml -Path c:\WIMWitch\Configs\$filename -ErrorAction Stop
+        update-log -data "file saved" -Class Information
+    }
+    catch {
+        Update-Log -data "Couldn't save file" -Class Error 
+    }
 
 }
 
 #Function to import configurations from file
-function load-config($filename){
-update-log -data "Importing config from $filename" -Class Information
-try{
-$settings = Import-Clixml -Path $filename -ErrorAction Stop
-update-log -data "Config file read..." -Class Information
-$WPFSourceWIMSelectWIMTextBox.text = $settings.SourcePath
-$WPFSourceWimIndexTextBox.text = $settings.SourceIndex
-$WPFUpdatesEnableCheckBox.IsChecked = $settings.UpdatesEnabled
-$WPFJSONEnableCheckBox.IsChecked = $settings.AutopilotEnabled
-$WPFJSONTextBox.text = $settings.AutopilotPath 
-$WPFDriverCheckBox.IsChecked = $settings.DriversEnabled
-$WPFDriverDir1TextBox.text = $settings.DriverPath1
-$WPFDriverDir2TextBox.text = $settings.DriverPath2
-$WPFDriverDir3TextBox.text = $settings.DriverPath3
-$WPFDriverDir4TextBox.text = $settings.DriverPath4
-$WPFDriverDir5TextBox.text = $settings.DriverPath5
-$WPFAppxCheckBox.IsChecked = $settings.AppxIsEnabled
-$WPFAppxTextBox.text = $settings.AppxSelected -split " "
-$WPFMISWimNameTextBox.text = $settings.WIMName
-$WPFMISWimFolderTextBox.text = $settings.WIMPath
-$WPFMISMountTextBox.text = $settings.MountPath
-$global:SelectedAppx = $settings.AppxSelected -split " "
+function load-config($filename) {
+    update-log -data "Importing config from $filename" -Class Information
+    try {
+        $settings = Import-Clixml -Path $filename -ErrorAction Stop
+        update-log -data "Config file read..." -Class Information
+        $WPFSourceWIMSelectWIMTextBox.text = $settings.SourcePath
+        $WPFSourceWimIndexTextBox.text = $settings.SourceIndex
+        $WPFUpdatesEnableCheckBox.IsChecked = $settings.UpdatesEnabled
+        $WPFJSONEnableCheckBox.IsChecked = $settings.AutopilotEnabled
+        $WPFJSONTextBox.text = $settings.AutopilotPath 
+        $WPFDriverCheckBox.IsChecked = $settings.DriversEnabled
+        $WPFDriverDir1TextBox.text = $settings.DriverPath1
+        $WPFDriverDir2TextBox.text = $settings.DriverPath2
+        $WPFDriverDir3TextBox.text = $settings.DriverPath3
+        $WPFDriverDir4TextBox.text = $settings.DriverPath4
+        $WPFDriverDir5TextBox.text = $settings.DriverPath5
+        $WPFAppxCheckBox.IsChecked = $settings.AppxIsEnabled
+        $WPFAppxTextBox.text = $settings.AppxSelected -split " "
+        $WPFMISWimNameTextBox.text = $settings.WIMName
+        $WPFMISWimFolderTextBox.text = $settings.WIMPath
+        $WPFMISMountTextBox.text = $settings.MountPath
+        $global:SelectedAppx = $settings.AppxSelected -split " "
 
 
-update-log -data "Configration set" -class Information
+        update-log -data "Configration set" -class Information
 
-import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
+        import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
 
-if ($WPFJSONEnableCheckBox.IsChecked -eq $true){
-#Update-Log -data "Parsing Autopilot JSON file" -Class Information
-Parse-JSON -file $WPFJSONTextBox.text 
-}
+        if ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
+            #Update-Log -data "Parsing Autopilot JSON file" -Class Information
+            Parse-JSON -file $WPFJSONTextBox.text 
+        }
 
-reset-MISCheckBox
-Update-Log -data "Config file loaded successfully" -Class Information
-}
+        reset-MISCheckBox
+        Update-Log -data "Config file loaded successfully" -Class Information
+    }
 
-catch
-{update-log -data "Could not import from $filename" -Class Error}
+    catch
+    { update-log -data "Could not import from $filename" -Class Error }
 
 }
 
 #Function to select configuration file
-Function select-config{
-$SourceXML = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
-    InitialDirectory = "C:\WIMWitch\Configs"
-    #InitialDirectory = [Environment]::GetFolderPath('Desktop') 
-    Filter = 'XML (*.XML)|'
-}
-$null = $SourceXML.ShowDialog()
-$WPFSLLoadTextBox.text = $SourceXML.FileName
-load-config -filename $WPFSLLoadTextBox.text
+Function select-config {
+    $SourceXML = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+        InitialDirectory = "C:\WIMWitch\Configs"
+        #InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+        Filter           = 'XML (*.XML)|'
+    }
+    $null = $SourceXML.ShowDialog()
+    $WPFSLLoadTextBox.text = $SourceXML.FileName
+    load-config -filename $WPFSLLoadTextBox.text
 }
 
 #Function to reset reminder values from check boxes on the MIS tab when loading a config
 #This function is still buggy. It doesn't refresh all or most of the time 
-function reset-MISCheckBox{
+function reset-MISCheckBox {
     update-log -data "Refreshing MIS Values..." -class Information
-    If ($WPFJSONEnableCheckBox.IsChecked -eq $true){
+    If ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
         $WPFJSONButton.IsEnabled = $True
-        $WPFMISJSONTextBox.Text = "True"}
+        $WPFMISJSONTextBox.Text = "True"
+    }
 
-    If ($WPFDriverCheckBox.IsChecked -eq $true){
+    If ($WPFDriverCheckBox.IsChecked -eq $true) {
         $WPFDriverDir1Button.IsEnabled = $True
         $WPFDriverDir2Button.IsEnabled = $True
         $WPFDriverDir3Button.IsEnabled = $True
         $WPFDriverDir4Button.IsEnabled = $True
         $WPFDriverDir5Button.IsEnabled = $True
         $WPFMISDriverTextBox.Text = "True"
-        }
+    }
 
-    If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
+    If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
         $WPFUpdateOSDBUpdateButton.IsEnabled = $True
         $WPFUpdatesDownloadNewButton.IsEnabled = $True
         $WPFUpdates1903CheckBox.IsEnabled = $True
@@ -1428,15 +1427,16 @@ function reset-MISCheckBox{
         $WPFUpdates1709CheckBox.IsEnabled = $True
         $WPFUpdateOSDBUpdateButton.IsEnabled = $True
         $WPFMISUpdatesTextBox.Text = "True"
-        }
+    }
 
-    If ($WPFAppxCheckBox.IsChecked -eq $true){
+    If ($WPFAppxCheckBox.IsChecked -eq $true) {
         $WPFAppxButton.IsEnabled = $True
-        $WPFMISAppxTextBox.Text = "True"}
+        $WPFMISAppxTextBox.Text = "True"
+    }
 }
 
 #Function to run WIM Witch from a config file
-function run-configfile($filename){
+function run-configfile($filename) {
     Update-Log -Data "Loading the config file: $filename" -Class Information
     load-config -filename $filename 
     Update-Log -Data "Starting auto mode with the config file $filename" -Class Information
@@ -1444,141 +1444,161 @@ function run-configfile($filename){
 }
 
 #Function to display text on closing of the script or wpf window
-function display-closingtext{
-#Before you start bitching about write-host, write-output doesn't work with the exiting function. Suggestions are welcome.
-Write-Host " " 
-Write-Host "##########################################################"
-Write-Host " "
-Write-Host "Thank you for using WIM Witch. If you have any questions,"
-Write-Host "comments, or suggestions, please reach out to me!"
-Write-Host " "
-Write-Host "-Donna Ryan" 
-Write-Host " "
-Write-Host "twitter: @TheNotoriousDRR"
-Write-Host "www.SCConfigMgr.com"
-Write-Host "www.TheNotoriousDRR.com"
-Write-Host " "
-Write-Host "##########################################################"
+function display-closingtext {
+    #Before you start bitching about write-host, write-output doesn't work with the exiting function. Suggestions are welcome.
+    Write-Host " " 
+    Write-Host "##########################################################"
+    Write-Host " "
+    Write-Host "Thank you for using WIM Witch. If you have any questions,"
+    Write-Host "comments, or suggestions, please reach out to me!"
+    Write-Host " "
+    Write-Host "-Donna Ryan" 
+    Write-Host " "
+    Write-Host "twitter: @TheNotoriousDRR"
+    Write-Host "www.SCConfigMgr.com"
+    Write-Host "www.TheNotoriousDRR.com"
+    Write-Host " "
+    Write-Host "##########################################################"
 }
 
 #Function to display opening text
-function display-openingtext{
-cls
-Write-Output "##########################################################"
-Write-Output " "
-Write-Output "             ***** Starting WIM Witch *****"
-Write-Output "                   version 0.9.7 beta"
-Write-Output "##########################################################"
-Write-Output " "
+function display-openingtext {
+    cls
+    Write-Output "##########################################################"
+    Write-Output " "
+    Write-Output "             ***** Starting WIM Witch *****"
+    Write-Output "                   version 0.9.7 beta"
+    Write-Output " "
+    Write-Output "##########################################################"
+    Write-Output " "
 }
 
 #Function to check suitability of the proposed mount point folder
-function check-mountpath{
-param(
-[parameter(mandatory=$true,HelpMessage="mount path")] 
-$path,
+function check-mountpath {
+    param(
+        [parameter(mandatory = $true, HelpMessage = "mount path")] 
+        $path,
 
-[parameter(mandatory=$false,HelpMessage="clear out the crapola")] 
-[ValidateSet($true)]
-$clean
-)
+        [parameter(mandatory = $false, HelpMessage = "clear out the crapola")] 
+        [ValidateSet($true)]
+        $clean
+    )
 
 
-$IsMountPoint = $null
-$HasFiles = $null
-$currentmounts = get-windowsimage -Mounted
+    $IsMountPoint = $null
+    $HasFiles = $null
+    $currentmounts = get-windowsimage -Mounted
 
-foreach ($currentmount in $currentmounts){
-    if ($currentmount.path -eq $path) {$IsMountPoint = $true} 
-        }
-  
-    if ($IsMountPoint -eq $null){
-        if( (Get-ChildItem $path | Measure-Object).Count -gt 0) {
-            $HasFiles = $true}
-        }
-
-if ($HasFiles -eq $true){
-    Update-Log -Data "Folder is not empty" -Class Warning
-    if ($clean -eq $true){
-        try{
-        Update-Log -Data "Cleaning folder..." -Class Warning
-        Remove-Item -Path $path\* -Recurse -Force -ErrorAction Stop
-        Update-Log -Data "$path cleared" -Class Warning}
-        
-        catch{
-        Update-Log -Data "Couldn't delete contents of $path" -Class Error
-        Update-Log -Data "Select a different folder to continue." -Class Error
-        return
-        }
-     }
-     }
-
-if ($IsMountPoint -eq $true){
-    Update-Log -Data "$path is currently a mount point" -Class Warning
-    if (($IsMountPoint -eq $true) -and ($clean -eq $true)){
-          
-           try{
-            Update-Log -Data "Attempting to dismount image from mount point" -Class Warning
-            Dismount-WindowsImage -Path $path -Discard |Out-Null -ErrorAction Stop
-            $IsMountPoint = $null
-            Update-Log -Data "Dismounting was successful" -Class Warning}   
-            
-            catch{
-            Update-Log -Data "Couldn't completely dismount the folder. Ensure" -Class Error
-            update-log -data "all connections to the path are closed, then try again" -Class Error
-            return}
-          }
+    foreach ($currentmount in $currentmounts) {
+        if ($currentmount.path -eq $path) { $IsMountPoint = $true } 
     }
-if (($IsMountPoint -eq $null) -and ($HasFiles -eq $null)){Update-Log -Data "$path is suitable for mounting" -Class Information}
+  
+    if ($IsMountPoint -eq $null) {
+        if ( (Get-ChildItem $path | Measure-Object).Count -gt 0) {
+            $HasFiles = $true
+        }
+    }
+
+    if ($HasFiles -eq $true) {
+        Update-Log -Data "Folder is not empty" -Class Warning
+        if ($clean -eq $true) {
+            try {
+                Update-Log -Data "Cleaning folder..." -Class Warning
+                Remove-Item -Path $path\* -Recurse -Force -ErrorAction Stop
+                Update-Log -Data "$path cleared" -Class Warning
+            }
+        
+            catch {
+                Update-Log -Data "Couldn't delete contents of $path" -Class Error
+                Update-Log -Data "Select a different folder to continue." -Class Error
+                return
+            }
+        }
+    }
+
+    if ($IsMountPoint -eq $true) {
+        Update-Log -Data "$path is currently a mount point" -Class Warning
+        if (($IsMountPoint -eq $true) -and ($clean -eq $true)) {
+          
+            try {
+                Update-Log -Data "Attempting to dismount image from mount point" -Class Warning
+                Dismount-WindowsImage -Path $path -Discard | Out-Null -ErrorAction Stop
+                $IsMountPoint = $null
+                Update-Log -Data "Dismounting was successful" -Class Warning
+            }   
+            
+            catch {
+                Update-Log -Data "Couldn't completely dismount the folder. Ensure" -Class Error
+                update-log -data "all connections to the path are closed, then try again" -Class Error
+                return
+            }
+        }
+    }
+    if (($IsMountPoint -eq $null) -and ($HasFiles -eq $null)) { Update-Log -Data "$path is suitable for mounting" -Class Information }
 }
 
 #Function to check the name of the target file and remediate if necessary
+function check-name {
+    Param( 
+        [parameter(mandatory = $false, HelpMessage = "what to do")] 
+        [ValidateSet("stop", "append", "backup", "overwrite")] 
+        $conflict = "stop"
+    )
 
-function check-name{
-Param( 
-[parameter(mandatory=$false,HelpMessage="what to do")] 
-[ValidateSet("stop","append","backup","overwrite")] 
-$conflict = "stop"
-)
-
-If ($WPFMISWimNameTextBox.Text -like "*.wim")
-{
-$WPFLogging.Focus()
-update-log -Data "New WIM name is valid" -Class Information
-}
-
-If($WPFMISWimNameTextBox.Text -notlike "*.wim")
-{
-
-$WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
-update-log -Data "Appending new file name with an extension" -Class Information
-}
-
-$WIMpath = $WPFMISWimFolderTextBox.text + "\" + $WPFMISWimNameTextBox.Text
-$FileCheck = Test-Path -Path $WIMpath
-
-
-#append,backup,overwrite,stop
-
-if ($FileCheck -eq $false){update-log -data "Target WIM file name not in use. Continuing..." -class Information}
-    else{
-    if ($conflict -eq "append"){
-        Write-Host "Appending action"
-        return}
-    if ($conflict -eq "backup"){
-        Write-Host "backup of old file"
-        return}
-    if ($conflict -eq "overwrite"){
-        Write-Host "overwrite action"
-        return}
-    if ($conflict -eq "stop"){
-        $string = $WPFMISWimNameTextBox.Text + " already exists. Rename the target WIM and try again"
-        update-log -Data $string -Class Error
-        return "stop"
-        }
+    If ($WPFMISWimNameTextBox.Text -like "*.wim") {
+        #$WPFLogging.Focus()
+        #update-log -Data "New WIM name is valid" -Class Information
     }
 
+    If ($WPFMISWimNameTextBox.Text -notlike "*.wim") {
+
+        $WPFMISWimNameTextBox.Text = $WPFMISWimNameTextBox.Text + ".wim"
+        update-log -Data "Appending new file name with an extension" -Class Information
+    }
+
+    $WIMpath = $WPFMISWimFolderTextBox.text + "\" + $WPFMISWimNameTextBox.Text
+    $FileCheck = Test-Path -Path $WIMpath
+
+
+    #append,overwrite,stop
+
+    if ($FileCheck -eq $false) { update-log -data "Target WIM file name not in use. Continuing..." -class Information }
+    else {
+        if ($conflict -eq "append") {
+            $renamestatus = (replace-name -file $WIMpath -extension ".wim")
+            if ($renamestatus -eq "stop") { return "stop" }
+        }
+        if ($conflict -eq "overwrite") {
+            Write-Host "overwrite action"
+            return
+        }
+        if ($conflict -eq "stop") {
+            $string = $WPFMISWimNameTextBox.Text + " already exists. Rename the target WIM and try again"
+            update-log -Data $string -Class Warning
+            return "stop"
+        }
+    }
+    update-log -Data "New WIM name is valid" -Class Information
 }
+
+#Function to rename existing target wim file if the target WIM name already exists
+function replace-name($file, $extension) {
+    $text = "Renaming existing " + $extension + " file..."
+    Update-Log -Data $text -Class Warning
+    $filename = (Split-Path -leaf $file)
+    $dateinfo = (get-item -Path $file).LastWriteTime -replace (" ", "_") -replace ("/", "_") -replace (":", "_")
+    $filename = $filename -replace ($extension, "")
+    $filename = $filename + $dateinfo + $extension
+    try {
+        rename-Item -Path $file -NewName $filename -ErrorAction Stop
+        $text = $file + " has been renamed to " + $filename
+        Update-Log -Data $text -Class Warning    
+    }
+    catch {
+        Update-Log -data "Couldn't rename file. Stopping..." -Class Error
+        return "stop"
+    }
+} 
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
@@ -1592,29 +1612,27 @@ $Log = "C:\WIMWitch\logging\WIMWitch.log"
 
 Set-Logging #Clears out old logs from previous builds and checks for other folders
 
-
-
 #The OSD Update functions. Disable the following four to increase start time. check-superced takes the longest - FYI
 #===========================================================================
 Get-OSDBInstallation #Sets OSDBuilder version info
 Get-OSDBCurrentVer #Discovers current version of OSDBuilder
 compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
 
-if ($updates -eq "yes"){
+if ($updates -eq "yes") {
 
-    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")){update-OSDB}
+    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { update-OSDB }
     
-    if ($Superseded -eq "audit"){check-superceded -action "audit"}
-    if ($Superseded -eq "delete"){check-superceded -action "delete"}
+    if ($Superseded -eq "audit") { check-superceded -action "audit" }
+    if ($Superseded -eq "delete") { check-superceded -action "delete" }
 
-    if ($DownUpdates -ne $null){
-        if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")){download-patches -build 1903}
-        if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")){download-patches -build 1809}
-        if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")){download-patches -build 1803}
-        if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")){download-patches -build 1709}
-        }
+    if ($DownUpdates -ne $null) {
+        if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")) { download-patches -build 1903 }
+        if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
+        if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
+        if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
+    }
 
-#check-superceded #checks to see if superceded patches exist
+    #check-superceded #checks to see if superceded patches exist
     
 }
 
@@ -1643,117 +1661,121 @@ $WPFMISAppxTextBox.Text = "False"
 #===========================================================================
 
 #Mount Dir Button                                                    
-$WPFMISMountSelectButton.Add_Click({SelectMountdir}) 
+$WPFMISMountSelectButton.Add_Click( { SelectMountdir }) 
 
 #Source WIM File Button
-$WPFSourceWIMSelectButton.Add_Click({SelectSourceWIM}) 
+$WPFSourceWIMSelectButton.Add_Click( { SelectSourceWIM }) 
 
 #JSON File selection Button
-$WPFJSONButton.Add_Click({SelectJSONFile}) 
+$WPFJSONButton.Add_Click( { SelectJSONFile }) 
 
 #Target Folder selection Button
-$WPFMISFolderButton.Add_Click({SelectTargetDir}) 
+$WPFMISFolderButton.Add_Click( { SelectTargetDir }) 
 
 #Driver Directory Buttons
-$WPFDriverDir1Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir1TextBox}) 
-$WPFDriverDir2Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir2TextBox}) 
-$WPFDriverDir3Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir3TextBox}) 
-$WPFDriverDir4Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir4TextBox}) 
-$WPFDriverDir5Button.Add_Click({SelectDriverSource -DriverTextBoxNumber $WPFDriverDir5TextBox}) 
+$WPFDriverDir1Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDriverDir1TextBox }) 
+$WPFDriverDir2Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDriverDir2TextBox }) 
+$WPFDriverDir3Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDriverDir3TextBox }) 
+$WPFDriverDir4Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDriverDir4TextBox }) 
+$WPFDriverDir5Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDriverDir5TextBox }) 
 
 #Make it So Button, which builds the WIM file
 #$WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
-$WPFMISMakeItSoButton.Add_Click({MakeItSo -appx $global:SelectedAppx}) 
+$WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx }) 
 
 #Update OSDBuilder Button
-$WPFUpdateOSDBUpdateButton.Add_Click({update-OSDB}) 
+$WPFUpdateOSDBUpdateButton.Add_Click( { update-OSDB }) 
 
 #Update patch source
-$WPFUpdatesDownloadNewButton.Add_Click({update-patchsource})
+$WPFUpdatesDownloadNewButton.Add_Click( { update-patchsource })
 
 #Logging window
 $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 
 #Select Appx packages to remove
-$WPFAppxButton.Add_Click({$global:SelectedAppx = Select-Appx})
+$WPFAppxButton.Add_Click( { $global:SelectedAppx = Select-Appx })
 
 #Select Autopilot path to save button
-$WPFJSONButtonSavePath.Add_Click({SelectNewJSONDir})
+$WPFJSONButtonSavePath.Add_Click( { SelectNewJSONDir })
 
 #retrieve autopilot profile from intune
-$WPFJSONButtonRetrieve.Add_click({get-wwautopilotprofile -login $WPFJSONTextBoxAADID.Text -path $WPFJSONTextBoxSavePath.Text})
+$WPFJSONButtonRetrieve.Add_click( { get-wwautopilotprofile -login $WPFJSONTextBoxAADID.Text -path $WPFJSONTextBoxSavePath.Text })
 
 #Button to save configuration file
-$WPFSLSaveButton.Add_click({save-config -filename $WPFSLSaveFileName.text})
+$WPFSLSaveButton.Add_click( { save-config -filename $WPFSLSaveFileName.text })
 
-$WPFSLLoadButton.Add_click({select-config})
+$WPFSLLoadButton.Add_click( { select-config })
 
 #===========================================================================
 # Section for Checkboxes to call functions
 #===========================================================================
 
 #Enable JSON Selection
-$WPFJSONEnableCheckBox.Add_Click({
-    If ($WPFJSONEnableCheckBox.IsChecked -eq $true){
-        $WPFJSONButton.IsEnabled = $True
-        $WPFMISJSONTextBox.Text = "True"}
-        else{
-        $WPFJSONButton.IsEnabled = $False
-        $WPFMISJSONTextBox.Text = "False"}
+$WPFJSONEnableCheckBox.Add_Click( {
+        If ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
+            $WPFJSONButton.IsEnabled = $True
+            $WPFMISJSONTextBox.Text = "True"
+        }
+        else {
+            $WPFJSONButton.IsEnabled = $False
+            $WPFMISJSONTextBox.Text = "False"
+        }
     })
  
 #Enable Driver Selection  
-$WPFDriverCheckBox.Add_Click({
-    If ($WPFDriverCheckBox.IsChecked -eq $true){
-        $WPFDriverDir1Button.IsEnabled = $True
-        $WPFDriverDir2Button.IsEnabled = $True
-        $WPFDriverDir3Button.IsEnabled = $True
-        $WPFDriverDir4Button.IsEnabled = $True
-        $WPFDriverDir5Button.IsEnabled = $True
-        $WPFMISDriverTextBox.Text = "True"
+$WPFDriverCheckBox.Add_Click( {
+        If ($WPFDriverCheckBox.IsChecked -eq $true) {
+            $WPFDriverDir1Button.IsEnabled = $True
+            $WPFDriverDir2Button.IsEnabled = $True
+            $WPFDriverDir3Button.IsEnabled = $True
+            $WPFDriverDir4Button.IsEnabled = $True
+            $WPFDriverDir5Button.IsEnabled = $True
+            $WPFMISDriverTextBox.Text = "True"
         }
-        else{
-        $WPFDriverDir1Button.IsEnabled = $False
-        $WPFDriverDir2Button.IsEnabled = $False
-        $WPFDriverDir3Button.IsEnabled = $False
-        $WPFDriverDir4Button.IsEnabled = $False
-        $WPFDriverDir5Button.IsEnabled = $False
-        $WPFMISDriverTextBox.Text = "False"
+        else {
+            $WPFDriverDir1Button.IsEnabled = $False
+            $WPFDriverDir2Button.IsEnabled = $False
+            $WPFDriverDir3Button.IsEnabled = $False
+            $WPFDriverDir4Button.IsEnabled = $False
+            $WPFDriverDir5Button.IsEnabled = $False
+            $WPFMISDriverTextBox.Text = "False"
         }
     })
 
 #Enable Updates Selection
-$WPFUpdatesEnableCheckBox.Add_Click({
-If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true){
-    $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-    $WPFUpdatesDownloadNewButton.IsEnabled = $True
-    $WPFUpdates1903CheckBox.IsEnabled = $True
-    $WPFUpdates1809CheckBox.IsEnabled = $True
-    $WPFUpdates1803CheckBox.IsEnabled = $True
-    $WPFUpdates1709CheckBox.IsEnabled = $True
-    $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-    $WPFMISUpdatesTextBox.Text = "True"
-}
-else{
-   # $WPFUpdatesOSDBVersion.IsEnabled = $False
-    $WPFUpdateOSDBUpdateButton.IsEnabled = $False
-    $WPFUpdatesDownloadNewButton.IsEnabled = $False
-    $WPFUpdates1903CheckBox.IsEnabled = $False
-    $WPFUpdates1809CheckBox.IsEnabled = $False
-    $WPFUpdates1803CheckBox.IsEnabled = $False
-    $WPFUpdates1709CheckBox.IsEnabled = $False
-    $WPFUpdateOSDBUpdateButton.IsEnabled = $False
-    $WPFMISUpdatesTextBox.Text = "False"
-}
-})
+$WPFUpdatesEnableCheckBox.Add_Click( {
+        If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
+            $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+            $WPFUpdatesDownloadNewButton.IsEnabled = $True
+            $WPFUpdates1903CheckBox.IsEnabled = $True
+            $WPFUpdates1809CheckBox.IsEnabled = $True
+            $WPFUpdates1803CheckBox.IsEnabled = $True
+            $WPFUpdates1709CheckBox.IsEnabled = $True
+            $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+            $WPFMISUpdatesTextBox.Text = "True"
+        }
+        else {
+            # $WPFUpdatesOSDBVersion.IsEnabled = $False
+            $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+            $WPFUpdatesDownloadNewButton.IsEnabled = $False
+            $WPFUpdates1903CheckBox.IsEnabled = $False
+            $WPFUpdates1809CheckBox.IsEnabled = $False
+            $WPFUpdates1803CheckBox.IsEnabled = $False
+            $WPFUpdates1709CheckBox.IsEnabled = $False
+            $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+            $WPFMISUpdatesTextBox.Text = "False"
+        }
+    })
 
 #Enable AppX Selection
-$WPFAppxCheckBox.Add_Click({
-    If ($WPFAppxCheckBox.IsChecked -eq $true){
-        $WPFAppxButton.IsEnabled = $True
-        $WPFMISAppxTextBox.Text = "True"}
-       else{
-        $WPFAppxButton.IsEnabled = $False}
+$WPFAppxCheckBox.Add_Click( {
+        If ($WPFAppxCheckBox.IsChecked -eq $true) {
+            $WPFAppxButton.IsEnabled = $True
+            $WPFMISAppxTextBox.Text = "True"
+        }
+        else {
+            $WPFAppxButton.IsEnabled = $False
+        }
     })
  
 #==========================================================
@@ -1768,20 +1790,21 @@ if (($auto -eq "yes") -and ($autofile -ne $null)) {
 }
 
 if (($auto -eq "yes") -and ($autopath -ne $null)) {
-Update-Log -data "Running batch job from config folder $autopath" -Class Information
-$files = Get-ChildItem -Path $autopath
-Update-Log -data "Setting batch job for the folling configs:" -Class Information
-foreach ($file in $files){Update-Log -Data $file -Class Information}
-foreach ($file in $files){
-$fullpath = $autopath + '\' + $file
-run-configfile -filename $fullpath}
-Update-Log -Data "Work complete" -Class Information
-display-closingtext
-exit 0
+    Update-Log -data "Running batch job from config folder $autopath" -Class Information
+    $files = Get-ChildItem -Path $autopath
+    Update-Log -data "Setting batch job for the folling configs:" -Class Information
+    foreach ($file in $files) { Update-Log -Data $file -Class Information }
+    foreach ($file in $files) {
+        $fullpath = $autopath + '\' + $file
+        run-configfile -filename $fullpath
+    }
+    Update-Log -Data "Work complete" -Class Information
+    display-closingtext
+    exit 0
 }
 
 #Closing action for the WPF form
-Register-ObjectEvent -InputObject $form -EventName Closed -Action ({display-closingtext}) |Out-Null
+Register-ObjectEvent -InputObject $form -EventName Closed -Action ( { display-closingtext }) | Out-Null
 
 #Start GUI 
 update-log -data "Starting WIM Witch GUI" -class Information
