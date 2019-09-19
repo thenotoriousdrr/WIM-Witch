@@ -23,11 +23,6 @@
 # -Removal of AppX Modern Apps
 # -Create batch jobs for image catalog updating
 #
-#===========================================================================
-# Version 0.9.8
-#
-# -Added installation check and remdiation
-# -Added variable path installation
 #
 #===========================================================================
 # Version 0.9.7
@@ -81,7 +76,7 @@ Param(
     $autofile,
 
     [parameter(mandatory = $false, HelpMessage = "config path")] 
-    #[ValidateSet("$PSScriptRoot\configs")]
+    #[ValidateSet("c:\wimwitch\configs")]
     $autopath,
 
     [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
@@ -115,7 +110,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.8 Beta" Height="500" Width="900">
+        Title="WIM Witch v0.9.7 Beta" Height="500" Width="900">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="128*"/>
@@ -246,10 +241,10 @@ $inputXML = @"
                     <Label Content="Driver injection?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
                     <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="122,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
                     <Label Content="JSON injection?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
-                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
                     <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="310,339,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
-                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <Label Content="Mount Path" HorizontalAlignment="Left" Margin="5,194,0,0" VerticalAlignment="Top" Height="25" Width="100" Grid.Column="1"/>
                     <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
                     <Label Content="Update injection?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
@@ -477,22 +472,22 @@ Function MakeItSo ($appx) {
 
 
     #check for working directory, make if does not exist, delete files if they exist
-    $FolderExist = Test-Path $PSScriptRoot\Staging -PathType Any
+    $FolderExist = Test-Path C:\WIMWitch\Staging -PathType Any
     update-log -Data "Checking to see if the staging path exists..." -Class Information
 
     try {
         if ($FolderExist = $False) {
-            New-Item -ItemType Directory -Force -Path $PSScriptRoot\Staging -ErrorAction Stop
+            New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging -ErrorAction Stop
             update-log -Data "Path did not exist, but it does now :)" -Class Information -ErrorAction Stop
         }
         Else {
-            Remove-Item –path $PSScriptRoot\Staging\* -Recurse -ErrorAction Stop
+            Remove-Item –path c:\WIMWitch\Staging\* -Recurse -ErrorAction Stop
             update-log -Data "The path existed, and it has been purged." -Class Information -ErrorAction Stop
         }
     }
     catch {
         Update-Log -data $_.Exception.Message -class Error
-        Update-Log -data "Something is wrong with folder $PSScriptRoot\Staging. Try deleting manually if it exists" -Class Error
+        Update-Log -data "Something is wrong with folder C:\WIMWitch\Staging. Try deleting manually if it exists" -Class Error
         return
     }
 
@@ -515,7 +510,7 @@ Function MakeItSo ($appx) {
     update-log -Data "Copying source WIM to the staging folder" -Class Information
 
     try {
-        Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "$PSScriptRoot\Staging" -ErrorAction Stop
+        Copy-Item $WPFSourceWIMSelectWIMTextBox.Text -Destination "C:\WIMWitch\Staging" -ErrorAction Stop
     }
     catch {
         Update-Log -data $_.Exception.Message -class Error
@@ -528,14 +523,14 @@ Function MakeItSo ($appx) {
     #Rename copied source WiM
 
     try {
-        $wimname = Get-Item -Path $PSScriptRoot\Staging\*.wim -ErrorAction Stop
+        $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim -ErrorAction Stop
         Rename-Item -Path $wimname -NewName $WPFMISWimNameTextBox.Text -ErrorAction Stop
         update-log -Data "Copied source WIM has been renamed" -Class Information
     }
     catch {
         Update-Log -data $_.Exception.Message -class Error
         Update-Log -data "The copied source file couldn't be renamed. This shouldn't have happened." -Class Error
-        Update-Log -data "Go delete the WIM from $PSScriptRoot\Staging\, then try again" -Class Error
+        Update-Log -data "Go delete the WIM from C:\WIMWitch\Staging\, then try again" -Class Error
         return
     }
 
@@ -545,7 +540,7 @@ Function MakeItSo ($appx) {
     #Mount the WIM File
 
 
-    $wimname = Get-Item -Path $PSScriptRoot\Staging\*.wim
+    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
     update-log -Data "Mounting source WIM $wimname" -Class Information
     update-log -Data "to mount point:" -Class Information
     update-log -data $WPFMISMountTextBox.Text -Class Information
@@ -624,7 +619,7 @@ Function MakeItSo ($appx) {
     try {
         update-log -Data "Attempting to copy log to mounted image" -Class Information 
         $mountlogdir = $WPFMISMountTextBox.Text + "\windows\"
-        Copy-Item $PSScriptRoot\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
+        Copy-Item C:\WIMWitch\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
         $CopyLogExist = Test-Path $mountlogdir\WIMWitch.log -PathType Leaf
         if ($CopyLogExist -eq $true) { update-log -Data "Log filed copied successfully" -Class Information }
     }
@@ -663,7 +658,7 @@ Function MakeItSo ($appx) {
     #Copy log here
     try {
         update-log -Data "Copying build log to target folder" -Class Information 
-        Copy-Item -Path $PSScriptRoot\logging\WIMWitch.log -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
+        Copy-Item -Path C:\WIMWitch\logging\WIMWitch.log -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
         $logold = $WPFMISWimFolderTextBox.Text + "\WIMWitch.log"
         $lognew = $WPFMISWimFolderTextBox.Text + "\" + $WPFMISWimNameTextBox.Text + ".log"
         #Put log detection code here
@@ -754,65 +749,65 @@ Function Update-Log {
 Function Set-Logging {
 
     #logging folder
-    $FileExist = Test-Path -Path $PSScriptRoot\logging\WIMWitch.Log -PathType Leaf
+    $FileExist = Test-Path -Path C:\WIMWitch\logging\WIMWitch.Log -PathType Leaf
     if ($FileExist -eq $False) {
         #update-log -data "Logging folder does not exist" -class Warning
-        New-Item -ItemType Directory -Force -Path $PSScriptRoot\Logging | Out-Null
-        New-Item -Path $PSScriptRoot\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Logging | Out-Null
+        New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
         #update-log -data "Logging folder and log created successfully" -Class Information 
     }
     Else {
-        Remove-Item -Path $PSScriptRoot\logging\WIMWitch.log
-        New-Item -Path $PSScriptRoot\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
+        Remove-Item -Path C:\WIMWitch\logging\WIMWitch.log
+        New-Item -Path C:\WIMWitch\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
         #Update-Log -Data "Logging started successfully" -Class Information
     }
-   
+    #$log = C:\WIMWitch\logging\WIMWitch.Log
 
     #updates folder
-    $FileExist = Test-Path -Path $PSScriptRoot\updates #-PathType Leaf
+    $FileExist = Test-Path -Path C:\WIMWitch\updates #-PathType Leaf
     if ($FileExist -eq $False) {
         Update-Log -Data "Updates folder does not exist. Creating..." -Class Warning
-        New-Item -ItemType Directory -Force -Path $PSScriptRoot\updates | Out-Null
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\updates | Out-Null
         Update-Log -Data "Updates folder created" -Class Information
     }
    
     if ($FileExist -eq $True) { Update-Log -Data "Updates folder exists" -Class Information }
 
     #staging folder
-    $FileExist = Test-Path -Path $PSScriptRoot\Staging #-PathType Leaf
+    $FileExist = Test-Path -Path C:\WIMWitch\Staging #-PathType Leaf
     if ($FileExist -eq $False) {
         Update-Log -Data "Staging folder does not exist. Creating..." -Class Warning
-        New-Item -ItemType Directory -Force -Path $PSScriptRoot\Staging | Out-Null
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Staging | Out-Null
         Update-Log -Data "Staging folder created" -Class Information
     }
 
     if ($FileExist -eq $True) { Update-Log -Data "Staging folder exists" -Class Information }
 
     #Mount folder
-    $FileExist = Test-Path -Path $PSScriptRoot\Mount #-PathType Leaf
+    $FileExist = Test-Path -Path C:\WIMWitch\Mount #-PathType Leaf
     if ($FileExist -eq $False) {
         Update-Log -Data "Mount folder does not exist. Creating..." -Class Warning
-        New-Item -ItemType Directory -Force -Path $PSScriptRoot\Mount | Out-Null
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Mount | Out-Null
         Update-Log -Data "Mount folder created" -Class Information
     }
 
     if ($FileExist -eq $True) { Update-Log -Data "Mount folder exists" -Class Information }
 
     #Completed WIMs folder
-    $FileExist = Test-Path -Path $PSScriptRoot\CompletedWIMs #-PathType Leaf
+    $FileExist = Test-Path -Path C:\WIMWitch\CompletedWIMs #-PathType Leaf
     if ($FileExist -eq $False) {
         Update-Log -Data "CompletedWIMs folder does not exist. Creating..." -Class Warning
-        New-Item -ItemType Directory -Force -Path $PSScriptRoot\CompletedWIMs | Out-Null
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\CompletedWIMs | Out-Null
         Update-Log -Data "CompletedWIMs folder created" -Class Information
     }
 
     if ($FileExist -eq $True) { Update-Log -Data "CompletedWIMs folder exists" -Class Information }
 
     #Configurations XML folder
-    $FileExist = Test-Path -Path $PSScriptRoot\Configs #-PathType Leaf
+    $FileExist = Test-Path -Path C:\WIMWitch\Configs #-PathType Leaf
     if ($FileExist -eq $False) {
         Update-Log -Data "Configs folder does not exist. Creating..." -Class Warning
-        New-Item -ItemType Directory -Force -Path $PSScriptRoot\Configs | Out-Null
+        New-Item -ItemType Directory -Force -Path C:\WIMWitch\Configs | Out-Null
         Update-Log -Data "Configs folder created" -Class Information
     }
 
@@ -934,7 +929,7 @@ Function update-OSDB {
 #Function to check for superceded updates
 Function check-superceded($action) {
     Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
-    $path = "$PSScriptRoot\updates\"  #sets base path
+    $path = "C:\WIMWitch\updates\"  #sets base path
     $Children = Get-ChildItem -Path $path  #query sub directories
 
     foreach ($Children in $Children) {
@@ -990,15 +985,15 @@ Function compare-OSDBuilderVer {
 #Function to download new patches
 Function download-patches($build) {
     Update-Log -Data "Downloading SSU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\SSU
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\SSU
     Update-Log -Data "Downloading AdobeSU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\AdobeSU
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\AdobeSU
     Update-Log -Data "Downloading LCU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\LCU
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\LCU
     Update-Log -Data "Downloading .Net updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\DotNet
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNet
     Update-Log -Data "Downloading .Net CU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\DotNetCU
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU' } | Get-DownOSDUpdate -DownloadPath C:\WIMWitch\updates\$build\DotNetCU
     Update-Log -Data "Downloading completed for Windows 10 $build" -Class Information
 }
  
@@ -1038,8 +1033,7 @@ Function Apply-Updates($class) {
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
 
 
- #   $path = '$PSScriptRoot\updates\' + $buildnum + '\' + $class + '\'
-     $path = $PSScriptRoot + '\updates\' + $buildnum + '\' + $class + '\'
+    $path = 'C:\wimwitch\updates\' + $buildnum + '\' + $class + '\'
     $Children = Get-ChildItem -Path $path
     foreach ($Children in $Children) {
         $compound = $path + $Children
@@ -1239,7 +1233,7 @@ function remove-appx($array) {
 #Function to remove unwanted image indexes
 Function remove-indexes {
     Update-Log -Data "Attempting to remove unwanted image indexes" -Class Information
-    $wimname = Get-Item -Path $PSScriptRoot\Staging\*.wim
+    $wimname = Get-Item -Path C:\WIMWitch\Staging\*.wim
     Update-Log -Data "Found Image $wimname" -Class Information
     $IndexesAll = Get-WindowsImage -ImagePath $wimname | foreach { $_.ImageName }
     $IndexSelected = $WPFSourceWIMImgDesTextBox.Text
@@ -1342,7 +1336,7 @@ function save-config($filename) {
 
     Update-Log -data "Saving configuration file $filename" -Class Information
     try {
-        $CurrentConfig | Export-Clixml -Path $PSScriptRoot\Configs\$filename -ErrorAction Stop
+        $CurrentConfig | Export-Clixml -Path c:\WIMWitch\Configs\$filename -ErrorAction Stop
         update-log -data "file saved" -Class Information
     }
     catch {
@@ -1397,7 +1391,7 @@ function load-config($filename) {
 #Function to select configuration file
 Function select-config {
     $SourceXML = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
-        InitialDirectory = "$PSScriptRoot\Configs"
+        InitialDirectory = "C:\WIMWitch\Configs"
         #InitialDirectory = [Environment]::GetFolderPath('Desktop') 
         Filter           = 'XML (*.XML)|'
     }
@@ -1473,7 +1467,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                   version 0.9.8 beta"
+    Write-Output "                   version 0.9.7 beta"
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -1702,7 +1696,7 @@ $subfolders = @(
 display-openingtext
 check-install
 #Set the path and name for logging
-$Log = "$PSScriptRoot\logging\WIMWitch.log"
+$Log = "C:\WIMWitch\logging\WIMWitch.log"
 
 Set-Logging #Clears out old logs from previous builds and checks for other folders
 
