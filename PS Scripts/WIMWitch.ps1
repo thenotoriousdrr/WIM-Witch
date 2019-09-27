@@ -22,6 +22,14 @@
 # -Save and Load Configuration Templates
 # -Removal of AppX Modern Apps
 # -Create batch jobs for image catalog updating
+# -importing WIM and .Net binaries from an ISO file
+#
+#===========================================================================
+# Version 0.9.9
+#
+# -Added import from ISO function for install.wim and .net binaries
+# -minor bug fix
+#
 #
 #===========================================================================
 # Version 0.9.8
@@ -115,12 +123,31 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.8 Beta" Height="500" Width="900">
+        Title="WIM Witch v0.9.9 Beta" Height="500" Width="925">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="128*"/>
+            <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <TabControl Grid.ColumnSpan="2" Margin="0,0,0.2,-0.2" Background="#FFC4BBDF">
+        <TabControl Margin="0,0,0.2,-0.2" >
+            <TabItem Header="Import" Height="20" Width="100">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,38,0,0" TextWrapping="Wrap" Text="Select an ISO that contains the desired WIM file and/or .Net binaries" VerticalAlignment="Top" Height="42" Width="353"/>
+                    <Button x:Name="ImportImportSelectButton" Content="Select" HorizontalAlignment="Left" Margin="451,127,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,159,0,0" TextWrapping="Wrap" Text="Select the item(s) to import:" VerticalAlignment="Top" Width="263"/>
+                    <CheckBox x:Name="ImportWIMCheckBox" Content="Install.wim" HorizontalAlignment="Left" Margin="44,191,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="ImportDotNetCheckBox" Content=".Net Binaries" HorizontalAlignment="Left" Margin="44,211,0,0" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,268,0,0" TextWrapping="Wrap" Text="New name for the imported WIM:" VerticalAlignment="Top" Width="311"/>
+                    <TextBox x:Name="ImportNewNameTextBox" HorizontalAlignment="Left" Height="23" Margin="26,289,0,0" TextWrapping="Wrap" Text="Name for the imported WIM" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <Button x:Name="ImportImportButton" Content="Import" HorizontalAlignment="Left" Margin="451,354,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+
+                </Grid>
+            </TabItem>
+
+
             <TabItem Header="Source WIM" Margin="0" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -153,7 +180,7 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="20,183,0,0" TextWrapping="Wrap" Text="Installed version of OSD Update:" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="194,182,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="194,236,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 to download current patches for. Updating will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,187,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="497,187,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="569,187,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
@@ -164,7 +191,7 @@ $inputXML = @"
                     <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="472,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                     <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="544,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                     <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="613,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Update" HorizontalAlignment="Left" Margin="626,241,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="626,241,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSD Update by using the button below. Updating OSD Update will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
                     <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="194,210,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,210,0,0" TextWrapping="Wrap" Text="Current Version of OSD Update:" VerticalAlignment="Top"/>
@@ -190,7 +217,7 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="24,178,0,0" TextWrapping="Wrap" Text="ZTD ID#" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,204,0,0" TextWrapping="Wrap" Text="Tenant Name" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,233,0,0" TextWrapping="Wrap" Text="Deployment Profile" VerticalAlignment="Top"/>
-                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,375,0,0" TextWrapping="Wrap" Text="Select folder to save new Autopilot profile " VerticalAlignment="Top" Width="499" IsEnabled="False"/>
+                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,375,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\Autopilot" VerticalAlignment="Top" Width="499" IsEnabled="False"/>
                     <TextBox x:Name="JSONTextBoxAADID" HorizontalAlignment="Left" Height="23" Margin="27,331,0,0" TextWrapping="Wrap" Text="User ID for Intune authentication" VerticalAlignment="Top" Width="499"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,275,0,0" TextWrapping="Wrap" Text="To download a new Autopilot profile from Intune, provide an AAD user name and a path to save the file" VerticalAlignment="Top" Height="36" Width="331"/>
                     <TextBlock HorizontalAlignment="Left" Margin="27,312,0,0" TextWrapping="Wrap" Text="User ID:" VerticalAlignment="Top"/>
@@ -231,7 +258,6 @@ $inputXML = @"
                 </Grid>
 
             </TabItem>
-
             <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -246,10 +272,10 @@ $inputXML = @"
                     <Label Content="Driver injection?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
                     <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="122,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
                     <Label Content="JSON injection?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
-                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
                     <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="310,339,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
-                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <Label Content="Mount Path" HorizontalAlignment="Left" Margin="5,194,0,0" VerticalAlignment="Top" Height="25" Width="100" Grid.Column="1"/>
                     <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
                     <Label Content="Update injection?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
@@ -342,7 +368,8 @@ Function SelectMountDir {
 Function SelectSourceWIM {
 
     $SourceWIM = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
-        InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+        #InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+        InitialDirectory = "$PSScriptRoot\imports\wim"
         Filter           = 'WIM (*.wim)|'
     }
     $null = $SourceWIM.ShowDialog()
@@ -379,7 +406,7 @@ function import-wiminfo($IndexNumber) {
     }
     $text = "WIM file selected: " + $SourceWIM.FileName
     Update-Log -data $text -Class Information
-    $text = "Edition selected: " + $WPFSourceWIMImgDesTextBox.text
+    $text = "Edition selected: " + $ImageInfo.ImageDescription
     Update-Log -data $text -Class Information
     #update-log -Data "WIM file selected -" -Class Information
     #Update-Log -data $SourceWIM.FileName -Class Information
@@ -1473,7 +1500,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                   version 0.9.8 beta"
+    Write-Output "                   version 0.9.9 beta"
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -1606,6 +1633,8 @@ function replace-name($file, $extension) {
     }
 } 
 
+
+#Function to see if the folder WIM Witch was started in is an installation folder. If not, prompt for installation
 function check-install{
 #$installfolder = $null
 
@@ -1648,12 +1677,12 @@ function install-wimwitch{
                     Write-Output "Created folder: $subfolder"} 
                     }
                 
-            Set-Location $PSScriptRoot
+            #Set-Location $PSScriptRoot
             Write-Output "============================================="
             Write-Output "WIM Witch has been installed to $installpath"
             Write-Output "Start WIM witch from that folder to continue."
             Write-Output " "
-            Write-Output "Exiting...:"
+            Write-Output "Exiting..."
             break
             }
   
@@ -1667,7 +1696,10 @@ $subfolders = @(
     "logging"      
     "Mount"        
     "Staging"      
-    "updates" 
+    "updates"
+    "imports"
+    "imports\WIM"
+    "imports\DotNet" 
     )
     $count = $null
     set-location -path $PSScriptRoot
@@ -1693,6 +1725,132 @@ $subfolders = @(
     }
 }
 
+
+#Function to import WIM and .Net binaries from an iso file
+function import-iso($file,$type,$newname){
+
+function set-version($wimversion){
+    if ($wimversion -like '10.0.16299.*'){$version = "1709"}
+    if ($wimversion -like '10.0.17134.*'){$version = "1803"}
+    if ($wimversion -like '10.0.17763.*'){$version = "1809"}
+    if ($wimversion -like '10.0.18362.*'){$version = "1903"}
+    return $version
+    }
+#Check to see if destination WIM already exists
+if (($type -eq "all") -or ($type -eq "wim")){
+    update-log -data "Checking to see if the destination WIM file exists..." -Class Information	
+     #check to see if the new name for the imported WIM is valid
+        if (($WPFImportNewNameTextBox.Text -eq "") -or ($WPFImportNewNameTextBox.Text -eq "Name for the imported WIM")) {
+            update-log -Data "Enter a valid file name for the imported WIM and then try again" -Class Error
+            return 
+         }
+        If ($newname -notlike "*.wim") {
+            $newname = $newname + ".wim"
+            update-log -Data "Appending new file name with an extension" -Class Information
+        }
+    
+    if ((Test-Path -Path $PSScriptRoot\Imports\WIM\$newname) -eq $true){
+        Update-Log -Data "Destination WIM name already exists. Provide a new name and try again." -Class Error
+        return
+        }
+        else{
+        update-log -Data "Name appears to be good. Continuing..." -Class Information}
+    }
+
+Update-Log -Data "Mounting ISO..." -Class Information
+$isomount = Mount-DiskImage -ImagePath $file -NoDriveLetter
+$iso = $isomount.devicepath
+$windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
+$version = set-version -wimversion $windowsver.version
+
+#Copy out WIM file
+if (($type -eq "all") -or ($type -eq "wim")){
+   
+    #Copy out the WIM file from the selected ISO
+    try{
+    Update-Log -Data "Copying WIM file to the staging folder..." -Class Information	
+    Copy-Item -Path $iso\sources\install.wim -Destination $PSScriptRoot\staging -Force -ErrorAction Stop}
+    catch{
+    Update-Log "Couldn't copy from the source" -Class Error
+    return}
+     
+    #Rename install.wim to the new name
+    try{
+    $text = "Renaming install.wim to " + $newname
+    Update-Log -Data $text -Class Information
+    Rename-Item -Path $PSScriptRoot\Staging\install.wim -NewName $newname -ErrorAction Stop
+    }
+    catch{
+    Update-Log -data "Couldn't rename the copied file. Most likely a weird permissions issues." -Class Error
+    return}
+    
+    #Move the imported WIM to the imports folder
+    
+    try{
+    Update-Log -data "Moving $newname to imports folder..." -Class Information
+    Move-Item -Path $PSScriptRoot\Staging\$newname -Destination $PSScriptRoot\Imports\WIM -ErrorAction Stop
+    }
+    catch{
+    Update-Log -Data "Couldn't move the new WIM to the staging folder." -Class Error
+    return
+    }
+
+    }
+
+#Copy DotNet binaries
+if (($type -eq "all") -or ($type -eq "Dotnet")){
+if ((Test-Path -Path $PSScriptRoot\Imports\DotNet\$version) -eq $false){
+  try{
+    Update-Log -Data "Creating folders..." -Class Warning
+    New-Item -Path $PSScriptRoot\Imports\DotNet\ -Name $version -ItemType Directory -ErrorAction stop |Out-Null 
+    }
+  catch{
+  Update-Log -Data "Couldn't creating new folder in DotNet imports folder" -Class Error
+  return
+  }
+  }
+
+
+try{
+Update-Log -Data "Copying .Net binaries..." -Class Information
+Copy-Item -Path $iso\sources\sxs\*netfx3* -Destination $PSScriptRoot\Imports\DotNet\$version -Force -ErrorAction Stop
+}
+catch{
+Update-Log -Data "Couldn't copy the .Net binaries" -Class Error
+return
+}
+}
+
+try{
+Update-Log -Data "Dismount!" -Class Information
+Dismount-DiskImage -ImagePath $file -ErrorAction Stop|Out-Null
+}
+catch
+{
+Update-Log -Data "Couldn't dismount the ISO. WIM Witch uses a file mount option that does not" -Class Error
+Update-Log -Data "provision a drive letter. Use the Dismount-DiskImage command to manaully dismount." -Class Error
+}
+update-log -data "Importing complete" -class Information
+}
+
+#function to select ISO for import
+function select-iso{
+
+    $SourceISO = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+        InitialDirectory = [Environment]::GetFolderPath('Desktop') 
+        Filter           = 'ISO (*.iso)|'
+    }
+    $null = $SourceISO.ShowDialog()
+    $WPFImportISOTextBox.text = $SourceISO.FileName
+
+
+    if ($SourceISO.FileName -notlike "*.iso") {
+        update-log -Data "An ISO file not selected. Please select a valid file to continue." -Class Warning
+        return
+    }
+    $text = $WPFImportISOTextBox.text + " selected as the ISO to import from"
+    Update-Log -Data $text -class Information
+}
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
@@ -1798,7 +1956,21 @@ $WPFJSONButtonRetrieve.Add_click( { get-wwautopilotprofile -login $WPFJSONTextBo
 #Button to save configuration file
 $WPFSLSaveButton.Add_click( { save-config -filename $WPFSLSaveFileName.text })
 
+#Button to load configuration file
 $WPFSLLoadButton.Add_click( { select-config })
+
+#Button to select ISO for importation
+$WPFImportImportSelectButton.Add_click({ select-iso})
+
+#Button to import content from iso
+$WPFImportImportButton.Add_click({
+   
+    if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)){import-iso -type all -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
+    if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $false)){import-iso -type DotNet -file $WPFImportISOTextBox.text }
+    if (($WPFImportDotNetCheckBox.IsChecked -eq $false) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)){import-iso -type wim -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
+
+})
+
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -1871,6 +2043,31 @@ $WPFAppxCheckBox.Add_Click( {
             $WPFAppxButton.IsEnabled = $False
         }
     })
+
+#Enable install.wim selection in import
+$WPFImportWIMCheckBox.Add_Click( {
+        If ($WPFImportWIMCheckBox.IsChecked -eq $true) {
+            $WPFImportNewNameTextBox.IsEnabled = $True
+            $WPFImportImportButton.IsEnabled = $True
+             }
+        else {
+            $WPFImportNewNameTextBox.IsEnabled = $False
+            #$WPFImportImportButton.IsEnabled = $False
+            if ($WPFImportDotNetCheckBox.IsChecked -eq $False){$WPFImportImportButton.IsEnabled = $False}
+        }
+    })
+
+#Enable .Net binaries selection in import
+$WPFImportDotNetCheckBox.Add_Click( {
+        If ($WPFImportDotNetCheckBox.IsChecked -eq $true) {
+            $WPFImportImportButton.IsEnabled = $True
+         }
+        else {
+             #$WPFImportImportButton.IsEnabled = $False
+             if ($WPFImportWIMCheckBox.IsChecked -eq $False){$WPFImportImportButton.IsEnabled = $False}
+        }
+    })
+
  
 #==========================================================
 #Run WIM Witch below
