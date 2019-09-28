@@ -178,27 +178,31 @@ $inputXML = @"
             </TabItem>
             <TabItem Header="Updates" Height="20" Width="100">
                 <Grid>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,183,0,0" TextWrapping="Wrap" Text="Installed version of OSD Update:" VerticalAlignment="Top"/>
-                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="194,182,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="194,236,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="387,140,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="419,187,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="497,187,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="569,187,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="638,187,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="91,194,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,290,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="517,131,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="549,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="627,178,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="699,178,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="768,178,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. " VerticalAlignment="Top" Height="23" Width="353"/>
                     <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top" ClickMode="Press"/>
-                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="394,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="472,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="544,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="613,189,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="626,241,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSD Update by using the button below. Updating OSD Update will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
-                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="194,210,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,210,0,0" TextWrapping="Wrap" Text="Current Version of OSD Update:" VerticalAlignment="Top"/>
-                    <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,283,0,0" TextWrapping="Wrap" Text="OSDBuilder is out of date. Please click &quot;Update OSDBuilder&quot; to update." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
-                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="394,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Visibility="Hidden"/>
-                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="387,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
+                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="524,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="602,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="674,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="743,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="756,232,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
+                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,216,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="218,194,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,315,0,0" TextWrapping="Wrap" Text="A software update module is out of date. Please click the &quot;Install / Update&quot; button to update it." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
+                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="495,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="413" Visibility="Hidden"/>
+                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="510,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
+                    <TextBlock HorizontalAlignment="Left" Margin="24,217,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,254,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
 
                 </Grid>
             </TabItem>
@@ -883,7 +887,7 @@ Function DriverInjection($Folder) {
     }
 }
 
-#Function to retrieve OSDBuilder Version 
+#Function to retrieve OSDUpdate Version 
 Function Get-OSDBInstallation {
     update-log -Data "Getting OSD Installation information" -Class Information
     try {
@@ -907,9 +911,35 @@ Function Get-OSDBInstallation {
     }
 }
 
-#Function to retrieve current OSDBuilder Version
+
+#Function to retrieve OSDSUS Version 
+Function Get-OSDSUSInstallation {
+    update-log -Data "Getting OSDSUS Installation information" -Class Information
+    try {
+        Import-Module -name OSDSUS -ErrorAction Stop
+    }
+    catch {
+        $WPFUpdatesOSDSUSVersion.Text = "Not Installed"
+        Update-Log -Data "OSDSUS is not installed" -Class Warning
+        Return
+    }
+    try {
+        $OSDSUSVersion = get-module -name OSDSUS -ErrorAction Stop
+        $WPFUpdatesOSDSUSVersion.Text = $OSDSUSVersion.Version
+        $text = $osdsusversion.version
+        Update-Log -data "Installed version of OSDSUS is $text" -Class Information
+        Return
+    }
+    catch {
+        Update-Log -Data "Whatever you were hoping for, you didn’t get :)" -Class Error
+        Return
+    }
+}
+
+
+#Function to retrieve current OSDUpdate Version
 Function Get-OSDBCurrentVer {
-    Update-Log -Data "Checking for the most current OSD Update version available" -Class Information
+    Update-Log -Data "Checking for the most current OSDUpdate version available" -Class Information
     try {
         $OSDBCurrentVer = find-module -name OSDUpdate -ErrorAction Stop
         $WPFUpdatesOSDBCurrentVerTextBox.Text = $OSDBCurrentVer.version
@@ -923,7 +953,24 @@ Function Get-OSDBCurrentVer {
     }
 }
 
-#Function to update or install OSDBuilder
+#Function to retrieve current OSDUSUS Version
+Function Get-OSDSUSCurrentVer {
+    Update-Log -Data "Checking for the most current OSDSUS version available" -Class Information
+    try {
+        $OSDSUSCurrentVer = find-module -name OSDSUS -ErrorAction Stop
+        $WPFUpdatesOSDSUSCurrentVerTextBox.Text = $OSDSUSCurrentVer.version
+        $text = $OSDSUSCurrentVer.version
+        update-log -data "$text is the most current version" -class Information
+        Return
+    }
+    catch {
+        $WPFUpdatesOSDSUSCurrentVerTextBox.Text = "Network Error"
+        Return
+    }
+}
+
+
+#Function to update or install OSDUpdate
 Function update-OSDB {
     if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed") {
         Update-Log -Data "Attempting to install and import OSD Update" -Class Information
@@ -967,6 +1014,86 @@ Function update-OSDB {
     }
 }
 
+#Function to update or install OSDSUS
+Function update-OSDSUS {
+    if ($WPFUpdatesOSDSUSVersion.Text -eq "Not Installed") {
+        Update-Log -Data "Attempting to install and import OSDSUS" -Class Information
+        try {
+            Install-Module OSDUpdate -Force -ErrorAction Stop
+            #Write-Host "Installed module"
+            Update-Log -data "OSDSUS module has been installed" -Class Information
+            Import-Module -Name OSDUpdate -Force -ErrorAction Stop
+            #Write-Host "Imported module"
+            Update-Log -Data "OSDSUS module has been imported" -Class Information
+            Update-Log -Data "****************************************************************************" -Class Warning
+            Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
+            Update-Log -Data "****************************************************************************" -Class Warning
+            $WPFUpdatesOSDSUSClosePowerShellTextBlock.visibility = "Visible"
+            Return
+        }
+        catch {
+            $WPFUpdatesOSDSUSVersion.Text = "Inst Fail"
+            Update-Log -Data "Couldn't install OSDSUS" -Class Error
+            Update-Log -data $_.Exception.Message -class Error
+            Return
+        }
+    }
+
+    If ($WPFUpdatesOSDSUSVersion.Text -gt "1.0.0") {
+        Update-Log -data "Attempting to update OSDSUS" -class Information
+        try {
+            Update-OSDSUS -ErrorAction Stop
+            Update-Log -Data "Updated OSDSUS" -Class Information
+            Update-Log -Data "****************************************************************************" -Class Warning
+            Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
+            Update-Log -Data "****************************************************************************" -Class Warning
+            $WPFUpdatesOSDSUSClosePowerShellTextBlock.visibility = "Visible"
+            get-OSDSUSInstallation
+            return
+        }
+        catch {
+            $WPFUpdatesOSDSUSCurrentVerTextBox.Text = "OSDSUS Err"
+            Return
+        }
+    }
+}
+
+#Function to compare OSDBuilder Versions
+Function compare-OSDBuilderVer {
+    Update-Log -data "Comparing OSD Update module versions" -Class Information
+    if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed") {
+        Return
+    }
+    If ($WPFUpdatesOSDBVersion.Text -eq $WPFUpdatesOSDBCurrentVerTextBox.Text) {
+        Update-Log -Data "OSD Update is up to date" -class Information
+        Return
+    }
+    $WPFUpdatesOSDBOutOfDateTextBlock.Visibility = "Visible"
+    Update-Log -Data "OSD Update appears to be out of date. Run the upgrade function from within WIM Witch to resolve" -class Warning
+
+    Return
+}
+
+
+#Function to compare OSDSUS Versions
+Function compare-OSDSUSVer {
+    Update-Log -data "Comparing OSDSUS module versions" -Class Information
+    if ($WPFUpdatesOSDSUSVersion.Text -eq "Not Installed") {
+        Return
+    }
+    If ($WPFUpdatesOSDSUSVersion.Text -eq $WPFUpdatesOSDSUSCurrentVerTextBox.Text) {
+        Update-Log -Data "OSDSUS is up to date" -class Information
+        Return
+    }
+    $WPFUpdatesOSDBOutOfDateTextBlock.Visibility = "Visible"
+    Update-Log -Data "OSDSUS appears to be out of date. Run the upgrade function from within WIM Witch to resolve" -class Warning
+
+    Return
+}
+
+
+
+
 #Function to check for superceded updates
 Function check-superceded($action) {
     Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
@@ -1007,21 +1134,7 @@ Function check-superceded($action) {
     }
 }
 
-#Function to compare OSDBuilder Versions
-Function compare-OSDBuilderVer {
-    Update-Log -data "Comparing OSD Update module versions" -Class Information
-    if ($WPFUpdatesOSDBVersion.Text -eq "Not Installed") {
-        Return
-    }
-    If ($WPFUpdatesOSDBVersion.Text -eq $WPFUpdatesOSDBCurrentVerTextBox.Text) {
-        Update-Log -Data "OSD Update is up to date" -class Information
-        Return
-    }
-    $WPFUpdatesOSDBOutOfDateTextBlock.Visibility = "Visible"
-    Update-Log -Data "OSD Update appears to be out of date. Run the upgrade function from within WIM Witch to resolve" -class Warning
 
-    Return
-}
 
 #Function to download new patches
 Function download-patches($build) {
@@ -1921,13 +2034,20 @@ Set-Logging #Clears out old logs from previous builds and checks for other folde
 
 #The OSD Update functions. Disable the following four to increase start time. check-superced takes the longest - FYI
 #===========================================================================
-Get-OSDBInstallation #Sets OSDBuilder version info
-Get-OSDBCurrentVer #Discovers current version of OSDBuilder
-compare-OSDBuilderVer #determines if an update of OSDBuilder can be applied
+Get-OSDBInstallation #Sets OSDUpate version info
+Get-OSDBCurrentVer #Discovers current version of OSDUpdate
+compare-OSDBuilderVer #determines if an update of OSDUpdate can be applied
+
+get-osdsusinstallation #Sets OSDSUS version info
+Get-OSDSUSCurrentVer #Discovers current version of OSDSUS
+compare-OSDSUSVer #determines if an update of OSDSUS can be applied
+
 
 if ($updates -eq "yes") {
 
-    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { update-OSDB }
+    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { 
+        update-OSDB
+        Update-OSDSUS }
     
     if ($Superseded -eq "audit") { check-superceded -action "audit" }
     if ($Superseded -eq "delete") { check-superceded -action "delete" }
@@ -1991,7 +2111,9 @@ $WPFDriverDir5Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDr
 $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx }) 
 
 #Update OSDBuilder Button
-$WPFUpdateOSDBUpdateButton.Add_Click( { update-OSDB }) 
+$WPFUpdateOSDBUpdateButton.Add_Click( {
+     update-OSDB
+     Update-OSDSUS }) 
 
 #Update patch source
 $WPFUpdatesDownloadNewButton.Add_Click( { update-patchsource })
