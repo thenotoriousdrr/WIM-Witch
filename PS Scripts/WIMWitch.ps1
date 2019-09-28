@@ -9,8 +9,9 @@
 #
 #===========================================================================
 #
-# WIM Witch is a GUI driven tool used to update and customize WIM files, create WIM configuration templates, and to
-# apply those tempates either with the GUI or programatically for bulk creation.
+# WIM Witch is a GUI driven tool used to update and customize Windows Image (WIM) files.
+# It can also create WIM configuration templates and apply them either with 
+# the GUI or programatically for bulk creation.
 #
 # It currently supports the following functions:
 #
@@ -23,12 +24,14 @@
 # -Removal of AppX Modern Apps
 # -Create batch jobs for image catalog updating
 # -importing WIM and .Net binaries from an ISO file
+# -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
 # Version 0.9.9
 #
 # -Added import from ISO function for install.wim and .net binaries
-# -minor bug fix
+# -Added function to inject .net 3.5 binaries into image, has file existsential check feature
+# -minor bug fixes
 #
 #
 #===========================================================================
@@ -146,8 +149,6 @@ $inputXML = @"
 
                 </Grid>
             </TabItem>
-
-
             <TabItem Header="Source WIM" Margin="0" Width="100">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -217,7 +218,7 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="24,178,0,0" TextWrapping="Wrap" Text="ZTD ID#" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,204,0,0" TextWrapping="Wrap" Text="Tenant Name" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,233,0,0" TextWrapping="Wrap" Text="Deployment Profile" VerticalAlignment="Top"/>
-                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,375,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\Autopilot" VerticalAlignment="Top" Width="499" IsEnabled="False"/>
+                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,375,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Autopilot" VerticalAlignment="Top" Width="499" IsEnabled="False"/>
                     <TextBox x:Name="JSONTextBoxAADID" HorizontalAlignment="Left" Height="23" Margin="27,331,0,0" TextWrapping="Wrap" Text="User ID for Intune authentication" VerticalAlignment="Top" Width="499"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,275,0,0" TextWrapping="Wrap" Text="To download a new Autopilot profile from Intune, provide an AAD user name and a path to save the file" VerticalAlignment="Top" Height="36" Width="331"/>
                     <TextBlock HorizontalAlignment="Left" Margin="27,312,0,0" TextWrapping="Wrap" Text="User ID:" VerticalAlignment="Top"/>
@@ -272,23 +273,25 @@ $inputXML = @"
                     <Label Content="Driver injection?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
                     <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="122,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
                     <Label Content="JSON injection?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
-                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="5.508,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, Make it so!" VerticalAlignment="Top" Height="42" Width="353" Grid.Column="1"/>
-                    <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="310,339,0,0" VerticalAlignment="Top" Width="353" Height="64" FontSize="24" Grid.Column="1"/>
-                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="C:\WIMWitch\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="5.8,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, click &quot;Make it so!&quot; to start the build." VerticalAlignment="Top" Height="60" Width="353" Grid.Column="1"/>
+                    <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="385.8,20,0,0" VerticalAlignment="Top" Width="120" Height="29" Grid.Column="1" FontSize="16"/>
+                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
                     <Label Content="Mount Path" HorizontalAlignment="Left" Margin="5,194,0,0" VerticalAlignment="Top" Height="25" Width="100" Grid.Column="1"/>
                     <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
                     <Label Content="Update injection?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISUpdatesTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
                     <Label Content="App removal?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
+                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" Grid.Column="1" HorizontalAlignment="Left" Margin="291.8,349,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="1" HorizontalAlignment="Left" Margin="291.8,293,0,0" TextWrapping="Wrap" Text="To inject .Net 3.5, check the box below. Binaries must be imported from an ISO. WIM Witch cannot download them directly from Microsoft." VerticalAlignment="Top" Height="56" Width="260"/>
 
                 </Grid>
             </TabItem>
             <TabItem x:Name="Logging" Header="Logging" Height="20" Width="100">
                 <Grid>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Logging" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
-                    <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2"/>
+                    <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2" IsEnabled="False"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Save/Load" Height="20" Width="100">
@@ -534,6 +537,10 @@ Function MakeItSo ($appx) {
 
     }
 
+    if ($WPFMISDotNetCheckBox.IsChecked -eq $true){
+        if ((check-dotnetexists) -eq $False){return}
+    }
+
 
 
     #####End of MIS Preflight###################################################################
@@ -588,6 +595,8 @@ Function MakeItSo ($appx) {
         return
     }
 
+    #Inject .Net Binaries
+    if ($WPFMISDotNetCheckBox.IsChecked -eq $true){inject-dotnet}
 
 
     #Inject Autopilot JSON file
@@ -1365,6 +1374,7 @@ function save-config($filename) {
         WIMName          = $WPFMISWimNameTextBox.text
         WIMPath          = $WPFMISWimFolderTextBox.text
         MountPath        = $WPFMISMountTextBox.text
+        DotNetEnabled    = $WPFMISDotNetCheckBox.IsChecked
     }
 
     Update-Log -data "Saving configuration file $filename" -Class Information
@@ -1401,6 +1411,7 @@ function load-config($filename) {
         $WPFMISWimFolderTextBox.text = $settings.WIMPath
         $WPFMISMountTextBox.text = $settings.MountPath
         $global:SelectedAppx = $settings.AppxSelected -split " "
+        $WPFMISDotNetCheckBox.IsChecked = $settings.DotNetEnabled
 
 
         update-log -data "Configration set" -class Information
@@ -1633,7 +1644,6 @@ function replace-name($file, $extension) {
     }
 } 
 
-
 #Function to see if the folder WIM Witch was started in is an installation folder. If not, prompt for installation
 function check-install{
 #$installfolder = $null
@@ -1725,7 +1735,6 @@ $subfolders = @(
     }
 }
 
-
 #Function to import WIM and .Net binaries from an iso file
 function import-iso($file,$type,$newname){
 
@@ -1773,6 +1782,11 @@ if (($type -eq "all") -or ($type -eq "wim")){
     catch{
     Update-Log "Couldn't copy from the source" -Class Error
     return}
+    
+    #Change file attribute to normal
+    Update-Log -Data "Setting file attribute of install.wim to Normal" -Class Information
+    $attrib = Get-Item $PSScriptRoot\staging\install.wim
+    $attrib.Attributes = 'Normal'
      
     #Rename install.wim to the new name
     try{
@@ -1851,6 +1865,47 @@ function select-iso{
     $text = $WPFImportISOTextBox.text + " selected as the ISO to import from"
     Update-Log -Data $text -class Information
 }
+
+#function to inject the .Net 3.5 binaries from the import folder
+function inject-dotnet{
+
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+
+    $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum
+
+    try{
+        $text = "Injecting .Net 3.5 binaries from " + $DotNetFiles
+        Update-Log -Data $text -Class Information
+        Add-WindowsPackage -PackagePath $DotNetFiles -Path $WPFMISMountTextBox.Text -ErrorAction Continue |Out-Null
+        }
+    catch{
+        Update-Log -Data "Couldn't inject .Net Binaries" -Class Warning
+        return
+        } 
+    Update-Log -Data ".Net 3.5 injection complete" -Class Information
+}
+
+function check-dotnetexists{
+
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+
+    $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum +'\'
+
+    Test-Path -Path $DotNetFiles\* 
+    if ((Test-Path -Path $DotNetFiles\*) -eq $false){
+        $text = ".Net 3.5 Binaries are not present for " + $buildnum
+        update-log -Data $text -Class Warning
+        update-log -data "Import .Net from an ISO or disable injection to continue" -Class Warning
+       return $false
+         }
+
+    }
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
