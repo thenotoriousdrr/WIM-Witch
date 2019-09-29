@@ -9,9 +9,9 @@
 #
 #===========================================================================
 #
-# WIM Witch is a GUI driven tool used to update and customize Windows Image (WIM) files.
-# It can also create WIM configuration templates and apply them either with 
-# the GUI or programatically for bulk creation.
+# WIM Witch is a GUI driven tool used to update and customize Windows
+# Image (WIM) files. It can also create WIM configuration templates and
+# apply them either with the GUI or programatically for bulk creation.
 #
 # It currently supports the following functions:
 #
@@ -27,12 +27,19 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.0
+#
+# -Minor bug fixes
+# -Removed useless logging tab
+# -added color scheme
+#
+#===========================================================================
 # Version 0.9.9
 #
 # -Added import from ISO function for install.wim and .net binaries
 # -Added function to inject .net 3.5 binaries into image, has file existsential check feature
 # -minor bug fixes
-#
+# -add version detection for OSDSUS module
 #
 #===========================================================================
 # Version 0.9.8
@@ -126,19 +133,13 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch v0.9.9 Beta" Height="500" Width="925">
+        Title="WIM Witch - v1.0" Height="500" Width="825" Background="#FF751010">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        <TabControl Margin="0,0,0.2,-0.2" >
+        <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF751010" >
             <TabItem Header="Import" Height="20" Width="100">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-
-                    </Grid.ColumnDefinitions>
                     <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,38,0,0" TextWrapping="Wrap" Text="Select an ISO that contains the desired WIM file and/or .Net binaries" VerticalAlignment="Top" Height="42" Width="353"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,56,0,0" TextWrapping="Wrap" Text="Select a Windows 10 ISO:" VerticalAlignment="Top" Height="26" Width="353"/>
                     <Button x:Name="ImportImportSelectButton" Content="Select" HorizontalAlignment="Left" Margin="451,127,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,159,0,0" TextWrapping="Wrap" Text="Select the item(s) to import:" VerticalAlignment="Top" Width="263"/>
                     <CheckBox x:Name="ImportWIMCheckBox" Content="Install.wim" HorizontalAlignment="Left" Margin="44,191,0,0" VerticalAlignment="Top"/>
@@ -146,22 +147,14 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="26,268,0,0" TextWrapping="Wrap" Text="New name for the imported WIM:" VerticalAlignment="Top" Width="311"/>
                     <TextBox x:Name="ImportNewNameTextBox" HorizontalAlignment="Left" Height="23" Margin="26,289,0,0" TextWrapping="Wrap" Text="Name for the imported WIM" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Button x:Name="ImportImportButton" Content="Import" HorizontalAlignment="Left" Margin="451,354,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-
                 </Grid>
             </TabItem>
             <TabItem Header="Source WIM" Margin="0" Width="100">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="359*"/>
-                        <ColumnDefinition Width="430*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
                     <TextBox x:Name="SourceWIMSelectWIMTextBox" HorizontalAlignment="Left" Height="25" Margin="26,98,0,0" TextWrapping="Wrap" Text="Select WIM File" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.ColumnSpan="2"/>
                     <Label Content="Source Wim " HorizontalAlignment="Left" Height="25" Margin="26,70,0,0" VerticalAlignment="Top" Width="100"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the WIM file, and then Edition, that will serve as the base for the custom WIM." VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
-                    <Button x:Name="SourceWIMSelectButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="92.281,142,0,0" VerticalAlignment="Top" Width="75" Grid.Column="1"/>
+                    <Button x:Name="SourceWIMSelectButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="450,142,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBox x:Name="SourceWIMImgDesTextBox" HorizontalAlignment="Left" Height="23" Margin="94,155,0,0" TextWrapping="Wrap" Text="ImageDescription" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
                     <TextBox x:Name="SourceWimArchTextBox" HorizontalAlignment="Left" Height="23" Margin="94,183,0,0" TextWrapping="Wrap" Text="Architecture" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
                     <TextBox x:Name="SourceWimVerTextBox" HorizontalAlignment="Left" Height="23" Margin="94,211,0,0" TextWrapping="Wrap" Text="Version" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
@@ -181,36 +174,32 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="91,194,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,290,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="517,131,0,0" TextWrapping="Wrap" Text="Select which version of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="549,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="627,178,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="699,178,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="768,178,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,131,0,0" TextWrapping="Wrap" Text="Select which version(s) of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="471,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="549,178,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="621,178,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="690,178,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. " VerticalAlignment="Top" Height="23" Width="353"/>
                     <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top" ClickMode="Press"/>
-                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="524,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="602,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="674,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="743,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="756,232,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="446,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="524,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="596,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="665,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="688,232,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
                     <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,216,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="218,194,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
                     <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,315,0,0" TextWrapping="Wrap" Text="A software update module is out of date. Please click the &quot;Install / Update&quot; button to update it." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
-                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="495,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="413" Visibility="Hidden"/>
+                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="417,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="375" Visibility="Hidden"/>
                     <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="510,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
                     <TextBlock HorizontalAlignment="Left" Margin="24,217,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,254,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-
                 </Grid>
             </TabItem>
-            <TabItem Header="Autopilot" Margin="-2,0,3,0" Width="100">
+            <TabItem Header="Autopilot" Width="100">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="733*"/>
-                    </Grid.ColumnDefinitions>
                     <TextBox x:Name="JSONTextBox" HorizontalAlignment="Left" Height="25" Margin="26,130,0,0" TextWrapping="Wrap" Text="Select JSON File" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Label x:Name="JSONLabel" Content="Source JSON" HorizontalAlignment="Left" Height="25" Margin="26,104,0,0" VerticalAlignment="Top" Width="100"/>
                     <Button x:Name="JSONButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="451,165,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
@@ -229,14 +218,10 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="27,358,0,0" TextWrapping="Wrap" Text="Path to save file:" VerticalAlignment="Top"/>
                     <Button x:Name="JSONButtonSavePath" Content="Select" HorizontalAlignment="Left" Margin="450,403,0,0" VerticalAlignment="Top" Width="75"/>
                     <Button x:Name="JSONButtonRetrieve" Content="Retrieve Profile" HorizontalAlignment="Left" Margin="382,275,0,0" VerticalAlignment="Top" Width="130"/>
-
                 </Grid>
             </TabItem>
             <TabItem Header="Drivers" Height="20" Width="100">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="733*"/>
-                    </Grid.ColumnDefinitions>
                     <TextBox x:Name="DriverDir1TextBox" HorizontalAlignment="Left" Height="25" Margin="26,144,0,0" TextWrapping="Wrap" Text="Select Driver Source Folder" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Label x:Name="DirverDirLabel" Content="Driver Source" HorizontalAlignment="Left" Height="25" Margin="26,114,0,0" VerticalAlignment="Top" Width="100"/>
                     <Button x:Name="DriverDir1Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,144,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
@@ -250,59 +235,40 @@ $inputXML = @"
                     <Button x:Name="DriverDir4Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,281,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                     <TextBox x:Name="DriverDir5TextBox" HorizontalAlignment="Left" Height="25" Margin="26,328,0,0" TextWrapping="Wrap" Text="Select Driver Source Folder" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Button x:Name="DriverDir5Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,328,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-
                 </Grid>
             </TabItem>
             <TabItem Header ="App Removal" Height="20" Width="100">
                 <Grid>
-                    <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Select the apps to remove..." Margin="21,85,252.2,22.8"/>
+                    <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Select the apps to remove..." Margin="21,85,252.2,22.8" VerticalScrollBarVisibility="Visible"/>
                     <TextBlock HorizontalAlignment="Left" Margin="21,65,0,0" TextWrapping="Wrap" Text="Selected app packages to remove:" VerticalAlignment="Top" Height="15" Width="194"/>
                     <CheckBox x:Name="AppxCheckBox" Content="Enable app removal" HorizontalAlignment="Left" Margin="21,33,0,0" VerticalAlignment="Top"/>
                     <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75"/>
-
                 </Grid>
-
             </TabItem>
             <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-
-                        <ColumnDefinition Width="20*"/>
-                        <ColumnDefinition Width="769*"/>
-
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="430,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647" Grid.Column="1"/>
-                    <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="5.508,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500" Grid.Column="1"/>
-                    <TextBox x:Name="MISDriverTextBox" HorizontalAlignment="Left" Height="23" Margin="122,345,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
-                    <Label Content="Driver injection?" HorizontalAlignment="Left" Height="30" Margin="15,343,0,0" VerticalAlignment="Top" Width="101" Grid.Column="1"/>
-                    <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="122,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" Grid.Column="1" IsEnabled="False"/>
-                    <Label Content="JSON injection?" HorizontalAlignment="Left" Margin="15,372,0,0" VerticalAlignment="Top" Width="102" Grid.Column="1"/>
-                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="5.508,119,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="5.8,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, click &quot;Make it so!&quot; to start the build." VerticalAlignment="Top" Height="60" Width="353" Grid.Column="1"/>
-                    <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="385.8,20,0,0" VerticalAlignment="Top" Width="120" Height="29" Grid.Column="1" FontSize="16"/>
-                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="5,219,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.Column="1"/>
-                    <Label Content="Mount Path" HorizontalAlignment="Left" Margin="5,194,0,0" VerticalAlignment="Top" Height="25" Width="100" Grid.Column="1"/>
-                    <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="430,255,0,0" VerticalAlignment="Top" Width="75" Height="25" Grid.Column="1"/>
-                    <Label Content="Update injection?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,311,0,0" VerticalAlignment="Top" Width="109"/>
-                    <TextBox x:Name="MISUpdatesTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
-                    <Label Content="App removal?" Grid.Column="1" HorizontalAlignment="Left" Margin="15,280,0,0" VerticalAlignment="Top" Width="109"/>
-                    <TextBox x:Name="MISAppxTextBox" Grid.Column="1" HorizontalAlignment="Left" Height="23" Margin="122,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
-                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" Grid.Column="1" HorizontalAlignment="Left" Margin="291.8,349,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock Grid.Column="1" HorizontalAlignment="Left" Margin="291.8,293,0,0" TextWrapping="Wrap" Text="To inject .Net 3.5, check the box below. Binaries must be imported from an ISO. WIM Witch cannot download them directly from Microsoft." VerticalAlignment="Top" Height="56" Width="260"/>
-
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="Logging" Header="Logging" Height="20" Width="100">
-                <Grid>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Logging" VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
-                    <TextBox x:Name="LoggingTextBox" TextWrapping="Wrap" Text="TextBox" Margin="26,67,25.2,36.8" Grid.ColumnSpan="2" IsEnabled="False"/>
+                    <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="444,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647"/>
+                    <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="20,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500"/>
+                    <TextBox x:Name="MISDriverTextBox" HorizontalAlignment="Left" Height="23" Margin="136,345,0,0" TextWrapping="Wrap" Text="Driver Y/N" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Label Content="Driver injection?" HorizontalAlignment="Left" Height="30" Margin="29,343,0,0" VerticalAlignment="Top" Width="101"/>
+                    <TextBox x:Name="MISJSONTextBox" HorizontalAlignment="Left" Height="23" Margin="136,374,0,0" TextWrapping="Wrap" Text="JSON Select Y/N" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Label Content="JSON injection?" HorizontalAlignment="Left" Margin="29,372,0,0" VerticalAlignment="Top" Width="102"/>
+                    <TextBox x:Name="MISWimFolderTextBox" HorizontalAlignment="Left" Height="23" Margin="20,119,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\CompletedWIMs" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,20,0,0" TextWrapping="Wrap" Text="Enter a name, and select a destination forlder, for the  image to be created. Once complete, and build parameters verified, click &quot;Make it so!&quot; to start the build." VerticalAlignment="Top" Height="60" Width="353"/>
+                    <Button x:Name="MISMakeItSoButton" Content="Make it so!" HorizontalAlignment="Left" Margin="400,20,0,0" VerticalAlignment="Top" Width="120" Height="29" FontSize="16"/>
+                    <TextBox x:Name="MISMountTextBox" HorizontalAlignment="Left" Height="25" Margin="19,219,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Mount" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <Label Content="Mount Path" HorizontalAlignment="Left" Margin="19,194,0,0" VerticalAlignment="Top" Height="25" Width="100"/>
+                    <Button x:Name="MISMountSelectButton" Content="Select" HorizontalAlignment="Left" Margin="444,255,0,0" VerticalAlignment="Top" Width="75" Height="25"/>
+                    <Label Content="Update injection?" HorizontalAlignment="Left" Margin="29,311,0,0" VerticalAlignment="Top" Width="109"/>
+                    <TextBox x:Name="MISUpdatesTextBox" HorizontalAlignment="Left" Height="23" Margin="136,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
+                    <Label Content="App removal?" HorizontalAlignment="Left" Margin="29,280,0,0" VerticalAlignment="Top" Width="109"/>
+                    <TextBox x:Name="MISAppxTextBox" HorizontalAlignment="Left" Height="23" Margin="136,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
+                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="306,349,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="306,293,0,0" TextWrapping="Wrap" Text="To inject .Net 3.5, check the box below. Binaries must be imported from an ISO. WIM Witch cannot download them directly from Microsoft." VerticalAlignment="Top" Height="56" Width="260"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Save/Load" Height="20" Width="100">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-
-                    </Grid.ColumnDefinitions>
                     <TextBox x:Name="SLSaveFileName" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="Name for saved configuration..." VerticalAlignment="Top" Width="500"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,38,0,0" TextWrapping="Wrap" Text="Provide a name for the saved configuration" VerticalAlignment="Top" Height="42" Width="353"/>
                     <Button x:Name="SLSaveButton" Content="Save" HorizontalAlignment="Left" Margin="451,127,0,0" VerticalAlignment="Top" Width="75"/>
@@ -310,12 +276,9 @@ $inputXML = @"
                     <TextBox x:Name="SLLoadTextBox" HorizontalAlignment="Left" Height="23" Margin="26,308,0,0" TextWrapping="Wrap" Text="Select configuration file to load" VerticalAlignment="Top" Width="500"/>
                     <Button x:Name="SLLoadButton" Content="Load" HorizontalAlignment="Left" Margin="451,351,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,279,0,0" TextWrapping="Wrap" Text="Select configuration file to load" VerticalAlignment="Top" Width="353"/>
-
                 </Grid>
-
             </TabItem>
         </TabControl>
-
     </Grid>
 </Window>
 
@@ -352,7 +315,6 @@ Function Get-FormVariables {
 }
  
 #Get-FormVariables
-
 
 #===========================================================================
 # Functions for Controls
@@ -787,7 +749,8 @@ Function Update-Log {
         }
         Default { }
     }
-    $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
+  #The below line is for a logging tab that was removed. If it gets put back in, reenable the line
+  #  $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 }
 
 #Removes old log and creates all folders if does not exist
@@ -911,7 +874,6 @@ Function Get-OSDBInstallation {
     }
 }
 
-
 #Function to retrieve OSDSUS Version 
 Function Get-OSDSUSInstallation {
     update-log -Data "Getting OSDSUS Installation information" -Class Information
@@ -935,7 +897,6 @@ Function Get-OSDSUSInstallation {
         Return
     }
 }
-
 
 #Function to retrieve current OSDUpdate Version
 Function Get-OSDBCurrentVer {
@@ -968,7 +929,6 @@ Function Get-OSDSUSCurrentVer {
         Return
     }
 }
-
 
 #Function to update or install OSDUpdate
 Function update-OSDB {
@@ -1028,7 +988,7 @@ Function update-OSDSUS {
             Update-Log -Data "****************************************************************************" -Class Warning
             Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
             Update-Log -Data "****************************************************************************" -Class Warning
-            $WPFUpdatesOSDSUSClosePowerShellTextBlock.visibility = "Visible"
+            $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
             Return
         }
         catch {
@@ -1074,7 +1034,6 @@ Function compare-OSDBuilderVer {
     Return
 }
 
-
 #Function to compare OSDSUS Versions
 Function compare-OSDSUSVer {
     Update-Log -data "Comparing OSDSUS module versions" -Class Information
@@ -1090,9 +1049,6 @@ Function compare-OSDSUSVer {
 
     Return
 }
-
-
-
 
 #Function to check for superceded updates
 Function check-superceded($action) {
@@ -1133,8 +1089,6 @@ Function check-superceded($action) {
         }
     }
 }
-
-
 
 #Function to download new patches
 Function download-patches($build) {
@@ -1405,6 +1359,7 @@ Function remove-indexes {
     }
 }
 
+#Function to select which folder to save Autopilot JSON file to
 Function SelectNewJSONDir {
 
     Add-Type -AssemblyName System.Windows.Forms
@@ -1456,7 +1411,7 @@ function get-WWAutopilotProfile ($login, $path) {
 
 
     Update-Log -data "Connecting to Intune..." -Class Information
-    Connect-AutopilotIntune -user $login
+    Connect-AutopilotIntune -user $login |out-null
     Update-Log -data "Connected to Intune" -Class Information
 
     Update-Log -data "Retrieving profile..." -Class Information
@@ -1558,7 +1513,6 @@ Function select-config {
 }
 
 #Function to reset reminder values from check boxes on the MIS tab when loading a config
-#This function is still buggy. It doesn't refresh all or most of the time 
 function reset-MISCheckBox {
     update-log -data "Refreshing MIS Values..." -class Information
     If ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
@@ -1624,7 +1578,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                   version 0.9.9 beta"
+    Write-Output "                       version 1.0 "
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -1822,7 +1776,8 @@ $subfolders = @(
     "updates"
     "imports"
     "imports\WIM"
-    "imports\DotNet" 
+    "imports\DotNet"
+    "Autopilot" 
     )
     $count = $null
     set-location -path $PSScriptRoot
@@ -2001,6 +1956,7 @@ function inject-dotnet{
     Update-Log -Data ".Net 3.5 injection complete" -Class Information
 }
 
+#function to see if the .Net binaries for the select Win10 version exist
 function check-dotnetexists{
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
@@ -2119,7 +2075,7 @@ $WPFUpdateOSDBUpdateButton.Add_Click( {
 $WPFUpdatesDownloadNewButton.Add_Click( { update-patchsource })
 
 #Logging window
-$WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
+#$WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 
 #Select Appx packages to remove
 $WPFAppxButton.Add_Click( { $global:SelectedAppx = Select-Appx })
