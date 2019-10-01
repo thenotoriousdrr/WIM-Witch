@@ -328,7 +328,7 @@ Function SelectMountDir {
     $browser.Description = "Select the mount folder"
     $null = $browser.ShowDialog()
     $MountDir = $browser.SelectedPath
-    $WPFMISMountTextBox.text = $MountDir #I SCREWED UP THIS VARIABLE
+    $WPFMISMountTextBox.text = $MountDir 
     check-mountpath -path $WPFMISMountTextBox.text
     update-log -Data "Mount directory selected" -Class Information
 }
@@ -377,8 +377,6 @@ function import-wiminfo($IndexNumber) {
     Update-Log -data $text -Class Information
     $text = "Edition selected: " + $ImageInfo.ImageDescription
     Update-Log -data $text -Class Information
-    #update-log -Data "WIM file selected -" -Class Information
-    #Update-Log -data $SourceWIM.FileName -Class Information
     $ImageIndex = $IndexNumber
 
 
@@ -1713,14 +1711,16 @@ function replace-name($file, $extension) {
 
 #Function to see if the folder WIM Witch was started in is an installation folder. If not, prompt for installation
 function check-install{
-#$installfolder = $null
-
 
 function select-installfolder {
     $installselect = New-Object System.Windows.Forms.FolderBrowserDialog
     $installselect.Description = "Select the installation folder"
     $null = $installselect.ShowDialog()
-    #$installfolder = $installselect.SelectedPath
+
+    if ($installselect.SelectedPath -eq ""){
+        write-output "User Cancelled or invalid entry"
+        exit 0}
+
     return $installselect.SelectedPath
 }
 
