@@ -1779,6 +1779,12 @@ $subfolders = @(
     "imports\DotNet"
     "Autopilot" 
     )
+    if ((Get-WmiObject win32_operatingsystem).version -like '10.0.*'){Write-Output "WIM Witch is running on a supported OS"}
+        else{
+           Write-Output "Current OS not supported"
+           Write-Output "Please run WIM Witch on Windows 10 / Server 2016+"
+           exit 0}
+    
     $count = $null
     set-location -path $PSScriptRoot
     Write-Output "WIM Witch starting in $PSScriptRoot"
