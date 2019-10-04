@@ -27,6 +27,12 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.1
+# 
+# -Fixed OSDSUS upgrade issue by having separate OSDSUS upgrade
+# -Fixed a fat-fingering
+#
+#===========================================================================
 # Version 1.0
 #
 # -Minor bug fixes
@@ -135,7 +141,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.0" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.1" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -1008,7 +1014,7 @@ Function update-OSDSUS {
             Update-Log -Data "****************************************************************************" -Class Warning
             Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
             Update-Log -Data "****************************************************************************" -Class Warning
-            $WPFUpdatesOSDSUSClosePowerShellTextBlock.visibility = "Visible"
+            $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
             get-OSDSUSInstallation
             return
         }
@@ -1579,7 +1585,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                       version 1.0 "
+    Write-Output "                       version 1.1 "
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
