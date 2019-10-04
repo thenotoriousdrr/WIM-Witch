@@ -1001,7 +1001,9 @@ Function update-OSDSUS {
     If ($WPFUpdatesOSDSUSVersion.Text -gt "1.0.0") {
         Update-Log -data "Attempting to update OSDSUS" -class Information
         try {
-            Update-OSDSUS -ErrorAction Stop
+            uninstall-module -Name osdsus -AllVersions -force
+            install-module -name osdsus -force
+           # Update-OSDSUS -ErrorAction Stop
             Update-Log -Data "Updated OSDSUS" -Class Information
             Update-Log -Data "****************************************************************************" -Class Warning
             Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
@@ -2086,7 +2088,7 @@ $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx })
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click( {
         update-OSDB
-     #   Update-OSDSUS 
+        Update-OSDSUS 
     }) 
 
 #Update patch source
