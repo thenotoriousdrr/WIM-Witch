@@ -502,8 +502,8 @@ Function MakeItSo ($appx) {
 
     }
 
-    if ($WPFMISDotNetCheckBox.IsChecked -eq $true) {
-        if ((check-dotnetexists) -eq $False) { return }
+    if ($WPFMISDotNetCheckBox.IsChecked -eq $true){
+        if ((check-dotnetexists) -eq $False){return}
     }
 
 
@@ -561,7 +561,7 @@ Function MakeItSo ($appx) {
     }
 
     #Inject .Net Binaries
-    if ($WPFMISDotNetCheckBox.IsChecked -eq $true) { inject-dotnet }
+    if ($WPFMISDotNetCheckBox.IsChecked -eq $true){inject-dotnet}
 
 
     #Inject Autopilot JSON file
@@ -748,8 +748,8 @@ Function Update-Log {
         }
         Default { }
     }
-    #The below line is for a logging tab that was removed. If it gets put back in, reenable the line
-    #  $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
+  #The below line is for a logging tab that was removed. If it gets put back in, reenable the line
+  #  $WPFLoggingTextBox.text = Get-Content -Path $Log -Delimiter "\n"
 }
 
 #Removes old log and creates all folders if does not exist
@@ -1140,8 +1140,8 @@ Function Apply-Updates($class) {
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
 
 
-    #   $path = '$PSScriptRoot\updates\' + $buildnum + '\' + $class + '\'
-    $path = $PSScriptRoot + '\updates\' + $buildnum + '\' + $class + '\'
+ #   $path = '$PSScriptRoot\updates\' + $buildnum + '\' + $class + '\'
+     $path = $PSScriptRoot + '\updates\' + $buildnum + '\' + $class + '\'
     $Children = Get-ChildItem -Path $path
     foreach ($Children in $Children) {
         $compound = $path + $Children
@@ -1410,7 +1410,7 @@ function get-WWAutopilotProfile ($login, $path) {
 
 
     Update-Log -data "Connecting to Intune..." -Class Information
-    Connect-AutopilotIntune -user $login | out-null
+    Connect-AutopilotIntune -user $login |out-null
     Update-Log -data "Connected to Intune" -Class Information
 
     Update-Log -data "Retrieving profile..." -Class Information
@@ -1711,37 +1711,35 @@ function replace-name($file, $extension) {
 } 
 
 #Function to see if the folder WIM Witch was started in is an installation folder. If not, prompt for installation
-function check-install {
+function check-install{
 
-    function select-installfolder {
-        $installselect = New-Object System.Windows.Forms.FolderBrowserDialog
-        $installselect.Description = "Select the installation folder"
-        $null = $installselect.ShowDialog()
+function select-installfolder {
+    $installselect = New-Object System.Windows.Forms.FolderBrowserDialog
+    $installselect.Description = "Select the installation folder"
+    $null = $installselect.ShowDialog()
 
-        if ($installselect.SelectedPath -eq "") {
-            write-output "User Cancelled or invalid entry"
-            exit 0
-        }
+    if ($installselect.SelectedPath -eq ""){
+        write-output "User Cancelled or invalid entry"
+        exit 0}
 
-        return $installselect.SelectedPath
-    }
+    return $installselect.SelectedPath
+}
 
-    function install-wimwitch {
+function install-wimwitch{
         Write-Output "Would you like to install WIM Witch here?"
         $yesno = Read-Host -Prompt "(Y/N)"
         Write-Output $yesno
-        if (($yesno -ne "Y") -and ($yesno -ne "N")) {
+        if (($yesno -ne "Y") -and ($yesno -ne "N")){
             Write-Output "Invalid entry, try again."
             install-wimwitch
-        }
-
-        if ($yesno -eq "y") {
-            foreach ($subfolder in $subfolders) {
-                New-Item -Path $subfolder -ItemType Directory | Out-Null
-                Write-Output "Created folder: $subfolder"
             }
-        }
-        if ($yesno -eq "n") {
+
+        if ($yesno -eq "y"){
+            foreach ($subfolder in $subfolders){
+            New-Item -Path $subfolder -ItemType Directory |Out-Null
+            Write-Output "Created folder: $subfolder"}
+            }
+        if ($yesno -eq "n"){
             Write-Output "Select an installation folder"
             $installpath = select-installfolder
             Write-Output "Installing WIM Witch in: $installpath"
@@ -1749,14 +1747,13 @@ function check-install {
             Write-Output "WIM Witch script copied to installation path"
             Set-Location -Path $installpath
             #Set-Location -path $installpath
-            foreach ($subfolder in $subfolders) {
+            foreach ($subfolder in $subfolders){
 
-                if ((Test-Path -Path "$subfolder") -eq $true) { Write-Host "$subfolder exists" }
-                if ((Test-Path -Path "$subfolder") -eq $false) {
-                    New-Item -Path $subfolder -ItemType Directory | out-null
-                    Write-Output "Created folder: $subfolder"
-                } 
-            }
+                if ((Test-Path -Path "$subfolder") -eq $true){Write-Host "$subfolder exists"}
+                if ((Test-Path -Path "$subfolder") -eq $false){
+                    New-Item -Path $subfolder -ItemType Directory |out-null
+                    Write-Output "Created folder: $subfolder"} 
+                    }
                 
             #Set-Location $PSScriptRoot
             Write-Output "============================================="
@@ -1765,174 +1762,168 @@ function check-install {
             Write-Output " "
             Write-Output "Exiting..."
             break
-        }
+            }
   
-    }
+}
 
-    $subfolders = @(
-        "CompletedWIMs"
-        "Configs"      
-        "drivers"      
-        "jobs"         
-        "logging"      
-        "Mount"        
-        "Staging"      
-        "updates"
-        "imports"
-        "imports\WIM"
-        "imports\DotNet"
-        "Autopilot" 
+$subfolders = @(
+    "CompletedWIMs"
+    "Configs"      
+    "drivers"      
+    "jobs"         
+    "logging"      
+    "Mount"        
+    "Staging"      
+    "updates"
+    "imports"
+    "imports\WIM"
+    "imports\DotNet"
+    "Autopilot" 
     )
-    if ((Get-WmiObject win32_operatingsystem).version -like '10.0.*') { Write-Output "WIM Witch is running on a supported OS" }
-    else {
-        Write-Output "Current OS not supported"
-        Write-Output "Please run WIM Witch on Windows 10 / Server 2016+"
-        exit 0
-    }
+    if ((Get-WmiObject win32_operatingsystem).version -like '10.0.*'){Write-Output "WIM Witch is running on a supported OS"}
+        else{
+           Write-Output "Current OS not supported"
+           Write-Output "Please run WIM Witch on Windows 10 / Server 2016+"
+           exit 0}
     
     $count = $null
     set-location -path $PSScriptRoot
     Write-Output "WIM Witch starting in $PSScriptRoot"
     Write-Output "Checking for installation status"
-    foreach ($subfolder in $subfolders) {
-        if ((Test-Path -Path .\$subfolder) -eq $true) { $count = $count + 1 }
-    }
+    foreach ($subfolder in $subfolders){
+        if ((Test-Path -Path .\$subfolder) -eq $true){$count = $count + 1}
+        }
 
-    if ($count -eq $null) {
+    if ($count -eq $null){
         Write-Output "WIM Witch does not appear to be installed in this location."
-        install-wimwitch
-    }
-    if ($count -ne $null) {
-        Write-Output "WIM Witch is installed"
-        Write-Output "Remediating for missing folders if they exist"
-        foreach ($subfolder in $subfolders) {
+        install-wimwitch}
+    if ($count -ne $null){
+            Write-Output "WIM Witch is installed"
+            Write-Output "Remediating for missing folders if they exist"
+            foreach ($subfolder in $subfolders){
 
-            if ((Test-Path -Path "$subfolder") -eq $false) {
-                New-Item -Path $subfolder -ItemType Directory | Out-Null
-                Write-Output "Created folder: $subfolder"
-            }
-        }      
-        write-output "Preflight complete. Starting WIM Witch"
+        if ((Test-Path -Path "$subfolder") -eq $false){
+            New-Item -Path $subfolder -ItemType Directory |Out-Null
+            Write-Output "Created folder: $subfolder"}
+      }      
+      write-output "Preflight complete. Starting WIM Witch"
     }
 }
 
 #Function to import WIM and .Net binaries from an iso file
-function import-iso($file, $type, $newname) {
+function import-iso($file,$type,$newname){
 
-    function set-version($wimversion) {
-        if ($wimversion -like '10.0.16299.*') { $version = "1709" }
-        if ($wimversion -like '10.0.17134.*') { $version = "1803" }
-        if ($wimversion -like '10.0.17763.*') { $version = "1809" }
-        if ($wimversion -like '10.0.18362.*') { $version = "1903" }
-        return $version
+function set-version($wimversion){
+    if ($wimversion -like '10.0.16299.*'){$version = "1709"}
+    if ($wimversion -like '10.0.17134.*'){$version = "1803"}
+    if ($wimversion -like '10.0.17763.*'){$version = "1809"}
+    if ($wimversion -like '10.0.18362.*'){$version = "1903"}
+    return $version
     }
-    #Check to see if destination WIM already exists
-    if (($type -eq "all") -or ($type -eq "wim")) {
-        update-log -data "Checking to see if the destination WIM file exists..." -Class Information	
-        #check to see if the new name for the imported WIM is valid
+#Check to see if destination WIM already exists
+if (($type -eq "all") -or ($type -eq "wim")){
+    update-log -data "Checking to see if the destination WIM file exists..." -Class Information	
+     #check to see if the new name for the imported WIM is valid
         if (($WPFImportNewNameTextBox.Text -eq "") -or ($WPFImportNewNameTextBox.Text -eq "Name for the imported WIM")) {
             update-log -Data "Enter a valid file name for the imported WIM and then try again" -Class Error
             return 
-        }
+         }
         If ($newname -notlike "*.wim") {
             $newname = $newname + ".wim"
             update-log -Data "Appending new file name with an extension" -Class Information
         }
     
-        if ((Test-Path -Path $PSScriptRoot\Imports\WIM\$newname) -eq $true) {
-            Update-Log -Data "Destination WIM name already exists. Provide a new name and try again." -Class Error
-            return
+    if ((Test-Path -Path $PSScriptRoot\Imports\WIM\$newname) -eq $true){
+        Update-Log -Data "Destination WIM name already exists. Provide a new name and try again." -Class Error
+        return
         }
-        else {
-            update-log -Data "Name appears to be good. Continuing..." -Class Information
-        }
+        else{
+        update-log -Data "Name appears to be good. Continuing..." -Class Information}
     }
 
-    Update-Log -Data "Mounting ISO..." -Class Information
-    $isomount = Mount-DiskImage -ImagePath $file -NoDriveLetter
-    $iso = $isomount.devicepath
-    $windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
-    $version = set-version -wimversion $windowsver.version
+Update-Log -Data "Mounting ISO..." -Class Information
+$isomount = Mount-DiskImage -ImagePath $file -NoDriveLetter
+$iso = $isomount.devicepath
+$windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
+$version = set-version -wimversion $windowsver.version
 
-    #Copy out WIM file
-    if (($type -eq "all") -or ($type -eq "wim")) {
+#Copy out WIM file
+if (($type -eq "all") -or ($type -eq "wim")){
    
-        #Copy out the WIM file from the selected ISO
-        try {
-            Update-Log -Data "Copying WIM file to the staging folder..." -Class Information	
-            Copy-Item -Path $iso\sources\install.wim -Destination $PSScriptRoot\staging -Force -ErrorAction Stop
-        }
-        catch {
-            Update-Log "Couldn't copy from the source" -Class Error
-            return
-        }
+    #Copy out the WIM file from the selected ISO
+    try{
+    Update-Log -Data "Copying WIM file to the staging folder..." -Class Information	
+    Copy-Item -Path $iso\sources\install.wim -Destination $PSScriptRoot\staging -Force -ErrorAction Stop}
+    catch{
+    Update-Log "Couldn't copy from the source" -Class Error
+    return}
     
-        #Change file attribute to normal
-        Update-Log -Data "Setting file attribute of install.wim to Normal" -Class Information
-        $attrib = Get-Item $PSScriptRoot\staging\install.wim
-        $attrib.Attributes = 'Normal'
+    #Change file attribute to normal
+    Update-Log -Data "Setting file attribute of install.wim to Normal" -Class Information
+    $attrib = Get-Item $PSScriptRoot\staging\install.wim
+    $attrib.Attributes = 'Normal'
      
-        #Rename install.wim to the new name
-        try {
-            $text = "Renaming install.wim to " + $newname
-            Update-Log -Data $text -Class Information
-            Rename-Item -Path $PSScriptRoot\Staging\install.wim -NewName $newname -ErrorAction Stop
-        }
-        catch {
-            Update-Log -data "Couldn't rename the copied file. Most likely a weird permissions issues." -Class Error
-            return
-        }
+    #Rename install.wim to the new name
+    try{
+    $text = "Renaming install.wim to " + $newname
+    Update-Log -Data $text -Class Information
+    Rename-Item -Path $PSScriptRoot\Staging\install.wim -NewName $newname -ErrorAction Stop
+    }
+    catch{
+    Update-Log -data "Couldn't rename the copied file. Most likely a weird permissions issues." -Class Error
+    return}
     
-        #Move the imported WIM to the imports folder
+    #Move the imported WIM to the imports folder
     
-        try {
-            Update-Log -data "Moving $newname to imports folder..." -Class Information
-            Move-Item -Path $PSScriptRoot\Staging\$newname -Destination $PSScriptRoot\Imports\WIM -ErrorAction Stop
-        }
-        catch {
-            Update-Log -Data "Couldn't move the new WIM to the staging folder." -Class Error
-            return
-        }
+    try{
+    Update-Log -data "Moving $newname to imports folder..." -Class Information
+    Move-Item -Path $PSScriptRoot\Staging\$newname -Destination $PSScriptRoot\Imports\WIM -ErrorAction Stop
+    }
+    catch{
+    Update-Log -Data "Couldn't move the new WIM to the staging folder." -Class Error
+    return
+    }
 
     }
 
-    #Copy DotNet binaries
-    if (($type -eq "all") -or ($type -eq "Dotnet")) {
-        if ((Test-Path -Path $PSScriptRoot\Imports\DotNet\$version) -eq $false) {
-            try {
-                Update-Log -Data "Creating folders..." -Class Warning
-                New-Item -Path $PSScriptRoot\Imports\DotNet\ -Name $version -ItemType Directory -ErrorAction stop | Out-Null 
-            }
-            catch {
-                Update-Log -Data "Couldn't creating new folder in DotNet imports folder" -Class Error
-                return
-            }
-        }
+#Copy DotNet binaries
+if (($type -eq "all") -or ($type -eq "Dotnet")){
+if ((Test-Path -Path $PSScriptRoot\Imports\DotNet\$version) -eq $false){
+  try{
+    Update-Log -Data "Creating folders..." -Class Warning
+    New-Item -Path $PSScriptRoot\Imports\DotNet\ -Name $version -ItemType Directory -ErrorAction stop |Out-Null 
+    }
+  catch{
+  Update-Log -Data "Couldn't creating new folder in DotNet imports folder" -Class Error
+  return
+  }
+  }
 
 
-        try {
-            Update-Log -Data "Copying .Net binaries..." -Class Information
-            Copy-Item -Path $iso\sources\sxs\*netfx3* -Destination $PSScriptRoot\Imports\DotNet\$version -Force -ErrorAction Stop
-        }
-        catch {
-            Update-Log -Data "Couldn't copy the .Net binaries" -Class Error
-            return
-        }
-    }
+try{
+Update-Log -Data "Copying .Net binaries..." -Class Information
+Copy-Item -Path $iso\sources\sxs\*netfx3* -Destination $PSScriptRoot\Imports\DotNet\$version -Force -ErrorAction Stop
+}
+catch{
+Update-Log -Data "Couldn't copy the .Net binaries" -Class Error
+return
+}
+}
 
-    try {
-        Update-Log -Data "Dismount!" -Class Information
-        Dismount-DiskImage -ImagePath $file -ErrorAction Stop | Out-Null
-    }
-    catch {
-        Update-Log -Data "Couldn't dismount the ISO. WIM Witch uses a file mount option that does not" -Class Error
-        Update-Log -Data "provision a drive letter. Use the Dismount-DiskImage command to manaully dismount." -Class Error
-    }
-    update-log -data "Importing complete" -class Information
+try{
+Update-Log -Data "Dismount!" -Class Information
+Dismount-DiskImage -ImagePath $file -ErrorAction Stop|Out-Null
+}
+catch
+{
+Update-Log -Data "Couldn't dismount the ISO. WIM Witch uses a file mount option that does not" -Class Error
+Update-Log -Data "provision a drive letter. Use the Dismount-DiskImage command to manaully dismount." -Class Error
+}
+update-log -data "Importing complete" -class Information
 }
 
 #function to select ISO for import
-function select-iso {
+function select-iso{
 
     $SourceISO = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
         InitialDirectory = [Environment]::GetFolderPath('Desktop') 
@@ -1951,7 +1942,7 @@ function select-iso {
 }
 
 #function to inject the .Net 3.5 binaries from the import folder
-function inject-dotnet {
+function inject-dotnet{
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
@@ -1960,37 +1951,37 @@ function inject-dotnet {
 
     $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum
 
-    try {
+    try{
         $text = "Injecting .Net 3.5 binaries from " + $DotNetFiles
         Update-Log -Data $text -Class Information
-        Add-WindowsPackage -PackagePath $DotNetFiles -Path $WPFMISMountTextBox.Text -ErrorAction Continue | Out-Null
-    }
-    catch {
+        Add-WindowsPackage -PackagePath $DotNetFiles -Path $WPFMISMountTextBox.Text -ErrorAction Continue |Out-Null
+        }
+    catch{
         Update-Log -Data "Couldn't inject .Net Binaries" -Class Warning
         return
-    } 
+        } 
     Update-Log -Data ".Net 3.5 injection complete" -Class Information
 }
 
 #function to see if the .Net binaries for the select Win10 version exist
-function check-dotnetexists {
+function check-dotnetexists{
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
 
-    $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum + '\'
+    $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum +'\'
 
     Test-Path -Path $DotNetFiles\* 
-    if ((Test-Path -Path $DotNetFiles\*) -eq $false) {
+    if ((Test-Path -Path $DotNetFiles\*) -eq $false){
         $text = ".Net 3.5 Binaries are not present for " + $buildnum
         update-log -Data $text -Class Warning
         update-log -data "Import .Net from an ISO or disable injection to continue" -Class Warning
-        return $false
-    }
+       return $false
+         }
 
-}
+    }
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
@@ -2019,8 +2010,7 @@ if ($updates -eq "yes") {
 
     If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { 
         update-OSDB
-        Update-OSDSUS 
-    }
+        Update-OSDSUS }
     
     if ($Superseded -eq "audit") { check-superceded -action "audit" }
     if ($Superseded -eq "delete") { check-superceded -action "delete" }
@@ -2085,9 +2075,9 @@ $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx })
 
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click( {
-        update-OSDB
-        # Update-OSDSUS 
-    }) 
+     update-OSDB
+    # Update-OSDSUS 
+     }) 
 
 #Update patch source
 $WPFUpdatesDownloadNewButton.Add_Click( { update-patchsource })
@@ -2111,16 +2101,16 @@ $WPFSLSaveButton.Add_click( { save-config -filename $WPFSLSaveFileName.text })
 $WPFSLLoadButton.Add_click( { select-config })
 
 #Button to select ISO for importation
-$WPFImportImportSelectButton.Add_click( { select-iso })
+$WPFImportImportSelectButton.Add_click({ select-iso})
 
 #Button to import content from iso
-$WPFImportImportButton.Add_click( {
+$WPFImportImportButton.Add_click({
    
-        if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)) { import-iso -type all -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
-        if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $false)) { import-iso -type DotNet -file $WPFImportISOTextBox.text }
-        if (($WPFImportDotNetCheckBox.IsChecked -eq $false) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)) { import-iso -type wim -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
+    if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)){import-iso -type all -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
+    if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $false)){import-iso -type DotNet -file $WPFImportISOTextBox.text }
+    if (($WPFImportDotNetCheckBox.IsChecked -eq $false) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)){import-iso -type wim -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
 
-    })
+})
 
 
 #===========================================================================
@@ -2162,24 +2152,24 @@ $WPFDriverCheckBox.Add_Click( {
 #Enable Updates Selection
 $WPFUpdatesEnableCheckBox.Add_Click( {
         If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
-            # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-            # $WPFUpdatesDownloadNewButton.IsEnabled = $True
-            # $WPFUpdates1903CheckBox.IsEnabled = $True
-            # $WPFUpdates1809CheckBox.IsEnabled = $True
-            # $WPFUpdates1803CheckBox.IsEnabled = $True
-            # $WPFUpdates1709CheckBox.IsEnabled = $True
-            # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+           # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+           # $WPFUpdatesDownloadNewButton.IsEnabled = $True
+           # $WPFUpdates1903CheckBox.IsEnabled = $True
+           # $WPFUpdates1809CheckBox.IsEnabled = $True
+           # $WPFUpdates1803CheckBox.IsEnabled = $True
+           # $WPFUpdates1709CheckBox.IsEnabled = $True
+           # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
             $WPFMISUpdatesTextBox.Text = "True"
         }
         else {
             # $WPFUpdatesOSDBVersion.IsEnabled = $False
-            #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
-            #  $WPFUpdatesDownloadNewButton.IsEnabled = $False
-            #  $WPFUpdates1903CheckBox.IsEnabled = $False
-            #  $WPFUpdates1809CheckBox.IsEnabled = $False
-            #  $WPFUpdates1803CheckBox.IsEnabled = $False
-            #  $WPFUpdates1709CheckBox.IsEnabled = $False
-            #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+          #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+          #  $WPFUpdatesDownloadNewButton.IsEnabled = $False
+          #  $WPFUpdates1903CheckBox.IsEnabled = $False
+          #  $WPFUpdates1809CheckBox.IsEnabled = $False
+          #  $WPFUpdates1803CheckBox.IsEnabled = $False
+          #  $WPFUpdates1709CheckBox.IsEnabled = $False
+          #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
             $WPFMISUpdatesTextBox.Text = "False"
         }
     })
@@ -2200,11 +2190,11 @@ $WPFImportWIMCheckBox.Add_Click( {
         If ($WPFImportWIMCheckBox.IsChecked -eq $true) {
             $WPFImportNewNameTextBox.IsEnabled = $True
             $WPFImportImportButton.IsEnabled = $True
-        }
+             }
         else {
             $WPFImportNewNameTextBox.IsEnabled = $False
             #$WPFImportImportButton.IsEnabled = $False
-            if ($WPFImportDotNetCheckBox.IsChecked -eq $False) { $WPFImportImportButton.IsEnabled = $False }
+            if ($WPFImportDotNetCheckBox.IsChecked -eq $False){$WPFImportImportButton.IsEnabled = $False}
         }
     })
 
@@ -2212,10 +2202,10 @@ $WPFImportWIMCheckBox.Add_Click( {
 $WPFImportDotNetCheckBox.Add_Click( {
         If ($WPFImportDotNetCheckBox.IsChecked -eq $true) {
             $WPFImportImportButton.IsEnabled = $True
-        }
+         }
         else {
-            #$WPFImportImportButton.IsEnabled = $False
-            if ($WPFImportWIMCheckBox.IsChecked -eq $False) { $WPFImportImportButton.IsEnabled = $False }
+             #$WPFImportImportButton.IsEnabled = $False
+             if ($WPFImportWIMCheckBox.IsChecked -eq $False){$WPFImportImportButton.IsEnabled = $False}
         }
     })
 
