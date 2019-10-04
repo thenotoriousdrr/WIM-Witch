@@ -2086,7 +2086,7 @@ $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx })
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click( {
         update-OSDB
-        # Update-OSDSUS 
+     #   Update-OSDSUS 
     }) 
 
 #Update patch source
