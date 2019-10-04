@@ -32,6 +32,8 @@
 # -Minor bug fixes
 # -Removed useless logging tab
 # -added color scheme
+# -Removed step to update OSDSUS as OSDUpdate updats OSDSUS as a dependent package
+# -Removed requirement to check enable updates to perfrom update maintenance.
 #
 #===========================================================================
 # Version 0.9.9
@@ -133,9 +135,9 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.0" Height="500" Width="825" Background="#FF751010">
+        Title="WIM Witch - v1.0" Height="500" Width="825" Background="#FF610536">
     <Grid>
-        <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF751010" >
+        <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
                 <Grid>
                     <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False"/>
@@ -173,25 +175,25 @@ $inputXML = @"
                 <Grid>
                     <TextBlock HorizontalAlignment="Left" Margin="91,194,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,290,0,0" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,290,0,0" VerticalAlignment="Top" Width="120"/>
                     <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,131,0,0" TextWrapping="Wrap" Text="Select which version(s) of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="471,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="549,178,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="621,178,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Height="23" Margin="690,178,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. " VerticalAlignment="Top" Height="23" Width="353"/>
-                    <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,80,0,0" VerticalAlignment="Top" ClickMode="Press"/>
-                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="446,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="524,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="596,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="665,180,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="688,232,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. WIM Witch will automatically determine the correct version to apply. Updates must have been downloaded prior to making it so." VerticalAlignment="Top" Height="47" Width="353"/>
+                    <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,90,0,0" VerticalAlignment="Top" ClickMode="Press"/>
+                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="446,180,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="524,180,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="596,180,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="665,180,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="688,232,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
                     <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,216,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="218,194,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
                     <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,315,0,0" TextWrapping="Wrap" Text="A software update module is out of date. Please click the &quot;Install / Update&quot; button to update it." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
                     <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="417,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="375" Visibility="Hidden"/>
-                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="510,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
+                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="435,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,217,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,254,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
@@ -281,7 +283,6 @@ $inputXML = @"
         </TabControl>
     </Grid>
 </Window>
-
 "@ 
  
 $inputXML = $inputXML -replace 'mc:Ignorable="d"', '' -replace "x:N", 'N' -replace '^<Win.*', '<Window'
@@ -2075,7 +2076,8 @@ $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx })
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click( {
      update-OSDB
-     Update-OSDSUS }) 
+    # Update-OSDSUS 
+     }) 
 
 #Update patch source
 $WPFUpdatesDownloadNewButton.Add_Click( { update-patchsource })
@@ -2150,24 +2152,24 @@ $WPFDriverCheckBox.Add_Click( {
 #Enable Updates Selection
 $WPFUpdatesEnableCheckBox.Add_Click( {
         If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
-            $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-            $WPFUpdatesDownloadNewButton.IsEnabled = $True
-            $WPFUpdates1903CheckBox.IsEnabled = $True
-            $WPFUpdates1809CheckBox.IsEnabled = $True
-            $WPFUpdates1803CheckBox.IsEnabled = $True
-            $WPFUpdates1709CheckBox.IsEnabled = $True
-            $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+           # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+           # $WPFUpdatesDownloadNewButton.IsEnabled = $True
+           # $WPFUpdates1903CheckBox.IsEnabled = $True
+           # $WPFUpdates1809CheckBox.IsEnabled = $True
+           # $WPFUpdates1803CheckBox.IsEnabled = $True
+           # $WPFUpdates1709CheckBox.IsEnabled = $True
+           # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
             $WPFMISUpdatesTextBox.Text = "True"
         }
         else {
             # $WPFUpdatesOSDBVersion.IsEnabled = $False
-            $WPFUpdateOSDBUpdateButton.IsEnabled = $False
-            $WPFUpdatesDownloadNewButton.IsEnabled = $False
-            $WPFUpdates1903CheckBox.IsEnabled = $False
-            $WPFUpdates1809CheckBox.IsEnabled = $False
-            $WPFUpdates1803CheckBox.IsEnabled = $False
-            $WPFUpdates1709CheckBox.IsEnabled = $False
-            $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+          #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
+          #  $WPFUpdatesDownloadNewButton.IsEnabled = $False
+          #  $WPFUpdates1903CheckBox.IsEnabled = $False
+          #  $WPFUpdates1809CheckBox.IsEnabled = $False
+          #  $WPFUpdates1803CheckBox.IsEnabled = $False
+          #  $WPFUpdates1709CheckBox.IsEnabled = $False
+          #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
             $WPFMISUpdatesTextBox.Text = "False"
         }
     })
