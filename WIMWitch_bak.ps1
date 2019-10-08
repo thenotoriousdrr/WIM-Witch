@@ -27,17 +27,6 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
-# Version 1.1.1
-# 
-# -Fixed a typo that caused the skype app to not be uninstalled on 1903
-#    Credit @AndyUpperton for finding the bug :)
-#===========================================================================
-# Version 1.1
-# 
-# -Fixed OSDSUS upgrade issue by having separate OSDSUS upgrade
-# -Fixed a fat-fingering
-#
-#===========================================================================
 # Version 1.0
 #
 # -Minor bug fixes
@@ -146,7 +135,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.1.1" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.0" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -1012,14 +1001,12 @@ Function update-OSDSUS {
     If ($WPFUpdatesOSDSUSVersion.Text -gt "1.0.0") {
         Update-Log -data "Attempting to update OSDSUS" -class Information
         try {
-            uninstall-module -Name osdsus -AllVersions -force
-            install-module -name osdsus -force
-           # Update-OSDSUS -ErrorAction Stop
+            Update-OSDSUS -ErrorAction Stop
             Update-Log -Data "Updated OSDSUS" -Class Information
             Update-Log -Data "****************************************************************************" -Class Warning
             Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
             Update-Log -Data "****************************************************************************" -Class Warning
-            $WPFUpdatesOSDBClosePowerShellTextBlock.visibility = "Visible"
+            $WPFUpdatesOSDSUSClosePowerShellTextBlock.visibility = "Visible"
             get-OSDSUSInstallation
             return
         }
@@ -1183,7 +1170,7 @@ Function Select-Appx {
         "Microsoft.People_2019.123.2346.0_neutral_~_8wekyb3d8bbwe"
         "Microsoft.Print3D_3.3.311.0_neutral_~_8wekyb3d8bbwe"
         "Microsoft.ScreenSketch_2018.1214.231.0_neutral_~_8wekyb3d8bbwe"
-        "Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c"
+        "Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c,"
         "Microsoft.StorePurchaseApp_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
         "Microsoft.VP9VideoExtensions_1.0.13333.0_x64__8wekyb3d8bbwe"
         "Microsoft.Wallet_2.4.18324.0_neutral_~_8wekyb3d8bbwe"
@@ -1590,7 +1577,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                       version 1.1 "
+    Write-Output "                       version 1.0 "
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -2099,7 +2086,7 @@ $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx })
 #Update OSDBuilder Button
 $WPFUpdateOSDBUpdateButton.Add_Click( {
         update-OSDB
-        Update-OSDSUS 
+        # Update-OSDSUS 
     }) 
 
 #Update patch source
