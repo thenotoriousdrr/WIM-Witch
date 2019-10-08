@@ -27,6 +27,11 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.1.1
+# 
+# -Fixed a typo that caused the skype app to not be uninstalled on 1903
+#    Credit @AndyUpperton for finding the bug :)
+#===========================================================================
 # Version 1.1
 # 
 # -Fixed OSDSUS upgrade issue by having separate OSDSUS upgrade
@@ -141,7 +146,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.1" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.1.1" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -1178,7 +1183,7 @@ Function Select-Appx {
         "Microsoft.People_2019.123.2346.0_neutral_~_8wekyb3d8bbwe"
         "Microsoft.Print3D_3.3.311.0_neutral_~_8wekyb3d8bbwe"
         "Microsoft.ScreenSketch_2018.1214.231.0_neutral_~_8wekyb3d8bbwe"
-        "Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c,"
+        "Microsoft.SkypeApp_14.35.152.0_neutral_~_kzf8qxf38zg5c"
         "Microsoft.StorePurchaseApp_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe"
         "Microsoft.VP9VideoExtensions_1.0.13333.0_x64__8wekyb3d8bbwe"
         "Microsoft.Wallet_2.4.18324.0_neutral_~_8wekyb3d8bbwe"
