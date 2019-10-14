@@ -27,6 +27,14 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.1.2
+#
+# -Add functionality to prevent installation of WIM Witch files in the 
+#    PowerShell script repository folder. This was done to support "install-script"
+# -Add SCConfigMgr icon to replace stock PowerShell icon.
+#
+#
+#===========================================================================
 # Version 1.1.1
 # 
 # -Fixed a typo that caused the skype app to not be uninstalled on 1903
@@ -146,7 +154,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.1.1" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.1.2" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -319,6 +327,26 @@ $xaml.SelectNodes("//*[@Name]") | % { "trying item $($_.Name)" | out-null;
     try { Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name) -ErrorAction Stop }
     catch { throw }
 }
+
+#Section to do the icon magic
+
+$base64 = "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"
+# Create a streaming image by streaming the base64 string to a bitmap streamsource
+$bitmap = New-Object System.Windows.Media.Imaging.BitmapImage
+$bitmap.BeginInit()
+$bitmap.StreamSource = [System.IO.MemoryStream][System.Convert]::FromBase64String($base64)
+$bitmap.EndInit()
+$bitmap.Freeze()
+
+# This is the icon in the upper left hand corner of the app
+$form.Icon = $bitmap
+# This is the toolbar icon and description
+$form.TaskbarItemInfo.Overlay = $bitmap
+$form.TaskbarItemInfo.Description = $window.Title
+
+
+
+
  
 Function Get-FormVariables {
     if ($global:ReadmeDisplay -ne $true) { Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow; $global:ReadmeDisplay = $true }
@@ -1590,7 +1618,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                       version 1.1 "
+    Write-Output "                     version 1.1.2 "
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -1748,15 +1776,30 @@ function check-install {
             install-wimwitch
         }
 
-        if ($yesno -eq "y") {
+        if (($yesno -eq "y") -and ($PSScriptRoot -notlike "*WindowsPowerShell\Scripts*")){
             foreach ($subfolder in $subfolders) {
                 New-Item -Path $subfolder -ItemType Directory | Out-Null
                 Write-Output "Created folder: $subfolder"
             }
         }
+        if (($yesno -eq "y") -and ($PSScriptRoot -like "*WindowsPowerShell\Scripts*")){
+            Write-Output " "
+            write-output "You cannot install WIM Witch in the script repository folder."
+            Write-Output "Also, you probably shouldn't install this in My Downloads, or My Desktop"
+            write-output "Please select another folder"
+            $yesno = "n"
+
+        }
         if ($yesno -eq "n") {
             Write-Output "Select an installation folder"
             $installpath = select-installfolder
+            
+            if ($installpath -like "*WindowsPowerShell\Scripts*"){
+                Write-Output "You cannot install WIM Witch in the script repository folder"
+                Write-Output "Exiting installer. Please try again"
+                exit 0
+                }
+
             Write-Output "Installing WIM Witch in: $installpath"
             Copy-Item -Path $MyInvocation.ScriptName -Destination $installpath -Force
             Write-Output "WIM Witch script copied to installation path"
