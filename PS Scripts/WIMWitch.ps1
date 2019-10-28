@@ -7,6 +7,9 @@
 # www.TheNotoriousDRR.com
 # www.SCConfigMgr.com
 #
+# Current WIM Witch Doc:
+# https://www.scconfigmgr.com/2019/10/04/wim-witch-a-gui-driven-solution-for-image-customization/
+#
 #===========================================================================
 #
 # WIM Witch is a GUI driven tool used to update and customize Windows
@@ -25,6 +28,13 @@
 # -Create batch jobs for image catalog updating
 # -importing WIM and .Net binaries from an ISO file
 # -injecting .Net 3.5 binaries into image
+#
+#===========================================================================
+# Version 1.2
+#
+# -Added update function to make upgrading WIM Witch easy
+# -Added backup function for previous WIM Witch script for DR purposes
+# -Modified variable to support Server SKUs
 #
 #===========================================================================
 # Version 1.1.4
@@ -101,7 +111,7 @@ Param(
     $updates 
 )
 
-$WWScriptVer = "1.1.4"
+$WWScriptVer = "1.2"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -112,7 +122,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.1.4" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.2" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -373,12 +383,15 @@ function import-wiminfo($IndexNumber) {
     }
     $text = "WIM file selected: " + $SourceWIM.FileName
     Update-Log -data $text -Class Information
-    $text = "Edition selected: " + $ImageInfo.ImageDescription
+#    $text = "Edition selected: " + $ImageInfo.ImageDescription
+    $text = "Edition selected: " + $ImageInfo.ImageName
+
     Update-Log -data $text -Class Information
     $ImageIndex = $IndexNumber
 
 
-    $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
+ #   $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
+    $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageName
     $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
     $WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
     $WPFSourceWimLangTextBox.text = $ImageInfo.Languages
@@ -649,7 +662,7 @@ Function MakeItSo ($appx) {
     try {
         #Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
         update-log -Data "Exporting WIM file" -Class Information
-        Export-WindowsImage -SourceImagePath $wimname -SourceIndex 1 -DestinationImagePath ($WPFMISWimFolderTextBox.Text + '\' + $WPFMISWimNameTextBox.Text) -DestinationName ('WW - ' + $WPFSourceWIMImgDesTextBox.text)
+        Export-WindowsImage -SourceImagePath $wimname -SourceIndex 1 -DestinationImagePath ($WPFMISWimFolderTextBox.Text + '\' + $WPFMISWimNameTextBox.Text) -DestinationName ('WW - ' + $WPFSourceWIMImgDesTextBox.text) |Out-Null
     }
     catch {
         Update-Log -data $_.Exception.Message -class Error
@@ -1578,7 +1591,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                     version 1.1.4 "
+    Write-Output "                        version 1.2 "
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -1797,7 +1810,8 @@ function check-install {
         "imports"
         "imports\WIM"
         "imports\DotNet"
-        "Autopilot" 
+        "Autopilot"
+        "backup" 
     )
     if ((Get-WmiObject win32_operatingsystem).version -like '10.0.*') { Write-Output "WIM Witch is running on a supported OS" }
     else {
@@ -2008,6 +2022,105 @@ function check-dotnetexists {
 
 }
 
+#Function to check installed version of WIM Witch and update if available
+Function Check-WIMWitchVer{
+
+    function upgrade-wimwitch {
+        Write-Output "Would you like to upgrade WIM Witch?"
+        $yesno = Read-Host -Prompt "(Y/N)"
+        Write-Output $yesno
+        if (($yesno -ne "Y") -and ($yesno -ne "N")) {
+            Write-Output "Invalid entry, try again."
+            upgrade-wimwitch
+        }
+
+        if ($yesno -eq "y") {
+           # Update-Log -Data "Calling script backup function..." -Class Information
+            Backup-WIMWitch
+ 
+            try{
+                Save-Script -Name "WIMWitch" -Path $PSScriptRoot -Force -ErrorAction Stop
+                Write-Output "New version has been applied. WIM Witch will now exit."
+                Write-Output "Please restart WIM Witch"
+                exit}
+            catch{
+                Write-Output "Couldn't upgrade. Try again when teh tubes are clear"
+                return}
+           
+            }
+        
+               
+        if ($yesno -eq "n") {
+            Write-Output "You'll want to upgrade at some point."
+            Update-Log -Data "Upgrade to new version was declined" -Class Warning
+            Update-Log -Data "Continuing to start WIM Witch..." -Class Warning
+            }
+  
+    }
+    
+Update-Log -Data "The currently installed version of WIM Witch is $WWScriptVer" -Class Information
+Update-Log -data "Checking for updates from PowerShell Gallery..." -Class Information
+
+
+try{
+    $WWCurrentVer = (Find-Script -Name "WIMWitch" -ErrorAction Stop).version 
+    Update-Log -Data "The latest version from the Gallery is $WWCurrentVer" -Class Information
+    }
+catch{
+    Update-Log -Data "Couldn't retreive script info from the PowerShell Gallery" -Class Warning
+    Update-Log -data "Try rebooting the internet and trying again" -Class Warning
+    Update-Log -data "Continuing on with loading WIM Witch..." -Class Warning
+    return
+    }
+
+
+
+If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -ne "yes")){upgrade-wimwitch}
+
+if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq "yes")){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
+
+If ($WWCurrentVer -eq $WWScriptVer){Update-Log -data "WIM Witch is up to date. Starting WIM Witch" -Class Information}
+
+If ($WWCurrentVer -lt $WWScriptVer){
+    Update-Log -Data "The local copy of WIM Witch is more current that the most current" -class Warning
+    Update-Log -Data "version available. Did you violate the Temporal Prime Directive?" -class Warning
+    Update-Log -data "Starting WIM Witch anyway..." -class warning
+
+    }
+
+}
+
+#Function to backup WIM Witch script file during upgrade
+function Backup-WIMWitch{
+Update-log -data "Backing up existing WIM Witch script..." -Class Information
+
+$scriptname = split-path $MyInvocation.PSCommandPath -Leaf #Find local script name
+Update-Log -data "The script to be backed up is: " -Class Information
+Update-Log -data $MyInvocation.PSCommandPath -Class Information
+
+try{
+    Update-Log -data "Copy script to backup folder..." -Class Information
+    Copy-Item -Path $scriptname -Destination $PSScriptRoot\backup -ErrorAction Stop
+    Update-Log -Data "Successfully copied..." -Class Information
+    }
+catch{
+    Update-Log -data "Couldn't copy the WIM Witch script. My guess is a permissions issue" -Class Error
+    Update-Log -Data "Exiting out of an over abundance of caution" -Class Error
+    exit
+}
+
+try {
+    Update-Log -data "Renaming archived script..." -Class Information
+    replace-name -file $PSScriptRoot\backup\$scriptname -extension ".ps1"
+    Update-Log -data "Backup successfully renamed for archiving" -class Information
+    }
+catch {
+
+    Update-Log -Data "Backed-up script couldn't be renamed. This isn't a critical error" -Class Warning
+    Update-Log -Data "You may want to change it's name so it doesn't get overwritten." -Class Warning
+    Update-Log -Data "Continuing with WIM Witch upgrade..." -Class Warning
+    }
+}
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
@@ -2022,6 +2135,7 @@ Set-Logging #Clears out old logs from previous builds and checks for other folde
 
 #The OSD Update functions. Disable the following four to increase start time. check-superced takes the longest - FYI
 #===========================================================================
+Check-WIMWitchVer #Checks installed version of WIM Witch and updates if selected
 Get-OSDBInstallation #Sets OSDUpate version info
 Get-OSDBCurrentVer #Discovers current version of OSDUpdate
 compare-OSDBuilderVer #determines if an update of OSDUpdate can be applied
