@@ -117,7 +117,7 @@ Param(
     $updates 
 )
 
-$WWScriptVer = "1.2.1"
+$WWScriptVer = "1.2.2"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -128,7 +128,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.2.1" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.2.2" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -1597,7 +1597,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                      version 1.2.0 "
+    Write-Output "                      version $WWScriptVer"
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
