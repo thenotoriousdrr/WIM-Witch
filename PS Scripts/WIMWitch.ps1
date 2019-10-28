@@ -30,6 +30,12 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.2.1
+#
+# -Changed version variable to stop upgrade loop
+# -Added "force" parameter to rename step in backup function. 
+#
+#===========================================================================
 # Version 1.2
 #
 # -Added update function to make upgrading WIM Witch easy
@@ -111,7 +117,7 @@ Param(
     $updates 
 )
 
-$WWScriptVer = "1.2"
+$WWScriptVer = "1.2.1"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -122,7 +128,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.2" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.2.1" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -1591,7 +1597,7 @@ function display-openingtext {
     Write-Output "##########################################################"
     Write-Output " "
     Write-Output "             ***** Starting WIM Witch *****"
-    Write-Output "                        version 1.2 "
+    Write-Output "                      version 1.2.0 "
     Write-Output " "
     Write-Output "##########################################################"
     Write-Output " "
@@ -1719,7 +1725,7 @@ function replace-name($file, $extension) {
         Update-Log -Data $text -Class Warning    
     }
     catch {
-        Update-Log -data "Couldn't rename file. Stopping..." -Class Error
+        Update-Log -data "Couldn't rename file. Stopping..." -force -Class Error
         return "stop"
     }
 } 
