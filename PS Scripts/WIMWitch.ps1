@@ -30,6 +30,11 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.2.2
+#
+# -Fixed bug around version display
+#
+#===========================================================================
 # Version 1.2.1
 #
 # -Changed version variable to stop upgrade loop
