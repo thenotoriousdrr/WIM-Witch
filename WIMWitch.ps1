@@ -1107,7 +1107,7 @@ Function check-superceded($action) {
                     }
                 }   
                 else {
-                    Update-Log -data "$fileinfo is stil current" -Class Information
+                    Update-Log -data "$fileinfo is still current" -Class Information
                 }    
             }
         }
