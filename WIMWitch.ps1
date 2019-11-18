@@ -30,6 +30,11 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.2.3
+#
+# -Added Win10 1909 support. Includes .Net 3.5, patch selection, commandline
+#
+#===========================================================================
 # Version 1.2.2
 #
 # -Fixed bug around version display
@@ -114,7 +119,7 @@ Param(
     #$newupdates,
 
     [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("all", "1709", "1803", "1809", "1903")] 
+    [ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
     $DownUpdates,
 
     [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
@@ -122,7 +127,7 @@ Param(
     $updates 
 )
 
-$WWScriptVer = "1.2.2"
+$WWScriptVer = "1.2.3"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -133,7 +138,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.2.2" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.2.3" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
@@ -169,23 +174,23 @@ $inputXML = @"
                     <Label Content="Index" HorizontalAlignment="Left" Height="30" Margin="22,297,0,0" VerticalAlignment="Top" Width="68"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Updates" Height="20" Width="100">
+             <TabItem Header="Updates" Height="20" Width="100">
                 <Grid>
                     <TextBlock HorizontalAlignment="Left" Margin="91,194,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,290,0,0" VerticalAlignment="Top" Width="120"/>
                     <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,131,0,0" TextWrapping="Wrap" Text="Select which version(s) of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="471,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="549,178,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="621,178,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="690,178,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="585,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="512,211,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="585,211,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="513,247,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. WIM Witch will automatically determine the correct version to apply. Updates must have been downloaded prior to making it so." VerticalAlignment="Top" Height="47" Width="353"/>
                     <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,90,0,0" VerticalAlignment="Top" ClickMode="Press"/>
-                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="446,180,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="524,180,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="596,180,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="665,180,0,0" VerticalAlignment="Top"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="688,232,0,0" VerticalAlignment="Top" Width="75"/>
+                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="560,180,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="489,213,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="560,213,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="489,249,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="638,180,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
                     <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,216,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBlock HorizontalAlignment="Left" Margin="218,194,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
@@ -196,6 +201,8 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="26,254,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="512,178,0,0" TextWrapping="Wrap" Text="1909" VerticalAlignment="Top" Width="35"/>
+                    <CheckBox x:Name="Updates1909CheckBox" Content="" HorizontalAlignment="Left" Margin="489,180,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Autopilot" Width="100">
@@ -280,6 +287,9 @@ $inputXML = @"
             </TabItem>
         </TabControl>
     </Grid>
+     <Window.TaskbarItemInfo>
+         <TaskbarItemInfo/>
+ </Window.TaskbarItemInfo>
 </Window>
 "@ 
  
@@ -321,7 +331,7 @@ $bitmap.Freeze()
 $form.Icon = $bitmap
 # This is the toolbar icon and description
 $form.TaskbarItemInfo.Overlay = $bitmap
-$form.TaskbarItemInfo.Description = $window.Title
+$form.TaskbarItemInfo.Description = "WIM Witch - $wwscirptver"
 ###################################################
 
 
@@ -1145,6 +1155,7 @@ Function update-patchsource {
         Return
     }
     Update-Log -Data "attempting to start download function" -Class Information
+    If ($WPFUpdates1909CheckBox.IsChecked -eq $true) { download-patches -build 1909 }
     If ($WPFUpdates1903CheckBox.IsChecked -eq $true) { download-patches -build 1903 }
     If ($WPFUpdates1809CheckBox.IsChecked -eq $true) { download-patches -build 1809 }
     If ($WPFUpdates1803CheckBox.IsChecked -eq $true) { download-patches -build 1803 }
@@ -1155,17 +1166,20 @@ Function update-patchsource {
 #Function to apply updates to mounted WIM
 Function Apply-Updates($class) {
 
-    #$Imageversion = Get-WindowsImage -ImagePath D:\Images\install.wim -Index 3
-
-    #$WPFSourceWimVerTextBox.text <----This line remmed out when testing command line function. Unknown if this breaks GUI
-
-    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+    #If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
+
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
+        $mountdir = $WPFMISMountTextBox.Text
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
+        $buildnum = $regvalues.ReleaseId
+        reg UNLOAD HKLM\OFFLINE}
 
 
-    #   $path = '$PSScriptRoot\updates\' + $buildnum + '\' + $class + '\'
+    
     $path = $PSScriptRoot + '\updates\' + $buildnum + '\' + $class + '\'
     $Children = Get-ChildItem -Path $path
     foreach ($Children in $Children) {
@@ -1894,6 +1908,11 @@ function import-iso($file, $type, $newname) {
     $iso = $isomount.devicepath
     $windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
     $version = set-version -wimversion $windowsver.version
+    if ($version = 1903){
+        if ($windowsver.CreatedTime -gt "10/1/2019"){$version = 1909}
+        }
+
+    
 
     #Copy out WIM file
     if (($type -eq "all") -or ($type -eq "wim")) {
@@ -1994,10 +2013,17 @@ function select-iso {
 #function to inject the .Net 3.5 binaries from the import folder
 function inject-dotnet {
 
-    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
+    #If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
+        $mountdir = $WPFMISMountTextBox.Text
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
+        $buildnum = $regvalues.ReleaseId
+        reg UNLOAD HKLM\OFFLINE}
 
     $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum
 
@@ -2171,6 +2197,7 @@ if ($updates -eq "yes") {
         if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
         if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
         if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
+        if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
     }
 
     #check-superceded #checks to see if superceded patches exist

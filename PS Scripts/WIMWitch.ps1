@@ -30,6 +30,11 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.2.3
+#
+# -Added Win10 1909 support. Includes .Net 3.5, patch selection, commandline
+#
+#===========================================================================
 # Version 1.2.2
 #
 # -Fixed bug around version display
@@ -114,7 +119,7 @@ Param(
     #$newupdates,
 
     [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("all", "1709", "1803", "1809", "1903")] 
+    [ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
     $DownUpdates,
 
     [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
@@ -1903,6 +1908,11 @@ function import-iso($file, $type, $newname) {
     $iso = $isomount.devicepath
     $windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
     $version = set-version -wimversion $windowsver.version
+    if ($version = 1903){
+        if ($windowsver.CreatedTime -gt "10/1/2019"){$version = 1909}
+        }
+
+    
 
     #Copy out WIM file
     if (($type -eq "all") -or ($type -eq "wim")) {
@@ -2003,10 +2013,17 @@ function select-iso {
 #function to inject the .Net 3.5 binaries from the import folder
 function inject-dotnet {
 
-    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
+    #If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
+        $mountdir = $WPFMISMountTextBox.Text
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
+        $buildnum = $regvalues.ReleaseId
+        reg UNLOAD HKLM\OFFLINE}
 
     $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum
 
@@ -2180,6 +2197,7 @@ if ($updates -eq "yes") {
         if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
         if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
         if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
+        if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
     }
 
     #check-superceded #checks to see if superceded patches exist
