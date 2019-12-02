@@ -127,7 +127,7 @@ Param(
     $updates 
 )
 
-$WWScriptVer = "1.2.3"
+$WWScriptVer = "1.3.0"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -138,14 +138,14 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.2.3" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.3.0" Height="500" Width="825" Background="#FF610536">
     <Grid>
         <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
             <TabItem Header="Import" Height="20" Width="100">
                 <Grid>
-                    <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False"/>
+                    <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="42" Margin="26,85,0,0" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="True" HorizontalScrollBarVisibility="Visible"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,56,0,0" TextWrapping="Wrap" Text="Select a Windows 10 ISO:" VerticalAlignment="Top" Height="26" Width="353"/>
-                    <Button x:Name="ImportImportSelectButton" Content="Select" HorizontalAlignment="Left" Margin="451,127,0,0" VerticalAlignment="Top" Width="75"/>
+                    <Button x:Name="ImportImportSelectButton" Content="Select" HorizontalAlignment="Left" Margin="451,135,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,159,0,0" TextWrapping="Wrap" Text="Select the item(s) to import:" VerticalAlignment="Top" Width="263"/>
                     <CheckBox x:Name="ImportWIMCheckBox" Content="Install.wim" HorizontalAlignment="Left" Margin="44,191,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="ImportDotNetCheckBox" Content=".Net Binaries" HorizontalAlignment="Left" Margin="44,211,0,0" VerticalAlignment="Top"/>
@@ -160,7 +160,7 @@ $inputXML = @"
                     <Label Content="Source Wim " HorizontalAlignment="Left" Height="25" Margin="26,70,0,0" VerticalAlignment="Top" Width="100"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,20,0,0" TextWrapping="Wrap" Text="Select the WIM file, and then Edition, that will serve as the base for the custom WIM." VerticalAlignment="Top" Height="42" Width="353" Grid.ColumnSpan="2"/>
                     <Button x:Name="SourceWIMSelectButton" Content="Select" HorizontalAlignment="Left" Height="25" Margin="450,142,0,0" VerticalAlignment="Top" Width="75"/>
-                    <TextBox x:Name="SourceWIMImgDesTextBox" HorizontalAlignment="Left" Height="23" Margin="94,155,0,0" TextWrapping="Wrap" Text="ImageDescription" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
+                    <TextBox x:Name="SourceWIMImgDesTextBox" HorizontalAlignment="Left" Height="23" Margin="94,155,0,0" TextWrapping="Wrap" Text="ImageDescription" VerticalAlignment="Top" Width="339" IsEnabled="False"/>
                     <TextBox x:Name="SourceWimArchTextBox" HorizontalAlignment="Left" Height="23" Margin="94,183,0,0" TextWrapping="Wrap" Text="Architecture" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
                     <TextBox x:Name="SourceWimVerTextBox" HorizontalAlignment="Left" Height="23" Margin="94,211,0,0" TextWrapping="Wrap" Text="Version" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
                     <TextBox x:Name="SourceWimSPBuildTextBox" HorizontalAlignment="Left" Height="23" Margin="94,239,0,0" TextWrapping="Wrap" Text="SPBuild" VerticalAlignment="Top" Width="225" IsEnabled="False"/>
@@ -174,38 +174,36 @@ $inputXML = @"
                     <Label Content="Index" HorizontalAlignment="Left" Height="30" Margin="22,297,0,0" VerticalAlignment="Top" Width="68"/>
                 </Grid>
             </TabItem>
-             <TabItem Header="Updates" Height="20" Width="100">
+            <TabItem Header="Updates" Height="20" Width="100">
                 <Grid>
-                    <TextBlock HorizontalAlignment="Left" Margin="91,194,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
-                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,290,0,0" VerticalAlignment="Top" Width="120"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,131,0,0" TextWrapping="Wrap" Text="Select which version(s) of Windows 10 to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="585,178,0,0" TextWrapping="Wrap" Text="1903" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="512,211,0,0" TextWrapping="Wrap" Text="1809" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="585,211,0,0" TextWrapping="Wrap" Text="1803" VerticalAlignment="Top" Width="35"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="513,247,0,0" TextWrapping="Wrap" Text="1709" VerticalAlignment="Top" Width="35"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="91,196,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,218,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,291,0,0" VerticalAlignment="Top" Width="120"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,118,0,0" TextWrapping="Wrap" Text="Select which versions of Windows to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. WIM Witch will automatically determine the correct version to apply. Updates must have been downloaded prior to making it so." VerticalAlignment="Top" Height="47" Width="353"/>
                     <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,90,0,0" VerticalAlignment="Top" ClickMode="Press"/>
-                    <CheckBox x:Name="Updates1903CheckBox" Content="" HorizontalAlignment="Left" Margin="560,180,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="Updates1809CheckBox" Content="" HorizontalAlignment="Left" Margin="489,213,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="Updates1803CheckBox" Content="" HorizontalAlignment="Left" Margin="560,213,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="Updates1709CheckBox" Content="" HorizontalAlignment="Left" Margin="489,249,0,0" VerticalAlignment="Top"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="638,180,0,0" VerticalAlignment="Top" Width="75"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,136,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
-                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,216,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="218,194,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesW10_1903" Content="1903" HorizontalAlignment="Left" Margin="535,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1809" Content="1809" HorizontalAlignment="Left" Margin="594,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1803" Content="1803" HorizontalAlignment="Left" Margin="652,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1709" Content="1709" HorizontalAlignment="Left" Margin="707,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="680,268,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,142,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
+                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="218,196,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
                     <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,315,0,0" TextWrapping="Wrap" Text="A software update module is out of date. Please click the &quot;Install / Update&quot; button to update it." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
-                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="417,283,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="375" Visibility="Hidden"/>
+                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="417,303,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="375" Visibility="Hidden"/>
                     <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="435,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="24,217,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,254,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
-                    <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,250,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Height="23" Margin="512,178,0,0" TextWrapping="Wrap" Text="1909" VerticalAlignment="Top" Width="35"/>
-                    <CheckBox x:Name="Updates1909CheckBox" Content="" HorizontalAlignment="Left" Margin="489,180,0,0" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="24,218,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,255,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,251,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,251,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10Main" Content="Windows 10" HorizontalAlignment="Left" Margin="450,167,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesS2016" Content="Windows Server 2016" HorizontalAlignment="Left" Margin="594,217,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesS2019" Content="Windows Server 2019" HorizontalAlignment="Left" Margin="448,217,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesW10_1909" Content="1909" HorizontalAlignment="Left" Margin="478,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Autopilot" Width="100">
+            <TabItem x:Name="AutopilotTab" Header="Autopilot" Width="100">
                 <Grid>
                     <TextBox x:Name="JSONTextBox" HorizontalAlignment="Left" Height="25" Margin="26,130,0,0" TextWrapping="Wrap" Text="Select JSON File" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Label x:Name="JSONLabel" Content="Source JSON" HorizontalAlignment="Left" Height="25" Margin="26,104,0,0" VerticalAlignment="Top" Width="100"/>
@@ -244,7 +242,7 @@ $inputXML = @"
                     <Button x:Name="DriverDir5Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,328,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                 </Grid>
             </TabItem>
-            <TabItem Header ="App Removal" Height="20" Width="100">
+            <TabItem x:Name="AppTab" Header ="App Removal" Height="20" Width="100">
                 <Grid>
                     <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Select the apps to remove..." Margin="21,85,252.2,22.8" VerticalScrollBarVisibility="Visible"/>
                     <TextBlock HorizontalAlignment="Left" Margin="21,65,0,0" TextWrapping="Wrap" Text="Selected app packages to remove:" VerticalAlignment="Top" Height="15" Width="194"/>
@@ -287,9 +285,9 @@ $inputXML = @"
             </TabItem>
         </TabControl>
     </Grid>
-     <Window.TaskbarItemInfo>
-         <TaskbarItemInfo/>
- </Window.TaskbarItemInfo>
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo/>
+    </Window.TaskbarItemInfo>
 </Window>
 "@ 
  
@@ -423,8 +421,21 @@ function import-wiminfo($IndexNumber) {
     Else {
         $WPFSourceWimArchTextBox.text = 'x86'
     }
+   if ($WPFSourceWIMImgDesTextBox.text -like "Windows Server*"){ 
+        $WPFJSONEnableCheckBox.IsChecked = $False
+        $WPFAppxCheckBox.IsChecked = $False
+        $WPFAppTab.IsEnabled = $False
+        $WPFAutopilotTab.IsEnabled = $False
+        $WPFMISAppxTextBox.text = "False"
+        $WPFMISJSONTextBox.text = "False"
+        }
+      Else{
+        $WPFAppTab.IsEnabled = $True
+        $WPFAutopilotTab.IsEnabled = $True
+        }
 
 }
+
  
 #Function to Select JSON File
 Function SelectJSONFile {
@@ -1085,58 +1096,62 @@ Function compare-OSDSUSVer {
 }
 
 #Function to check for superceded updates
-Function check-superceded($action) {
+Function check-superceded($action, $OS, $Build) {
     Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
-    $path = "$PSScriptRoot\updates\"  #sets base path
+    $path = $PSScriptRoot + '\updates\' + $OS + '\' + $Build + '\' #sets base path
+    write-host $OS
+    write-host $Build
+    write-host $path
     $Children = Get-ChildItem -Path $path  #query sub directories
 
     foreach ($Children in $Children) {
         $path1 = $path + $Children  
-        $kids = Get-ChildItem -Path $path1
+        $sprout = Get-ChildItem -Path $path1
  
-        foreach ($kids in $kids) {
-            $path2 = $path1 + '\' + $kids
-            $sprout = get-childitem -path $path2
+      #  foreach ($kids in $kids) {
+      #      $path2 = $path1 + '\' + $kids
+      #      $sprout = get-childitem -path $path2
         
             foreach ($sprout in $sprout) {
-                $path3 = $path2 + '\' + $sprout
+                $path3 = $path1 + '\' + $sprout
                 $fileinfo = get-childitem -path $path3
-            
-                $StillCurrent = Get-OSDUpdate | Where-Object { $_.FileName -eq $fileinfo }   
-                If ($StillCurrent -eq $null) {
-                    update-log -data "$fileinfo no longer current" -Class Warning
-                    if ($action -eq 'delete') {
-                        Update-Log -data "Deleting $path3" -class Warning
-                        remove-item -path $path3 -Recurse -Force
-                    }
+                foreach ($file in $fileinfo){
+                    $StillCurrent = Get-OSDUpdate | Where-Object { $_.FileName -eq $file }   
+                    If ($StillCurrent -eq $null) {
+                       update-log -data "$file no longer current" -Class Warning
+                       if ($action -eq 'delete') {
+                            Update-Log -data "Deleting $path3" -class Warning
+                            remove-item -path $path3 -Recurse -Force
+                        }
                     if ($action -eq 'audit') {
                         #write-host "set variable"
                         $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
 
                         Return
                     }
-                }   
-                else {
-                    Update-Log -data "$fileinfo is stil current" -Class Information
+                    }   
+                     else {
+                    Update-Log -data "$file is stil current" -Class Information
                 }    
+                 }
             }
-        }
+            }
     }
-}
+
 
 #Function to download new patches
-Function download-patches($build) {
-    Update-Log -Data "Downloading SSU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\SSU
-    Update-Log -Data "Downloading AdobeSU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\AdobeSU
-    Update-Log -Data "Downloading LCU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\LCU
-    Update-Log -Data "Downloading .Net updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\DotNet
-    Update-Log -Data "Downloading .Net CU updates for Windows 10 $build" -Class Information
-    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq 'Windows 10' -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$build\DotNetCU
-    Update-Log -Data "Downloading completed for Windows 10 $build" -Class Information
+Function download-patches($build,$OS) {
+    Update-Log -Data "Downloading SSU updates for $OS $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq $OS -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$OS\$build\SSU
+    Update-Log -Data "Downloading AdobeSU updates for $OS $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq $OS -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'AdobeSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$OS\$build\AdobeSU
+    Update-Log -Data "Downloading LCU updates for $OS $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq $OS -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'LCU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$OS\$build\LCU
+    Update-Log -Data "Downloading .Net updates for $OS $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq $OS -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNet' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$OS\$build\DotNet
+    Update-Log -Data "Downloading .Net CU updates for $OS $build" -Class Information
+    Get-OSDUpdate | Where-Object { $_.UpdateOS -eq $OS -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'DotNetCU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$OS\$build\DotNetCU
+    Update-Log -Data "Downloading completed for $OS $build" -Class Information
 }
  
 #Function to remove superceded updates and initate new patch download
@@ -1144,28 +1159,58 @@ Function update-patchsource {
 
 
 
-    try {
+    #try {
         #write-host "starting purge"
         #Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
         #Update-Log -Data "Deleting superseded updates..." -Class Warning
-        Check-Superceded -action delete -ErrorAction Stop
-    } 
-    catch {
-        Update-Log -Data "Updates not superceded" -Class Information
-        Return
-    }
+    #    Check-Superceded -action delete -ErrorAction Stop
+    #} 
+    #catch {
+    #    Update-Log -Data "Updates not superceded" -Class Information
+    #    Return
+    #}
     Update-Log -Data "attempting to start download function" -Class Information
-    If ($WPFUpdates1909CheckBox.IsChecked -eq $true) { download-patches -build 1909 }
-    If ($WPFUpdates1903CheckBox.IsChecked -eq $true) { download-patches -build 1903 }
-    If ($WPFUpdates1809CheckBox.IsChecked -eq $true) { download-patches -build 1809 }
-    If ($WPFUpdates1803CheckBox.IsChecked -eq $true) { download-patches -build 1803 }
-    If ($WPFUpdates1709CheckBox.IsChecked -eq $true) { download-patches -build 1709 }
+  #  If ($WPFUpdates1909CheckBox.IsChecked -eq $true) { download-patches -build 1909 }
+  #  If ($WPFUpdates1903CheckBox.IsChecked -eq $true) { download-patches -build 1903 }
+  #  If ($WPFUpdates1809CheckBox.IsChecked -eq $true) { download-patches -build 1809 }
+  #  If ($WPFUpdates1803CheckBox.IsChecked -eq $true) { download-patches -build 1803 }
+  #  If ($WPFUpdates1709CheckBox.IsChecked -eq $true) { download-patches -build 1709 }
+
+  
+if ($WPFUpdatesW10Main.IsChecked -eq $true){
+    if ($WPFUpdatesW10_1909.IsChecked -eq $true){
+        check-superceded -action delete -build 1909 -OS "Windows 10"
+        download-patches -build 1909 -OS "Windows 10"}
+    if ($WPFUpdatesW10_1903.IsChecked -eq $true){
+        check-superceded -action delete -build 1903 -OS "Windows 10"
+        download-patches -build 1903 -OS "Windows 10"}
+    if ($WPFUpdatesW10_1809.IsChecked -eq $true){
+        check-superceded -action delete -build 1809 -OS "Windows 10"
+        download-patches -build 1809 -OS "Windows 10"}
+    if ($WPFUpdatesW10_1803.IsChecked -eq $true){
+        check-superceded -action delete -build 1803 -OS "Windows 10"
+        download-patches -build 1803 -OS "Windows 10"}
+    if ($WPFUpdatesW10_1709.IsChecked -eq $true){
+        check-superceded -action delete -build 1709 -OS "Windows 10"
+        download-patches -build 1709 -OS "Windows 10"}
+    }
+
+if ($WPFUpdatesS2019.IsChecked -eq $true){
+    check-superceded -action delete -build 1809 -OS "Windows Server 2019"
+    download-patches -build 1809 -OS "Windows Server 2019"}
+if ($WPFUpdatesS2016.IsChecked -eq $true){
+    check-superceded -action delete -build 1607 -OS "Windows Server 2016"
+    download-patches -build 1607 -OS "Windows Server 2016"}
 
 }
 
 #Function to apply updates to mounted WIM
 Function Apply-Updates($class) {
+    If ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 2016*"){$OS = "Windows Server 2016"}
+    If ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 2019*"){$OS = "Windows Server 2019"}
+    If ($WPFSourceWIMImgDesTextBox.text -like "Windows 10*"){$OS = "Windows 10"}
 
+    If ($WPFSourceWimVerTextBox.text -like "10.0.14393.*") { $buildnum = 1607 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
@@ -1180,7 +1225,7 @@ Function Apply-Updates($class) {
 
 
     
-    $path = $PSScriptRoot + '\updates\' + $buildnum + '\' + $class + '\'
+    $path = $PSScriptRoot + '\updates\' + $OS + '\' + $buildnum + '\' + $class + '\'
     $Children = Get-ChildItem -Path $path
     foreach ($Children in $Children) {
         $compound = $path + $Children
@@ -1466,6 +1511,7 @@ function save-config($filename) {
     $CurrentConfig = @{
         SourcePath       = $WPFSourceWIMSelectWIMTextBox.text
         SourceIndex      = $WPFSourceWimIndexTextBox.text
+        SourceEdition    = $WPFSourceWIMImgDesTextBox.text
         UpdatesEnabled   = $WPFUpdatesEnableCheckBox.IsChecked
         AutopilotEnabled = $WPFJSONEnableCheckBox.IsChecked
         AutopilotPath    = $WPFJSONTextBox.text
@@ -1502,6 +1548,7 @@ function load-config($filename) {
         update-log -data "Config file read..." -Class Information
         $WPFSourceWIMSelectWIMTextBox.text = $settings.SourcePath
         $WPFSourceWimIndexTextBox.text = $settings.SourceIndex
+        $WPFSourceWIMImgDesTextBox.text = $settings.SourceEdition
         $WPFUpdatesEnableCheckBox.IsChecked = $settings.UpdatesEnabled
         $WPFJSONEnableCheckBox.IsChecked = $settings.AutopilotEnabled
         $WPFJSONTextBox.text = $settings.AutopilotPath 
@@ -1553,11 +1600,11 @@ Function select-config {
 #Function to reset reminder values from check boxes on the MIS tab when loading a config
 function reset-MISCheckBox {
     update-log -data "Refreshing MIS Values..." -class Information
+
     If ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
         $WPFJSONButton.IsEnabled = $True
         $WPFMISJSONTextBox.Text = "True"
     }
-
     If ($WPFDriverCheckBox.IsChecked -eq $true) {
         $WPFDriverDir1Button.IsEnabled = $True
         $WPFDriverDir2Button.IsEnabled = $True
@@ -1566,18 +1613,16 @@ function reset-MISCheckBox {
         $WPFDriverDir5Button.IsEnabled = $True
         $WPFMISDriverTextBox.Text = "True"
     }
-
     If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
-        $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-        $WPFUpdatesDownloadNewButton.IsEnabled = $True
-        $WPFUpdates1903CheckBox.IsEnabled = $True
-        $WPFUpdates1809CheckBox.IsEnabled = $True
-        $WPFUpdates1803CheckBox.IsEnabled = $True
-        $WPFUpdates1709CheckBox.IsEnabled = $True
-        $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+       # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
+       # $WPFUpdatesDownloadNewButton.IsEnabled = $True
+       # $WPFUpdates1903CheckBox.IsEnabled = $True
+       # $WPFUpdates1809CheckBox.IsEnabled = $True
+       # $WPFUpdates1803CheckBox.IsEnabled = $True
+       # $WPFUpdates1709CheckBox.IsEnabled = $True
+       # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
         $WPFMISUpdatesTextBox.Text = "True"
     }
-
     If ($WPFAppxCheckBox.IsChecked -eq $true) {
         $WPFAppxButton.IsEnabled = $True
         $WPFMISAppxTextBox.Text = "True"
@@ -1879,6 +1924,7 @@ function import-iso($file, $type, $newname) {
         if ($wimversion -like '10.0.17134.*') { $version = "1803" }
         if ($wimversion -like '10.0.17763.*') { $version = "1809" }
         if ($wimversion -like '10.0.18362.*') { $version = "1903" }
+        if ($wimversion -like '10.0.14393.*') { $version = "1607" }
         return $version
     }
     #Check to see if destination WIM already exists
@@ -1908,8 +1954,9 @@ function import-iso($file, $type, $newname) {
     $iso = $isomount.devicepath
     $windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
     $version = set-version -wimversion $windowsver.version
-    if ($version = 1903){
-        if ($windowsver.CreatedTime -gt "10/1/2019"){$version = 1909}
+    if ($version -eq 1903){
+        $Vardate = (Get-Date -Year 2019 -Month 10 -Day 01)
+        if ($windowsver.CreatedTime -gt $vardate){$version = 1909}
         }
 
     
@@ -2017,6 +2064,7 @@ function inject-dotnet {
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+    if ($WPFSourceWimVerTextBox.text -like "10.0.14393.*") { $buildnum = 1607 }
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
         $mountdir = $WPFMISMountTextBox.Text
@@ -2046,8 +2094,18 @@ function check-dotnetexists {
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.14393.*") { $buildnum = 1607 }
+    
+    $windowsver = (get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -index 1)
+   
+        if ($buildnum -eq 1903){
+            $Vardate = (Get-Date -Year 2019 -Month 10 -Day 01)
+             #$Vardate is an arbitrary date that is before the 1909 creation date and after the
+             #last 1903 release. It's hokey, but it works. - <3 Donna
+            if ($windowsver.CreatedTime -gt $Vardate){$buildnum = 1909}
+         }
 
-    $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum + '\'
+     $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum + '\'
 
     Test-Path -Path $DotNetFiles\* 
     if ((Test-Path -Path $DotNetFiles\*) -eq $false) {
@@ -2056,7 +2114,6 @@ function check-dotnetexists {
         update-log -data "Import .Net from an ISO or disable injection to continue" -Class Warning
         return $false
     }
-
 }
 
 #Function to check installed version of WIM Witch and update if available
@@ -2224,6 +2281,8 @@ $WPFMISUpdatesTextBox.Text = "False"
 
 $WPFMISAppxTextBox.Text = "False"
 
+#$WPFAppTab.IsEnabled = $False
+
 #===========================================================================
 # Section for Buttons to call functions
 #===========================================================================
@@ -2387,6 +2446,24 @@ $WPFImportDotNetCheckBox.Add_Click( {
         }
     })
 
+#Enable Win10 version selection
+$WPFUpdatesW10Main.Add_Click( {
+        If ($WPFUpdatesW10Main.IsChecked -eq $true) {
+            $WPFUpdatesW10_1909.IsEnabled = $True
+            $WPFUpdatesW10_1903.IsEnabled = $True
+            $WPFUpdatesW10_1809.IsEnabled = $True
+            $WPFUpdatesW10_1803.IsEnabled = $True
+            $WPFUpdatesW10_1709.IsEnabled = $True
+        }
+        else {
+            $WPFUpdatesW10_1909.IsEnabled = $False
+            $WPFUpdatesW10_1903.IsEnabled = $False
+            $WPFUpdatesW10_1809.IsEnabled = $False
+            $WPFUpdatesW10_1803.IsEnabled = $False
+            $WPFUpdatesW10_1709.IsEnabled = $False
+           
+        }
+    })
  
 #==========================================================
 #Run WIM Witch below
