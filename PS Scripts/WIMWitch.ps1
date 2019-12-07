@@ -95,36 +95,72 @@
 #
 #============================================================================================================
 Param( 
-    [parameter(mandatory = $false, HelpMessage = "enable auto")] 
-    [ValidateSet("yes")] 
-    $auto,
+   [parameter(mandatory = $false, HelpMessage = "enable auto")] 
+    #[ValidateSet("yes")] 
+    [switch]$auto,
 
     [parameter(mandatory = $false, HelpMessage = "config file")] 
-    $autofile,
+    [string]$autofile,
 
     [parameter(mandatory = $false, HelpMessage = "config path")] 
     #[ValidateSet("$PSScriptRoot\configs")]
-    $autopath,
+    [string]$autopath,
 
     [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
     [ValidateSet("audit", "delete")] 
-    $Superseded,
+    [string]$Superseded,
 
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("update")] 
-    $OSDSUS,
+    [parameter(mandatory = $false, HelpMessage = "Update Modules")] 
+    #[ValidateSet("update")] 
+    #$OSDSUS,
+    [Switch]$UpdatePoShModules,
 
-    #[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-    #[ValidateSet("download")] 
-    #$newupdates,
-
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    [parameter(mandatory = $false, HelpMessage = "Enable Downloading Updates")] 
+    #[ValidateSet("yes")] 
+    #$updates 
+    [switch]$DownloadUpdates,
+  
+    [parameter(mandatory = $false, HelpMessage = "Win10 Version")] 
     [ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
-    $DownUpdates,
+    #$DownUpdates,
+    [string]$Win10Version = "none",
 
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("yes")] 
-    $updates 
+    [parameter(mandatory = $false, HelpMessage = "Windows Server 2016?")] 
+    [switch]$Server2016,
+
+    [parameter(mandatory = $false, HelpMessage = "Windows Server 2019?")] 
+    [switch]$Server2019
+
+    #[parameter(mandatory = $false, HelpMessage = "enable auto")] 
+    #[ValidateSet("yes")] 
+    #$auto,
+
+    #[parameter(mandatory = $false, HelpMessage = "config file")] 
+    #$autofile,
+
+    #[parameter(mandatory = $false, HelpMessage = "config path")] 
+    ##[ValidateSet("$PSScriptRoot\configs")]
+    #$autopath,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("audit", "delete")] 
+    #$Superseded,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("update")] 
+    #$OSDSUS,
+
+    ##[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+    ##[ValidateSet("download")] 
+    ##$newupdates,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
+    #$DownUpdates,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("yes")] 
+    #$updates 
 )
 
 $WWScriptVer = "1.3.0"
@@ -501,12 +537,14 @@ Function MakeItSo ($appx) {
         return 
     }
 
-    if ($auto -ne "yes") {
+   # if ($auto -ne "yes") {
+     if ($auto -eq $false) {
         $checkresult = (check-name) 
         if ($checkresult -eq "stop") { return }
     }
 
-    if ($auto -eq "yes") {
+   # if ($auto -eq "yes") {
+   if ($auto -eq $true) {
         $checkresult = (check-name -conflict append)
         if ($checkresult -eq "stop") { return }
     }
@@ -593,8 +631,8 @@ Function MakeItSo ($appx) {
 
     try {
         #write-host $IndexNumber
-        Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
-    }
+         Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
+         }
     catch {
         Update-Log -data $_.Exception.Message -class Error
         Update-Log -data "The WIM couldn't be mounted. Make sure the mount directory is empty" -Class Error
@@ -1099,9 +1137,11 @@ Function compare-OSDSUSVer {
 Function check-superceded($action, $OS, $Build) {
     Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
     $path = $PSScriptRoot + '\updates\' + $OS + '\' + $Build + '\' #sets base path
-    write-host $OS
-    write-host $Build
-    write-host $path
+
+    if ((Test-Path -Path $path) -eq $false){
+        update-log -Data "No updates found, likely not yet downloaded. Skipping supersedense check..." -Class Warning
+        return}
+
     $Children = Get-ChildItem -Path $path  #query sub directories
 
     foreach ($Children in $Children) {
@@ -1136,6 +1176,7 @@ Function check-superceded($action, $OS, $Build) {
                  }
             }
             }
+        Update-Log -data "Supersedense check complete." -Class Information
     }
 
 
@@ -1206,6 +1247,10 @@ if ($WPFUpdatesS2016.IsChecked -eq $true){
 
 #Function to apply updates to mounted WIM
 Function Apply-Updates($class) {
+   if (($class -eq 'AdobeSU') -and ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 20*") -and ($WPFSourceWIMImgDesTextBox.text -notlike "*(Desktop Experience)")){
+    update-log -Data "Skipping Adobe updates for Server Core build" -Class Information
+    return}
+   
     If ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 2016*"){$OS = "Windows Server 2016"}
     If ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 2019*"){$OS = "Windows Server 2019"}
     If ($WPFSourceWIMImgDesTextBox.text -like "Windows 10*"){$OS = "Windows 10"}
@@ -1218,10 +1263,10 @@ Function Apply-Updates($class) {
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
         $mountdir = $WPFMISMountTextBox.Text
-        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE | Out-Null
         $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
         $buildnum = $regvalues.ReleaseId
-        reg UNLOAD HKLM\OFFLINE}
+        reg UNLOAD HKLM\OFFLINE | Out-Null}
 
 
     
@@ -2068,10 +2113,10 @@ function inject-dotnet {
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
         $mountdir = $WPFMISMountTextBox.Text
-        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE | out-null #Fount it
         $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
         $buildnum = $regvalues.ReleaseId
-        reg UNLOAD HKLM\OFFLINE}
+        reg UNLOAD HKLM\OFFLINE | out-null}#Found it
 
     $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum
 
@@ -2168,10 +2213,12 @@ catch{
     }
 
 
+If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq $false)){upgrade-wimwitch}
+#If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -ne "yes")){upgrade-wimwitch}
 
-If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -ne "yes")){upgrade-wimwitch}
+#if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq "yes")){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
+if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq $true)){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
 
-if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq "yes")){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
 
 If ($WWCurrentVer -eq $WWScriptVer){Update-Log -data "WIM Witch is up to date. Starting WIM Witch" -Class Information}
 
@@ -2238,28 +2285,54 @@ get-osdsusinstallation #Sets OSDSUS version info
 Get-OSDSUSCurrentVer #Discovers current version of OSDSUS
 compare-OSDSUSVer #determines if an update of OSDSUS can be applied
 
+#Function download-patches($build,$OS)
 
-if ($updates -eq "yes") {
+if ($DownloadUpdates -eq $true) {
 
-    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { 
+    If (($UpdatePoShModules -eq $true) -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { 
         update-OSDB
         Update-OSDSUS 
     }
     
-    if ($Superseded -eq "audit") { check-superceded -action "audit" }
-    if ($Superseded -eq "delete") { check-superceded -action "delete" }
+    #if ($Superseded -eq "audit") { check-superceded -action "audit" }
+    #if ($Superseded -eq "delete") { check-superceded -action "delete" }
 
-    if ($DownUpdates -ne $null) {
-        if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")) { download-patches -build 1903 }
-        if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
-        if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
-        if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
-        if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
+    
+    if ($Server2016 -eq $true){
+        check-superceded -action delete -OS "Windows Server 2016" -Build 1607
+        download-patches -OS "Windows Server 2016" -build 1607}
+    if ($Server2019 -eq $true){
+        check-superceded -action delete -OS "Windows Server 2019" -Build 1809
+        download-patches -OS "Windows Server 2019" -build 1809}
+
+    if ($Win10Version -ne "none"){
+        if (($Win10Version -eq "1709") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1709
+            download-patches -OS "Windows 10" -build 1709}
+        if (($Win10Version -eq "1803") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1803
+            download-patches -OS "Windows 10" -build 1803}
+        if (($Win10Version -eq "1809") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1809
+            download-patches -OS "Windows 10" -build 1809}
+        if (($Win10Version -eq "1903") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1903
+            download-patches -OS "Windows 10" -build 1903}
+        if (($Win10Version -eq "1909") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1909
+            download-patches -OS "Windows 10" -build 1909}
+     }
+
+   # if ($DownUpdates -ne $null) {
+   #     if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")) { download-patches -build 1903 }
+   #     if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
+   #     if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
+   #     if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
+   #     if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
     }
 
     #check-superceded #checks to see if superceded patches exist
     
-}
 
 #===========================================================================
 
@@ -2470,13 +2543,13 @@ $WPFUpdatesW10Main.Add_Click( {
 #==========================================================
 
 #Runs WIM Witch from a single file, bypassing the GUI
-if (($auto -eq "yes") -and ($autofile -ne $null)) {
+if (($auto -eq $true) -and ($autofile -ne $null)) {
     run-configfile -filename $autofile
     display-closingtext
     exit 0
 }
 
-if (($auto -eq "yes") -and ($autopath -ne $null)) {
+if (($auto -eq $true) -and ($autopath -ne $null)) {
     Update-Log -data "Running batch job from config folder $autopath" -Class Information
     $files = Get-ChildItem -Path $autopath
     Update-Log -data "Setting batch job for the folling configs:" -Class Information
