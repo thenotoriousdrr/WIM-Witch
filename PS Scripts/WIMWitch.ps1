@@ -30,6 +30,19 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.3.0
+#
+# -Added patching support for Server 2016 LTSB and Server 2019 LTSB
+# -Modified command line parameters for easier usage and to support Server
+# -Depricated Supersedense from command line functionality
+# -Downloading updates performs a supersedense check against that particular
+#     OS only. Previously all OS's were checked.
+# -OneDrive update downloaded with any Win10 build
+# -Apply OneDrive update to WIM - Win10 only
+# -Fixed Import ISO field with side scrolling ability
+# -Server Core updates skip Adobe updates as they are not applicable
+# 
+#===========================================================================
 # Version 1.2.3
 #
 # -Added Win10 1909 support. Includes .Net 3.5, patch selection, commandline
@@ -106,9 +119,9 @@ Param(
     #[ValidateSet("$PSScriptRoot\configs")]
     [string]$autopath,
 
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("audit", "delete")] 
-    [string]$Superseded,
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("audit", "delete")] 
+    #[string]$Superseded,
 
     [parameter(mandatory = $false, HelpMessage = "Update Modules")] 
     #[ValidateSet("update")] 
@@ -286,7 +299,7 @@ $inputXML = @"
                     <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Make It So" Height="20" Width="100">
+             <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
                     <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="444,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647"/>
                     <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="20,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500"/>
@@ -304,10 +317,14 @@ $inputXML = @"
                     <TextBox x:Name="MISUpdatesTextBox" HorizontalAlignment="Left" Height="23" Margin="136,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
                     <Label Content="App removal?" HorizontalAlignment="Left" Margin="29,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" HorizontalAlignment="Left" Height="23" Margin="136,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
-                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="306,349,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="306,293,0,0" TextWrapping="Wrap" Text="To inject .Net 3.5, check the box below. Binaries must be imported from an ISO. WIM Witch cannot download them directly from Microsoft." VerticalAlignment="Top" Height="56" Width="260"/>
+                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="306,317,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="306,282,0,0" TextWrapping="Wrap" Text=".Net 3.5 binaries must be imported from an ISO. They are not downloaded." VerticalAlignment="Top" Height="35" Width="260"/>
+                    <CheckBox x:Name="MISOneDriveCheckBox" Content="Update OneDrive client" HorizontalAlignment="Left" Margin="306,379,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="306,345,0,0" TextWrapping="Wrap" Text="Current OneDrive installer is downloaded with Win10 updates." VerticalAlignment="Top" Height="34" Width="260"/>
                 </Grid>
             </TabItem>
+
+
             <TabItem Header="Save/Load" Height="20" Width="100">
                 <Grid>
                     <TextBox x:Name="SLSaveFileName" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="Name for saved configuration..." VerticalAlignment="Top" Width="500"/>
@@ -464,10 +481,13 @@ function import-wiminfo($IndexNumber) {
         $WPFAutopilotTab.IsEnabled = $False
         $WPFMISAppxTextBox.text = "False"
         $WPFMISJSONTextBox.text = "False"
+        $WPFMISOneDriveCheckBox.IsChecked = $False
+        $WPFMISOneDriveCheckBox.IsEnabled = $False
         }
       Else{
         $WPFAppTab.IsEnabled = $True
         $WPFAutopilotTab.IsEnabled = $True
+        $WPFMISOneDriveCheckBox.IsEnabled = $True
         }
 
 }
@@ -642,6 +662,14 @@ Function MakeItSo ($appx) {
 
     #Inject .Net Binaries
     if ($WPFMISDotNetCheckBox.IsChecked -eq $true) { inject-dotnet }
+
+    #Copy the current OneDrive installer
+    if ($WPFMISOneDriveCheckBox.IsChecked -eq $true) {
+        copy-onedrive
+    }
+    else{
+        update-log -data "OneDrive agent update skipped as it was not selected" -Class Information
+    }
 
 
     #Inject Autopilot JSON file
@@ -1179,7 +1207,6 @@ Function check-superceded($action, $OS, $Build) {
         Update-Log -data "Supersedense check complete." -Class Information
     }
 
-
 #Function to download new patches
 Function download-patches($build,$OS) {
     Update-Log -Data "Downloading SSU updates for $OS $build" -Class Information
@@ -1234,6 +1261,7 @@ if ($WPFUpdatesW10Main.IsChecked -eq $true){
     if ($WPFUpdatesW10_1709.IsChecked -eq $true){
         check-superceded -action delete -build 1709 -OS "Windows 10"
         download-patches -build 1709 -OS "Windows 10"}
+    download-onedrive
     }
 
 if ($WPFUpdatesS2019.IsChecked -eq $true){
@@ -1572,6 +1600,7 @@ function save-config($filename) {
         WIMPath          = $WPFMISWimFolderTextBox.text
         MountPath        = $WPFMISMountTextBox.text
         DotNetEnabled    = $WPFMISDotNetCheckBox.IsChecked
+        OneDriveEnabled  = $WPFMISOneDriveCheckBox.IsChecked
     }
 
     Update-Log -data "Saving configuration file $filename" -Class Information
@@ -1610,6 +1639,7 @@ function load-config($filename) {
         $WPFMISMountTextBox.text = $settings.MountPath
         $global:SelectedAppx = $settings.AppxSelected -split " "
         $WPFMISDotNetCheckBox.IsChecked = $settings.DotNetEnabled
+        $WPFMISOneDriveCheckBox.IsChecked = $settings.OneDriveEnabled
 
 
         update-log -data "Configration set" -class Information
@@ -2262,6 +2292,53 @@ catch {
     Update-Log -Data "Continuing with WIM Witch upgrade..." -Class Warning
     }
 }
+
+#Function to download current OneDrive client
+#Most of this was stolen from David Segura @SeguraOSD
+function download-onedrive{
+    update-log -Data "Donwloading latest OneDrive agent installer..." -class Information
+    $DownloadUrl = 'https://go.microsoft.com/fwlink/p/?LinkId=248256'
+    $DownloadPath = "$PSScriptRoot\updates\OneDrive"
+    $DownloadFile = 'OneDriveSetup.exe'
+
+    if (!(Test-Path "$DownloadPath")) {New-Item -Path $DownloadPath -ItemType Directory -Force | Out-Null}
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile "$DownloadPath\$DownloadFile"
+    if (Test-Path "$DownloadPath\$DownloadFile") {
+        Update-Log -Data 'OneDrive Download Complete' -Class Information
+        } else {
+        Update-log -Data 'OneDrive could not be downloaded' -Class Error
+    }
+}
+
+#function to copy new OneDrive client installer to mount path
+function copy-onedrive{
+  
+    try{
+    update-log -Data "Setting ACL on the original OneDriveSetup.exe file" -Class Information
+    $user = $env:USERNAME
+    $Acl = Get-Acl "$PSScriptRoot\mount\Windows\SysWOW64\OneDriveSetup.exe"
+    $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "FullControl", "Allow")
+    $Acl.SetAccessRule($Ar)
+    Set-Acl "$PSScriptRoot\mount\Windows\SysWOW64\OneDriveSetup.exe" $Acl -ErrorAction Stop |out-null
+    update-log -Data "ACL successfully updated. Continuing..."
+    }
+    catch{
+    Update-Log -data "Couldn't set the ACL on the original file" -Class Error
+    return
+    } 
+    
+    try{
+    Update-Log -data "Copying updated OneDrive agent installer..." -Class Information
+    copy-item "$PSScriptRoot\updates\OneDrive\OneDriveSetup.exe" -Destination "$PSScriptRoot\Mount\Windows\SysWOW64" -Force -ErrorAction Stop
+    Update-Log -Data "OneDrive installer successfully copied." -Class Information
+    }
+    catch{
+    Update-Log -data "Couldn't copy the OneDrive installer file." -class Error
+    return
+    }
+
+}
+
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
@@ -2321,6 +2398,7 @@ if ($DownloadUpdates -eq $true) {
         if (($Win10Version -eq "1909") -or ($Win10Version -eq "all")){
             check-superceded -action delete -OS "Windows 10" -Build 1909
             download-patches -OS "Windows 10" -build 1909}
+        download-onedrive
      }
 
    # if ($DownUpdates -ne $null) {

@@ -30,6 +30,19 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.3.0
+#
+# -Added patching support for Server 2016 LTSB and Server 2019 LTSB
+# -Modified command line parameters for easier usage and to support Server
+# -Depricated Supersedense from command line functionality
+# -Downloading updates performs a supersedense check against that particular
+#     OS only. Previously all OS's were checked.
+# -OneDrive update downloaded with any Win10 build
+# -Apply OneDrive update to WIM - Win10 only
+# -Fixed Import ISO field with side scrolling ability
+# -Server Core updates skip Adobe updates as they are not applicable
+# 
+#===========================================================================
 # Version 1.2.3
 #
 # -Added Win10 1909 support. Includes .Net 3.5, patch selection, commandline
@@ -95,36 +108,72 @@
 #
 #============================================================================================================
 Param( 
-    [parameter(mandatory = $false, HelpMessage = "enable auto")] 
-    [ValidateSet("yes")] 
-    $auto,
+   [parameter(mandatory = $false, HelpMessage = "enable auto")] 
+    #[ValidateSet("yes")] 
+    [switch]$auto,
 
     [parameter(mandatory = $false, HelpMessage = "config file")] 
-    $autofile,
+    [string]$autofile,
 
     [parameter(mandatory = $false, HelpMessage = "config path")] 
     #[ValidateSet("$PSScriptRoot\configs")]
-    $autopath,
+    [string]$autopath,
 
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("audit", "delete")] 
-    $Superseded,
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("audit", "delete")] 
+    #[string]$Superseded,
 
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("update")] 
-    $OSDSUS,
+    [parameter(mandatory = $false, HelpMessage = "Update Modules")] 
+    #[ValidateSet("update")] 
+    #$OSDSUS,
+    [Switch]$UpdatePoShModules,
 
-    #[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-    #[ValidateSet("download")] 
-    #$newupdates,
-
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    [parameter(mandatory = $false, HelpMessage = "Enable Downloading Updates")] 
+    #[ValidateSet("yes")] 
+    #$updates 
+    [switch]$DownloadUpdates,
+  
+    [parameter(mandatory = $false, HelpMessage = "Win10 Version")] 
     [ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
-    $DownUpdates,
+    #$DownUpdates,
+    [string]$Win10Version = "none",
 
-    [parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    [ValidateSet("yes")] 
-    $updates 
+    [parameter(mandatory = $false, HelpMessage = "Windows Server 2016?")] 
+    [switch]$Server2016,
+
+    [parameter(mandatory = $false, HelpMessage = "Windows Server 2019?")] 
+    [switch]$Server2019
+
+    #[parameter(mandatory = $false, HelpMessage = "enable auto")] 
+    #[ValidateSet("yes")] 
+    #$auto,
+
+    #[parameter(mandatory = $false, HelpMessage = "config file")] 
+    #$autofile,
+
+    #[parameter(mandatory = $false, HelpMessage = "config path")] 
+    ##[ValidateSet("$PSScriptRoot\configs")]
+    #$autopath,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("audit", "delete")] 
+    #$Superseded,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("update")] 
+    #$OSDSUS,
+
+    ##[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
+    ##[ValidateSet("download")] 
+    ##$newupdates,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
+    #$DownUpdates,
+
+    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
+    #[ValidateSet("yes")] 
+    #$updates 
 )
 
 $WWScriptVer = "1.3.0"
@@ -250,7 +299,7 @@ $inputXML = @"
                     <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Make It So" Height="20" Width="100">
+             <TabItem Header="Make It So" Height="20" Width="100">
                 <Grid>
                     <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="444,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647"/>
                     <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="20,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500"/>
@@ -268,10 +317,14 @@ $inputXML = @"
                     <TextBox x:Name="MISUpdatesTextBox" HorizontalAlignment="Left" Height="23" Margin="136,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
                     <Label Content="App removal?" HorizontalAlignment="Left" Margin="29,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" HorizontalAlignment="Left" Height="23" Margin="136,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
-                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="306,349,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="306,293,0,0" TextWrapping="Wrap" Text="To inject .Net 3.5, check the box below. Binaries must be imported from an ISO. WIM Witch cannot download them directly from Microsoft." VerticalAlignment="Top" Height="56" Width="260"/>
+                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="306,317,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="306,282,0,0" TextWrapping="Wrap" Text=".Net 3.5 binaries must be imported from an ISO. They are not downloaded." VerticalAlignment="Top" Height="35" Width="260"/>
+                    <CheckBox x:Name="MISOneDriveCheckBox" Content="Update OneDrive client" HorizontalAlignment="Left" Margin="306,379,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="306,345,0,0" TextWrapping="Wrap" Text="Current OneDrive installer is downloaded with Win10 updates." VerticalAlignment="Top" Height="34" Width="260"/>
                 </Grid>
             </TabItem>
+
+
             <TabItem Header="Save/Load" Height="20" Width="100">
                 <Grid>
                     <TextBox x:Name="SLSaveFileName" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="Name for saved configuration..." VerticalAlignment="Top" Width="500"/>
@@ -428,10 +481,13 @@ function import-wiminfo($IndexNumber) {
         $WPFAutopilotTab.IsEnabled = $False
         $WPFMISAppxTextBox.text = "False"
         $WPFMISJSONTextBox.text = "False"
+        $WPFMISOneDriveCheckBox.IsChecked = $False
+        $WPFMISOneDriveCheckBox.IsEnabled = $False
         }
       Else{
         $WPFAppTab.IsEnabled = $True
         $WPFAutopilotTab.IsEnabled = $True
+        $WPFMISOneDriveCheckBox.IsEnabled = $True
         }
 
 }
@@ -501,12 +557,14 @@ Function MakeItSo ($appx) {
         return 
     }
 
-    if ($auto -ne "yes") {
+   # if ($auto -ne "yes") {
+     if ($auto -eq $false) {
         $checkresult = (check-name) 
         if ($checkresult -eq "stop") { return }
     }
 
-    if ($auto -eq "yes") {
+   # if ($auto -eq "yes") {
+   if ($auto -eq $true) {
         $checkresult = (check-name -conflict append)
         if ($checkresult -eq "stop") { return }
     }
@@ -593,8 +651,8 @@ Function MakeItSo ($appx) {
 
     try {
         #write-host $IndexNumber
-        Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
-    }
+         Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
+         }
     catch {
         Update-Log -data $_.Exception.Message -class Error
         Update-Log -data "The WIM couldn't be mounted. Make sure the mount directory is empty" -Class Error
@@ -604,6 +662,14 @@ Function MakeItSo ($appx) {
 
     #Inject .Net Binaries
     if ($WPFMISDotNetCheckBox.IsChecked -eq $true) { inject-dotnet }
+
+    #Copy the current OneDrive installer
+    if ($WPFMISOneDriveCheckBox.IsChecked -eq $true) {
+        copy-onedrive
+    }
+    else{
+        update-log -data "OneDrive agent update skipped as it was not selected" -Class Information
+    }
 
 
     #Inject Autopilot JSON file
@@ -1099,9 +1165,11 @@ Function compare-OSDSUSVer {
 Function check-superceded($action, $OS, $Build) {
     Update-Log -Data "Checking WIM Witch Update store for superseded updates" -Class Information
     $path = $PSScriptRoot + '\updates\' + $OS + '\' + $Build + '\' #sets base path
-    write-host $OS
-    write-host $Build
-    write-host $path
+
+    if ((Test-Path -Path $path) -eq $false){
+        update-log -Data "No updates found, likely not yet downloaded. Skipping supersedense check..." -Class Warning
+        return}
+
     $Children = Get-ChildItem -Path $path  #query sub directories
 
     foreach ($Children in $Children) {
@@ -1136,8 +1204,8 @@ Function check-superceded($action, $OS, $Build) {
                  }
             }
             }
+        Update-Log -data "Supersedense check complete." -Class Information
     }
-
 
 #Function to download new patches
 Function download-patches($build,$OS) {
@@ -1193,6 +1261,7 @@ if ($WPFUpdatesW10Main.IsChecked -eq $true){
     if ($WPFUpdatesW10_1709.IsChecked -eq $true){
         check-superceded -action delete -build 1709 -OS "Windows 10"
         download-patches -build 1709 -OS "Windows 10"}
+    download-onedrive
     }
 
 if ($WPFUpdatesS2019.IsChecked -eq $true){
@@ -1206,6 +1275,10 @@ if ($WPFUpdatesS2016.IsChecked -eq $true){
 
 #Function to apply updates to mounted WIM
 Function Apply-Updates($class) {
+   if (($class -eq 'AdobeSU') -and ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 20*") -and ($WPFSourceWIMImgDesTextBox.text -notlike "*(Desktop Experience)")){
+    update-log -Data "Skipping Adobe updates for Server Core build" -Class Information
+    return}
+   
     If ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 2016*"){$OS = "Windows Server 2016"}
     If ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 2019*"){$OS = "Windows Server 2019"}
     If ($WPFSourceWIMImgDesTextBox.text -like "Windows 10*"){$OS = "Windows 10"}
@@ -1218,10 +1291,10 @@ Function Apply-Updates($class) {
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
         $mountdir = $WPFMISMountTextBox.Text
-        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE | Out-Null
         $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
         $buildnum = $regvalues.ReleaseId
-        reg UNLOAD HKLM\OFFLINE}
+        reg UNLOAD HKLM\OFFLINE | Out-Null}
 
 
     
@@ -1527,6 +1600,7 @@ function save-config($filename) {
         WIMPath          = $WPFMISWimFolderTextBox.text
         MountPath        = $WPFMISMountTextBox.text
         DotNetEnabled    = $WPFMISDotNetCheckBox.IsChecked
+        OneDriveEnabled  = $WPFMISOneDriveCheckBox.IsChecked
     }
 
     Update-Log -data "Saving configuration file $filename" -Class Information
@@ -1565,6 +1639,7 @@ function load-config($filename) {
         $WPFMISMountTextBox.text = $settings.MountPath
         $global:SelectedAppx = $settings.AppxSelected -split " "
         $WPFMISDotNetCheckBox.IsChecked = $settings.DotNetEnabled
+        $WPFMISOneDriveCheckBox.IsChecked = $settings.OneDriveEnabled
 
 
         update-log -data "Configration set" -class Information
@@ -2068,10 +2143,10 @@ function inject-dotnet {
 
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
         $mountdir = $WPFMISMountTextBox.Text
-        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE
+        reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE | out-null #Fount it
         $regvalues = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\OFFLINE\Microsoft\Windows NT\CurrentVersion\" )
         $buildnum = $regvalues.ReleaseId
-        reg UNLOAD HKLM\OFFLINE}
+        reg UNLOAD HKLM\OFFLINE | out-null}#Found it
 
     $DotNetFiles = $PSScriptRoot + '\imports\DotNet\' + $buildnum
 
@@ -2168,10 +2243,12 @@ catch{
     }
 
 
+If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq $false)){upgrade-wimwitch}
+#If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -ne "yes")){upgrade-wimwitch}
 
-If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -ne "yes")){upgrade-wimwitch}
+#if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq "yes")){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
+if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq $true)){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
 
-if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq "yes")){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
 
 If ($WWCurrentVer -eq $WWScriptVer){Update-Log -data "WIM Witch is up to date. Starting WIM Witch" -Class Information}
 
@@ -2215,6 +2292,53 @@ catch {
     Update-Log -Data "Continuing with WIM Witch upgrade..." -Class Warning
     }
 }
+
+#Function to download current OneDrive client
+#Most of this was stolen from David Segura @SeguraOSD
+function download-onedrive{
+    update-log -Data "Donwloading latest OneDrive agent installer..." -class Information
+    $DownloadUrl = 'https://go.microsoft.com/fwlink/p/?LinkId=248256'
+    $DownloadPath = "$PSScriptRoot\updates\OneDrive"
+    $DownloadFile = 'OneDriveSetup.exe'
+
+    if (!(Test-Path "$DownloadPath")) {New-Item -Path $DownloadPath -ItemType Directory -Force | Out-Null}
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile "$DownloadPath\$DownloadFile"
+    if (Test-Path "$DownloadPath\$DownloadFile") {
+        Update-Log -Data 'OneDrive Download Complete' -Class Information
+        } else {
+        Update-log -Data 'OneDrive could not be downloaded' -Class Error
+    }
+}
+
+#function to copy new OneDrive client installer to mount path
+function copy-onedrive{
+  
+    try{
+    update-log -Data "Setting ACL on the original OneDriveSetup.exe file" -Class Information
+    $user = $env:USERNAME
+    $Acl = Get-Acl "$PSScriptRoot\mount\Windows\SysWOW64\OneDriveSetup.exe"
+    $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "FullControl", "Allow")
+    $Acl.SetAccessRule($Ar)
+    Set-Acl "$PSScriptRoot\mount\Windows\SysWOW64\OneDriveSetup.exe" $Acl -ErrorAction Stop |out-null
+    update-log -Data "ACL successfully updated. Continuing..."
+    }
+    catch{
+    Update-Log -data "Couldn't set the ACL on the original file" -Class Error
+    return
+    } 
+    
+    try{
+    Update-Log -data "Copying updated OneDrive agent installer..." -Class Information
+    copy-item "$PSScriptRoot\updates\OneDrive\OneDriveSetup.exe" -Destination "$PSScriptRoot\Mount\Windows\SysWOW64" -Force -ErrorAction Stop
+    Update-Log -Data "OneDrive installer successfully copied." -Class Information
+    }
+    catch{
+    Update-Log -data "Couldn't copy the OneDrive installer file." -class Error
+    return
+    }
+
+}
+
 #===========================================================================
 # Run commands to set values of files and variables, etc.
 #===========================================================================
@@ -2238,28 +2362,55 @@ get-osdsusinstallation #Sets OSDSUS version info
 Get-OSDSUSCurrentVer #Discovers current version of OSDSUS
 compare-OSDSUSVer #determines if an update of OSDSUS can be applied
 
+#Function download-patches($build,$OS)
 
-if ($updates -eq "yes") {
+if ($DownloadUpdates -eq $true) {
 
-    If (($OSDSUS -eq "update") -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { 
+    If (($UpdatePoShModules -eq $true) -and ($WPFUpdatesOSDBOutOfDateTextBlock.Visibility -eq "Visible")) { 
         update-OSDB
         Update-OSDSUS 
     }
     
-    if ($Superseded -eq "audit") { check-superceded -action "audit" }
-    if ($Superseded -eq "delete") { check-superceded -action "delete" }
+    #if ($Superseded -eq "audit") { check-superceded -action "audit" }
+    #if ($Superseded -eq "delete") { check-superceded -action "delete" }
 
-    if ($DownUpdates -ne $null) {
-        if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")) { download-patches -build 1903 }
-        if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
-        if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
-        if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
-        if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
+    
+    if ($Server2016 -eq $true){
+        check-superceded -action delete -OS "Windows Server 2016" -Build 1607
+        download-patches -OS "Windows Server 2016" -build 1607}
+    if ($Server2019 -eq $true){
+        check-superceded -action delete -OS "Windows Server 2019" -Build 1809
+        download-patches -OS "Windows Server 2019" -build 1809}
+
+    if ($Win10Version -ne "none"){
+        if (($Win10Version -eq "1709") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1709
+            download-patches -OS "Windows 10" -build 1709}
+        if (($Win10Version -eq "1803") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1803
+            download-patches -OS "Windows 10" -build 1803}
+        if (($Win10Version -eq "1809") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1809
+            download-patches -OS "Windows 10" -build 1809}
+        if (($Win10Version -eq "1903") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1903
+            download-patches -OS "Windows 10" -build 1903}
+        if (($Win10Version -eq "1909") -or ($Win10Version -eq "all")){
+            check-superceded -action delete -OS "Windows 10" -Build 1909
+            download-patches -OS "Windows 10" -build 1909}
+        download-onedrive
+     }
+
+   # if ($DownUpdates -ne $null) {
+   #     if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")) { download-patches -build 1903 }
+   #     if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
+   #     if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
+   #     if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
+   #     if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
     }
 
     #check-superceded #checks to see if superceded patches exist
     
-}
 
 #===========================================================================
 
@@ -2470,13 +2621,13 @@ $WPFUpdatesW10Main.Add_Click( {
 #==========================================================
 
 #Runs WIM Witch from a single file, bypassing the GUI
-if (($auto -eq "yes") -and ($autofile -ne $null)) {
+if (($auto -eq $true) -and ($autofile -ne $null)) {
     run-configfile -filename $autofile
     display-closingtext
     exit 0
 }
 
-if (($auto -eq "yes") -and ($autopath -ne $null)) {
+if (($auto -eq $true) -and ($autopath -ne $null)) {
     Update-Log -data "Running batch job from config folder $autopath" -Class Information
     $files = Get-ChildItem -Path $autopath
     Update-Log -data "Setting batch job for the folling configs:" -Class Information
