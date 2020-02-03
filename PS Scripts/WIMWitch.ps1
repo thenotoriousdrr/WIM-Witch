@@ -1,4 +1,58 @@
-﻿#===========================================================================
+﻿<#PSScriptInfo
+
+.VERSION 1.4.0
+
+.GUID ee1ba506-ac68-45f8-9f37-4555f1902353
+
+.AUTHOR Donna Ryan
+
+.COMPANYNAME @TheNotoriousDRR
+
+.COPYRIGHT
+
+.TAGS WIM,Servicing,Offline Image Servicing
+
+.LICENSEURI
+
+.PROJECTURI
+
+.ICONURI
+
+.EXTERNALMODULEDEPENDENCIES 
+
+.REQUIREDSCRIPTS
+
+.EXTERNALSCRIPTDEPENDENCIES
+
+.RELEASENOTES
+
+
+.PRIVATEDATA
+
+#>
+
+<# 
+
+.DESCRIPTION 
+ WIM Witch is a GUI driven tool used to update and customize Windows
+ Image (WIM) files. It can also create WIM configuration templates and
+ apply them either with the GUI or programatically for bulk creation.
+
+ Version 1.3.2
+
+ -Added "-PassThru" parameter to ISO Import command. This fixes importation
+ issues for certain users
+
+ Version 1.3.1
+
+ -Fix commandline bug that provented "-autopath" from working
+ -Autopilot module now has a version check. Authentication processes
+    changed to reflect changes in the WindowsAutopilotIntune module.
+ -OneDrive installer copy process now restores the original ACLs
+ -Fixed bug in OneDrive copy process that broke custom mount paths
+  
+#>
+#===========================================================================
 # WIM Witch 
 #===========================================================================
 #
@@ -7,7 +61,10 @@
 # www.TheNotoriousDRR.com
 # www.SCConfigMgr.com
 #
-# Current WIM Witch Doc:
+# Current WIM Witch Doc (v1.3.0):
+# https://www.scconfigmgr.com/2019/12/08/wim-witch-v1-3-0-server-support-onedrive-and-command-line/ 
+#
+# Previous WIM Witch Doc (v1.0):
 # https://www.scconfigmgr.com/2019/10/04/wim-witch-a-gui-driven-solution-for-image-customization/
 #
 #===========================================================================
@@ -30,6 +87,15 @@
 # -injecting .Net 3.5 binaries into image
 #
 #===========================================================================
+# Version 1.3.1
+#
+# -Fix commandline bug that provented "-autopath" from working
+# -Autopilot module now has a version check. Authentication processes
+#    changed to reflect changes in the WindowsAutopilotIntune module.
+# -OneDrive installer copy process now restores the original ACLs
+# -Fixed bug in OneDrive copy process that broke custom mount paths
+#
+#===========================================================================
 # Version 1.3.0
 #
 # -Added patching support for Server 2016 LTSB and Server 2019 LTSB
@@ -43,68 +109,7 @@
 # -Server Core updates skip Adobe updates as they are not applicable
 # 
 #===========================================================================
-# Version 1.2.3
-#
-# -Added Win10 1909 support. Includes .Net 3.5, patch selection, commandline
-#
-#===========================================================================
-# Version 1.2.2
-#
-# -Fixed bug around version display
-#
-#===========================================================================
-# Version 1.2.1
-#
-# -Changed version variable to stop upgrade loop
-# -Added "force" parameter to rename step in backup function. 
-#
-#===========================================================================
-# Version 1.2
-#
-# -Added update function to make upgrading WIM Witch easy
-# -Added backup function for previous WIM Witch script for DR purposes
-# -Modified variable to support Server SKUs
-#
-#===========================================================================
-# Version 1.1.4
-#
-# -Fixed bug that prevented CLI functionality 
-# -Removed pre-RTM notes
-#
-#===========================================================================
-# Version 1.1.3
-#
-# -Added export function (optimization) to shrink final WIM file
-#
-#===========================================================================
-# Version 1.1.2
-#
-# -Add functionality to prevent installation of WIM Witch files in the 
-#    PowerShell script repository folder. This was done to support "install-script"
-# -Add SCConfigMgr icon to replace stock PowerShell icon.
-#
-#
-#===========================================================================
-# Version 1.1.1
-# 
-# -Fixed a typo that caused the skype app to not be uninstalled on 1903
-#    Credit @AndyUpperton for finding the bug :)
-#===========================================================================
-# Version 1.1
-# 
-# -Fixed OSDSUS upgrade issue by having separate OSDSUS upgrade
-# -Fixed a fat-fingering
-#
-#===========================================================================
-# Version 1.0
-#
-# -Minor bug fixes
-# -Removed useless logging tab
-# -added color scheme
-# -Removed step to update OSDSUS as OSDUpdate updats OSDSUS as a dependent package
-# -Removed requirement to check enable updates to perform update maintenance.
-#
-#===========================================================================
+
 #
 #============================================================================================================
 Param( 
@@ -143,40 +148,10 @@ Param(
 
     [parameter(mandatory = $false, HelpMessage = "Windows Server 2019?")] 
     [switch]$Server2019
-
-    #[parameter(mandatory = $false, HelpMessage = "enable auto")] 
-    #[ValidateSet("yes")] 
-    #$auto,
-
-    #[parameter(mandatory = $false, HelpMessage = "config file")] 
-    #$autofile,
-
-    #[parameter(mandatory = $false, HelpMessage = "config path")] 
-    ##[ValidateSet("$PSScriptRoot\configs")]
-    #$autopath,
-
-    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    #[ValidateSet("audit", "delete")] 
-    #$Superseded,
-
-    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    #[ValidateSet("update")] 
-    #$OSDSUS,
-
-    ##[parameter(mandatory=$false,HelpMessage="Superseded updates")] 
-    ##[ValidateSet("download")] 
-    ##$newupdates,
-
-    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    #[ValidateSet("all", "1709", "1803", "1809", "1903", "1909")] 
-    #$DownUpdates,
-
-    #[parameter(mandatory = $false, HelpMessage = "Superseded updates")] 
-    #[ValidateSet("yes")] 
-    #$updates 
+ 
 )
 
-$WWScriptVer = "1.3.0"
+$WWScriptVer = "1.4.0"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -187,12 +162,13 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.3.0" Height="500" Width="825" Background="#FF610536">
+        Title="WIM Witch - v1.4.0" Height="500" Width="800" Background="#FF610536">
     <Grid>
-        <TabControl Margin="0,0,0.2,-0.2" Background="#FFACACAC" BorderBrush="#FF610536" >
-            <TabItem Header="Import" Height="20" Width="100">
+
+        <TabControl x:Name="TabControl" Margin="0,0,0,-0.5" Background="#FFACACAC" BorderBrush="#FF610536" Grid.ColumnSpan="2" >
+            <TabItem Header="Import WIM + .Net" Height="20" MinWidth="100">
                 <Grid>
-                    <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="42" Margin="26,85,0,0" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="True" HorizontalScrollBarVisibility="Visible"/>
+                    <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="42" Margin="26,85,0,0" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False" HorizontalScrollBarVisibility="Visible"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,56,0,0" TextWrapping="Wrap" Text="Select a Windows 10 ISO:" VerticalAlignment="Top" Height="26" Width="353"/>
                     <Button x:Name="ImportImportSelectButton" Content="Select" HorizontalAlignment="Left" Margin="451,135,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,159,0,0" TextWrapping="Wrap" Text="Select the item(s) to import:" VerticalAlignment="Top" Width="263"/>
@@ -203,7 +179,51 @@ $inputXML = @"
                     <Button x:Name="ImportImportButton" Content="Import" HorizontalAlignment="Left" Margin="451,354,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Source WIM" Margin="0" Width="100">
+            <TabItem Header="Import LP+FOD" Margin="0" MinWidth="100">
+                <Grid>
+                    <TextBox x:Name="ImportOtherTBPath" HorizontalAlignment="Left" Height="23" Margin="49,92,0,0" TextWrapping="Wrap" Text="path to source" VerticalAlignment="Top" Width="339" IsEnabled="False"/>
+                    <Button x:Name="ImportOtherBSelectPath" Content="Select" HorizontalAlignment="Left" Margin="413,94,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="49,130,0,0" TextWrapping="Wrap" Text="Selected items" VerticalAlignment="Top"/>
+                    <ComboBox x:Name="ImportOtherCBWinOS" HorizontalAlignment="Left" Margin="228,51,0,0" VerticalAlignment="Top" Width="120"/>
+                    <ComboBox x:Name="ImportOtherCBWinVer" HorizontalAlignment="Left" Margin="371,50,0,0" VerticalAlignment="Top" Width="120"/>
+                    <Button x:Name="ImportOtherBImport" Content="Import" HorizontalAlignment="Left" Margin="417,317,0,0" VerticalAlignment="Top" Width="75"/>
+                    <ComboBox x:Name="ImportOtherCBType" HorizontalAlignment="Left" Margin="51,51,0,0" VerticalAlignment="Top" Width="160"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="51,26,0,0" TextWrapping="Wrap" Text="Object Type" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="230,32,0,0" TextWrapping="Wrap" Text="Windows OS" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="372,31,0,0" TextWrapping="Wrap" Text="Version" VerticalAlignment="Top"/>
+                    <ListBox x:Name="ImportOtherLBList" HorizontalAlignment="Left" Height="149" Margin="49,151,0,0" VerticalAlignment="Top" Width="442"/>
+
+                </Grid>
+
+            </TabItem>
+            <TabItem Header="Update Store" Height="20" MinWidth="100">
+                <Grid>
+                    <TextBlock HorizontalAlignment="Left" Margin="91,196,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,218,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,291,0,0" VerticalAlignment="Top" Width="120"/>
+                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,118,0,0" TextWrapping="Wrap" Text="Select which versions of Windows to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
+                    <CheckBox x:Name="UpdatesW10_1903" Content="1903" HorizontalAlignment="Left" Margin="535,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1809" Content="1809" HorizontalAlignment="Left" Margin="594,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1803" Content="1803" HorizontalAlignment="Left" Margin="652,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1709" Content="1709" HorizontalAlignment="Left" Margin="707,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="680,268,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,142,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating will require PowerShell to be restarted." VerticalAlignment="Top" Height="34" Width="321"/>
+                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="218,196,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,315,0,0" TextWrapping="Wrap" Text="A software update module is out of date. Please click the &quot;Install / Update&quot; button to update it." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
+                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="417,303,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="375" Visibility="Hidden"/>
+                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="435,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="24,218,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,255,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
+                    <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,251,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,251,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10Main" Content="Windows 10" HorizontalAlignment="Left" Margin="450,167,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesS2016" Content="Windows Server 2016" HorizontalAlignment="Left" Margin="594,217,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesS2019" Content="Windows Server 2019" HorizontalAlignment="Left" Margin="448,217,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesW10_1909" Content="1909" HorizontalAlignment="Left" Margin="478,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Source WIM" Margin="0" MinWidth="100">
                 <Grid>
                     <TextBox x:Name="SourceWIMSelectWIMTextBox" HorizontalAlignment="Left" Height="25" Margin="26,98,0,0" TextWrapping="Wrap" Text="Select WIM File" VerticalAlignment="Top" Width="500" IsEnabled="False" Grid.ColumnSpan="2"/>
                     <Label Content="Source Wim " HorizontalAlignment="Left" Height="25" Margin="26,70,0,0" VerticalAlignment="Top" Width="100"/>
@@ -223,36 +243,7 @@ $inputXML = @"
                     <Label Content="Index" HorizontalAlignment="Left" Height="30" Margin="22,297,0,0" VerticalAlignment="Top" Width="68"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Updates" Height="20" Width="100">
-                <Grid>
-                    <TextBlock HorizontalAlignment="Left" Margin="91,196,0,0" TextWrapping="Wrap" Text="Installed version " VerticalAlignment="Top"/>
-                    <TextBox x:Name="UpdatesOSDBVersion" HorizontalAlignment="Left" Height="23" Margin="91,218,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,291,0,0" VerticalAlignment="Top" Width="120"/>
-                    <TextBlock HorizontalAlignment="Left" Height="42" Margin="435,118,0,0" TextWrapping="Wrap" Text="Select which versions of Windows to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,28,0,0" TextWrapping="Wrap" Text="Click the check box to enable updates for the selected WIM file. WIM Witch will automatically determine the correct version to apply. Updates must have been downloaded prior to making it so." VerticalAlignment="Top" Height="47" Width="353"/>
-                    <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="26,90,0,0" VerticalAlignment="Top" ClickMode="Press"/>
-                    <CheckBox x:Name="UpdatesW10_1903" Content="1903" HorizontalAlignment="Left" Margin="535,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW10_1809" Content="1809" HorizontalAlignment="Left" Margin="594,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW10_1803" Content="1803" HorizontalAlignment="Left" Margin="652,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW10_1709" Content="1709" HorizontalAlignment="Left" Margin="707,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="680,268,0,0" VerticalAlignment="Top" Width="75"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,142,0,0" TextWrapping="Wrap" Text="Update OSDeploy modules by using the button below. Updating the modules will require PowerShell to be restarted" VerticalAlignment="Top" Height="34" Width="321"/>
-                    <TextBox x:Name="UpdatesOSDBCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,217,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="218,196,0,0" TextWrapping="Wrap" Text="Current Version" VerticalAlignment="Top"/>
-                    <TextBlock x:Name="UpdatesOSDBOutOfDateTextBlock" HorizontalAlignment="Left" Margin="20,315,0,0" TextWrapping="Wrap" Text="A software update module is out of date. Please click the &quot;Install / Update&quot; button to update it." VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden" />
-                    <TextBlock x:Name="UpdatesOSDBSupercededExistTextBlock" HorizontalAlignment="Left" Margin="417,303,0,0" TextWrapping="Wrap" Text="Superceded updates discovered. Please select the versions of Windows 10 you are supporting and click &quot;Update&quot;" VerticalAlignment="Top" FontSize="20" Width="375" Visibility="Hidden"/>
-                    <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock" HorizontalAlignment="Left" Margin="435,28,0,0" TextWrapping="Wrap" Text="Please close all PowerShell windows, including WIM Witch, then relaunch app to continue" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" FontSize="20" Width="321" Visibility="Hidden"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="24,218,0,0" TextWrapping="Wrap" Text="OSDUpdate" VerticalAlignment="Top"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,255,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
-                    <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,251,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,251,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW10Main" Content="Windows 10" HorizontalAlignment="Left" Margin="450,167,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="UpdatesS2016" Content="Windows Server 2016" HorizontalAlignment="Left" Margin="594,217,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="UpdatesS2019" Content="Windows Server 2019" HorizontalAlignment="Left" Margin="448,217,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="UpdatesW10_1909" Content="1909" HorizontalAlignment="Left" Margin="478,193,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="AutopilotTab" Header="Autopilot" Width="100">
+            <TabItem x:Name="AutopilotTab" Header="Autopilot" MinWidth="100">
                 <Grid>
                     <TextBox x:Name="JSONTextBox" HorizontalAlignment="Left" Height="25" Margin="26,130,0,0" TextWrapping="Wrap" Text="Select JSON File" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Label x:Name="JSONLabel" Content="Source JSON" HorizontalAlignment="Left" Height="25" Margin="26,104,0,0" VerticalAlignment="Top" Width="100"/>
@@ -265,16 +256,14 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="24,178,0,0" TextWrapping="Wrap" Text="ZTD ID#" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,204,0,0" TextWrapping="Wrap" Text="Tenant Name" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="24,233,0,0" TextWrapping="Wrap" Text="Deployment Profile" VerticalAlignment="Top"/>
-                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,375,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Autopilot" VerticalAlignment="Top" Width="499" IsEnabled="False"/>
-                    <TextBox x:Name="JSONTextBoxAADID" HorizontalAlignment="Left" Height="23" Margin="27,331,0,0" TextWrapping="Wrap" Text="User ID for Intune authentication" VerticalAlignment="Top" Width="499"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,275,0,0" TextWrapping="Wrap" Text="To download a new Autopilot profile from Intune, provide an AAD user name and a path to save the file" VerticalAlignment="Top" Height="36" Width="331"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="27,312,0,0" TextWrapping="Wrap" Text="User ID:" VerticalAlignment="Top"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="27,358,0,0" TextWrapping="Wrap" Text="Path to save file:" VerticalAlignment="Top"/>
-                    <Button x:Name="JSONButtonSavePath" Content="Select" HorizontalAlignment="Left" Margin="450,403,0,0" VerticalAlignment="Top" Width="75"/>
+                    <TextBox x:Name="JSONTextBoxSavePath" HorizontalAlignment="Left" Height="23" Margin="26,345,0,0" TextWrapping="Wrap" Text="$PSScriptRoot\Autopilot" VerticalAlignment="Top" Width="499" IsEnabled="False"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,275,0,0" TextWrapping="Wrap" Text="To download a new Autopilot profile from Intune, click select to choose the folder to save the file to. Then click Retrieve Profile." VerticalAlignment="Top" Height="48" Width="331"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="27,328,0,0" TextWrapping="Wrap" Text="Path to save file:" VerticalAlignment="Top"/>
+                    <Button x:Name="JSONButtonSavePath" Content="Select" HorizontalAlignment="Left" Margin="450,373,0,0" VerticalAlignment="Top" Width="75"/>
                     <Button x:Name="JSONButtonRetrieve" Content="Retrieve Profile" HorizontalAlignment="Left" Margin="382,275,0,0" VerticalAlignment="Top" Width="130"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Drivers" Height="20" Width="100">
+            <TabItem Header="Drivers" Height="20" MinWidth="100">
                 <Grid>
                     <TextBox x:Name="DriverDir1TextBox" HorizontalAlignment="Left" Height="25" Margin="26,144,0,0" TextWrapping="Wrap" Text="Select Driver Source Folder" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Label x:Name="DirverDirLabel" Content="Driver Source" HorizontalAlignment="Left" Height="25" Margin="26,114,0,0" VerticalAlignment="Top" Width="100"/>
@@ -291,7 +280,26 @@ $inputXML = @"
                     <Button x:Name="DriverDir5Button" Content="Select" HorizontalAlignment="Left" Height="25" Margin="562,328,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                 </Grid>
             </TabItem>
-            <TabItem x:Name="AppTab" Header ="App Removal" Height="20" Width="100">
+            <TabItem Header="Customizations" Height="20" MinWidth="100">
+             <Grid>
+                    <CheckBox x:Name="CustomCBLangPacks" Content="Inject Language Packs" HorizontalAlignment="Left" Margin="29,37,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="CustomBLangPacksSelect" Content="Select" HorizontalAlignment="Left" Margin="251,37,0,0" VerticalAlignment="Top" Width="132" IsEnabled="False"/>
+                    <ListBox x:Name="CustomLBLangPacks" HorizontalAlignment="Left" Height="135" Margin="29,74,0,0" VerticalAlignment="Top" Width="355"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="32,55,0,0" TextWrapping="Wrap" Text="Selected LP's" VerticalAlignment="Top" Width="206"/>
+                    <CheckBox x:Name="CustomCBFOD" Content="Inject Features on Demand" HorizontalAlignment="Left" Margin="419,126,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="CustomBFODSelect" Content="Select" HorizontalAlignment="Left" Margin="625,125,0,0" VerticalAlignment="Top" Width="133" IsEnabled="False"/>
+                    <ListBox x:Name="CustomLBFOD" HorizontalAlignment="Left" Height="224" Margin="419,171,0,0" VerticalAlignment="Top" Width="340"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="421,147,0,0" TextWrapping="Wrap" Text="Select from imported Features" VerticalAlignment="Top" Width="206"/>
+                    <CheckBox x:Name="CustomCBLEP" Content="Inject Local Experience Packs" HorizontalAlignment="Left" Margin="32,217,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="CustomBLEPSelect" Content="Select" HorizontalAlignment="Left" Margin="251,218,0,0" VerticalAlignment="Top" Width="132" IsEnabled="False"/>
+                    <ListBox x:Name="CustomLBLEP" HorizontalAlignment="Left" Height="137" Margin="29,258,0,0" VerticalAlignment="Top" Width="355"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="32,237,0,0" TextWrapping="Wrap" Text="Selected LEP's" VerticalAlignment="Top" Width="206"/>
+                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="418,49,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="MISOneDriveCheckBox" Content="Update OneDrive client" HorizontalAlignment="Left" Margin="418,74,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="580,49,0,0" VerticalAlignment="Top" ClickMode="Press"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="AppTab" Header ="App Removal" Height="20" MinWidth="100">
                 <Grid>
                     <TextBox x:Name="AppxTextBox" TextWrapping="Wrap" Text="Select the apps to remove..." Margin="21,85,252.2,22.8" VerticalScrollBarVisibility="Visible"/>
                     <TextBlock HorizontalAlignment="Left" Margin="21,65,0,0" TextWrapping="Wrap" Text="Selected app packages to remove:" VerticalAlignment="Top" Height="15" Width="194"/>
@@ -299,7 +307,7 @@ $inputXML = @"
                     <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75"/>
                 </Grid>
             </TabItem>
-             <TabItem Header="Make It So" Height="20" Width="100">
+            <TabItem Header="Make It So" Height="20" MinWidth="100">
                 <Grid>
                     <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="444,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647"/>
                     <TextBox x:Name="MISWimNameTextBox" HorizontalAlignment="Left" Height="25" Margin="20,85,0,0" TextWrapping="Wrap" Text="Enter Target WIM Name" VerticalAlignment="Top" Width="500"/>
@@ -317,15 +325,9 @@ $inputXML = @"
                     <TextBox x:Name="MISUpdatesTextBox" HorizontalAlignment="Left" Height="23" Margin="136,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
                     <Label Content="App removal?" HorizontalAlignment="Left" Margin="29,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" HorizontalAlignment="Left" Height="23" Margin="136,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
-                    <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="306,317,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="306,282,0,0" TextWrapping="Wrap" Text=".Net 3.5 binaries must be imported from an ISO. They are not downloaded." VerticalAlignment="Top" Height="35" Width="260"/>
-                    <CheckBox x:Name="MISOneDriveCheckBox" Content="Update OneDrive client" HorizontalAlignment="Left" Margin="306,379,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="306,345,0,0" TextWrapping="Wrap" Text="Current OneDrive installer is downloaded with Win10 updates." VerticalAlignment="Top" Height="34" Width="260"/>
                 </Grid>
             </TabItem>
-
-
-            <TabItem Header="Save/Load" Height="20" Width="100">
+            <TabItem Header="Save/Load" Height="20" MinWidth="102">
                 <Grid>
                     <TextBox x:Name="SLSaveFileName" HorizontalAlignment="Left" Height="25" Margin="26,85,0,0" TextWrapping="Wrap" Text="Name for saved configuration..." VerticalAlignment="Top" Width="500"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,38,0,0" TextWrapping="Wrap" Text="Provide a name for the saved configuration" VerticalAlignment="Top" Height="42" Width="353"/>
@@ -491,7 +493,6 @@ function import-wiminfo($IndexNumber) {
         }
 
 }
-
  
 #Function to Select JSON File
 Function SelectJSONFile {
@@ -659,6 +660,16 @@ Function MakeItSo ($appx) {
         Update-Log -Data "and that it isn't an active mount point" -Class Error
         return
     }
+
+##Bolt in the LP stuff here
+    #Inject the selected language packs
+    if ($WPFCustomCBLangPacks.IsChecked -eq $true){apply-LanguagePacks }
+
+    if ($WPFCustomCBLEP.IsChecked -eq $true){apply-localexperiencepack}
+
+    if ($WPFCustomCBFOD.IsChecked -eq $true){apply-FODs}
+##
+
 
     #Inject .Net Binaries
     if ($WPFMISDotNetCheckBox.IsChecked -eq $true) { inject-dotnet }
@@ -1530,6 +1541,19 @@ Function SelectNewJSONDir {
 
 #Function to retrieve autopilot profile from intune
 function get-WWAutopilotProfile ($login, $path) {
+    
+    function update-autopilot{
+        Update-Log -Data "Uninstalling old WindowsAutopilotIntune module..." -Class Warning
+        Uninstall-Module -Name WindowsAutopilotIntune -AllVersions
+        Update-Log -Data "Installing new WindowsAutopilotIntune module..." -Class Warning
+        Install-Module -Name WindowsAutopilotIntune -force
+        $AutopilotUpdate = ([System.Windows.MessageBox]::Show("WIM Witch needs to close and PowerShell needs to be restarted. Click OK to close WIM Witch.",'Updating complete.','OK','warning'))
+        if ($AutopilotUpdate -eq "OK"){
+            $form.Close()
+            exit
+            }
+     }
+
     Update-Log -data "Checking dependencies for Autopilot profile retrieval..." -Class Information
 
     try {
@@ -1544,7 +1568,7 @@ function get-WWAutopilotProfile ($login, $path) {
 
     try {
 
-        Import-Module -name AzureAD -ErrorAction Stop
+        Import-Module -name AzureAD -ErrorAction Stop | Out-Null
         Update-Log -data "AzureAD Module is installed" -Class Information
     }
     catch {
@@ -1565,9 +1589,30 @@ function get-WWAutopilotProfile ($login, $path) {
         update-log -data "WindowsAutopilotIntune module is now installed." -class Information
     }
 
+        $AutopilotInstalledVer = (get-module -name windowsautopilotintune).Version
+        Update-Log -Data "The currently installed version of the WindowsAutopilotIntune module is $AutopilotInstalledVer" -Class Information
+        $AutopilotLatestVersion = (find-module -Name windowsautopilotintune).version
+        update-log -data "The latest available version of the WindowsAutopilotIntune module is $AutopilotLatestVersion" -Class Information
+
+        if ($AutopilotInstalledVer -eq $AutopilotLatestVersion){
+            update-log -data "WindowsAutopilotIntune module is current. Continuing..." -Class Information}
+            else{
+            Update-Log -data "WindowsAutopilotIntune module is out of date. Prompting the user to upgrade..."
+            $UpgradeAutopilot = ([System.Windows.MessageBox]::Show("Would you like to update the WindowsAutopilotIntune module to version $AutopilotLatestVersion now?",'Update Autopilot Module?','YesNo','warning'))
+            }
+
+        if ($UpgradeAutopilot -eq "Yes"){
+            update-log -Data "User has chosen to update WindowsAutopilotIntune module" -Class Warning
+            update-autopilot}
+            elseif($AutopilotInstalledVer -ne $AutopilotLatestVersion){
+            Update-Log -data "User declined to update WindowsAutopilotIntune module. Continuing..." -Class Warning}
+
 
     Update-Log -data "Connecting to Intune..." -Class Information
-    Connect-AutopilotIntune -user $login | out-null
+    if ($AutopilotInstalledVer -lt 3.9){Connect-AutopilotIntune | out-null}
+            else{
+        Connect-MSGraph | Out-Null}
+
     Update-Log -data "Connected to Intune" -Class Information
 
     Update-Log -data "Retrieving profile..." -Class Information
@@ -2025,7 +2070,7 @@ function import-iso($file, $type, $newname) {
     }
 
     Update-Log -Data "Mounting ISO..." -Class Information
-    $isomount = Mount-DiskImage -ImagePath $file -NoDriveLetter
+    $isomount = Mount-DiskImage -ImagePath $file -NoDriveLetter -PassThru
     $iso = $isomount.devicepath
     $windowsver = Get-WindowsImage -ImagePath $iso\sources\install.wim -Index 1
     $version = set-version -wimversion $windowsver.version
@@ -2315,11 +2360,13 @@ function copy-onedrive{
   
     try{
     update-log -Data "Setting ACL on the original OneDriveSetup.exe file" -Class Information
+    $mountpath = $WPFMISMountTextBox.text
     $user = $env:USERNAME
-    $Acl = Get-Acl "$PSScriptRoot\mount\Windows\SysWOW64\OneDriveSetup.exe"
+    $Acl = Get-Acl "$mountpath\Windows\SysWOW64\OneDriveSetup.exe"
+    $AclBAK = Get-Acl "$mountpath\Windows\SysWOW64\OneDriveSetup.exe"
     $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "FullControl", "Allow")
     $Acl.SetAccessRule($Ar)
-    Set-Acl "$PSScriptRoot\mount\Windows\SysWOW64\OneDriveSetup.exe" $Acl -ErrorAction Stop |out-null
+    Set-Acl "$mountpath\Windows\SysWOW64\OneDriveSetup.exe" $Acl -ErrorAction Stop |out-null
     update-log -Data "ACL successfully updated. Continuing..."
     }
     catch{
@@ -2329,7 +2376,7 @@ function copy-onedrive{
     
     try{
     Update-Log -data "Copying updated OneDrive agent installer..." -Class Information
-    copy-item "$PSScriptRoot\updates\OneDrive\OneDriveSetup.exe" -Destination "$PSScriptRoot\Mount\Windows\SysWOW64" -Force -ErrorAction Stop
+    copy-item "$PSScriptRoot\updates\OneDrive\OneDriveSetup.exe" -Destination "$mountpath\Windows\SysWOW64" -Force -ErrorAction Stop
     Update-Log -Data "OneDrive installer successfully copied." -Class Information
     }
     catch{
@@ -2337,6 +2384,532 @@ function copy-onedrive{
     return
     }
 
+    try{
+    update-log -data "Restoring original ACL to OneDrive installer." -Class Information
+    Set-Acl "$mountpath\Windows\SysWOW64\OneDriveSetup.exe" $AclBAK -ErrorAction Stop |out-null
+    update-log -data "Restoration complete" -Class Information
+    }
+    catch{
+    Update-Log "Couldn't restore original ACLs. Continuing." -Class Error
+    }
+}
+
+#Function to call the next three functions. This determines WinOS and WinVer and calls the function
+function select-LPFODCriteria($Type){
+
+    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
+        Else
+            {$WinOS = "Windows Server"}
+
+    
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
+
+    if ($type -eq "LP"){select-LanguagePacks -winver $Winver -WinOS $WinOS }
+    If ($type -eq "LXP"){select-localexperiencepack -winver $Winver -WinOS $WinOS}
+    if ($type -eq "FOD"){select-FODs -winver $Winver -WinOS $WinOS}
+}
+
+#Function to select langauge packs for injection
+function select-LanguagePacks($winver,$WinOS){
+    
+    $LPSourceFolder = $PSScriptRoot + '\imports\lang\' + $WinOS + '\' + $winver + '\'+ 'LanguagePacks' + '\' 
+    
+    write-host $LPSourceFolder
+    $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -PassThru)
+    foreach ($item in $items){$WPFCustomLBLangPacks.Items.Add($item.name)}
+}
+
+#Function to select LXP packs for injection
+function select-localexperiencepack($winver,$WinOS){
+    
+    $LPSourceFolder = $PSScriptRoot + '\imports\lang\' + $WinOS + '\' + $winver + '\'+ 'localexperiencepack' + '\' 
+    
+    write-host $LPSourceFolder
+    $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -PassThru)
+    foreach ($item in $items){$WPFCustomLBLEP.Items.Add($item.name)}
+
+
+}
+
+#Function to select FODs for injection
+function select-FODs($winver,$WinOS){
+    $Win10_1909_FODs = @("Accessibility.Braille~~~~0.0.1.0",
+"Analog.Holographic.Desktop~~~~0.0.1.0",
+"App.Support.QuickAssist~~~~0.0.1.0",
+"Browser.InternetExplorer~~~~0.0.11.0",
+"Hello.Face.18330~~~~0.0.1.0",
+"Hello.Face.Migration.18330~~~~0.0.1.0",
+"Language.Basic~~~af-ZA~0.0.1.0",
+"Language.Basic~~~ar-SA~0.0.1.0",
+"Language.Basic~~~as-IN~0.0.1.0",
+"Language.Basic~~~az-LATN-AZ~0.0.1.0",
+"Language.Basic~~~ba-RU~0.0.1.0",
+"Language.Basic~~~be-BY~0.0.1.0",
+"Language.Basic~~~bg-BG~0.0.1.0",
+"Language.Basic~~~bn-BD~0.0.1.0",
+"Language.Basic~~~bn-IN~0.0.1.0",
+"Language.Basic~~~bs-LATN-BA~0.0.1.0",
+"Language.Basic~~~ca-ES~0.0.1.0",
+"Language.Basic~~~cs-CZ~0.0.1.0",
+"Language.Basic~~~cy-GB~0.0.1.0",
+"Language.Basic~~~da-DK~0.0.1.0",
+"Language.Basic~~~de-CH~0.0.1.0",
+"Language.Basic~~~de-DE~0.0.1.0",
+"Language.Basic~~~el-GR~0.0.1.0",
+"Language.Basic~~~en-AU~0.0.1.0",
+"Language.Basic~~~en-CA~0.0.1.0",
+"Language.Basic~~~en-GB~0.0.1.0",
+"Language.Basic~~~en-IN~0.0.1.0",
+"Language.Basic~~~en-US~0.0.1.0",
+"Language.Basic~~~es-ES~0.0.1.0",
+"Language.Basic~~~es-MX~0.0.1.0",
+"Language.Basic~~~es-US~0.0.1.0",
+"Language.Basic~~~et-EE~0.0.1.0",
+"Language.Basic~~~eu-ES~0.0.1.0",
+"Language.Basic~~~fa-IR~0.0.1.0",
+"Language.Basic~~~fi-FI~0.0.1.0",
+"Language.Basic~~~fil-PH~0.0.1.0",
+"Language.Basic~~~fr-BE~0.0.1.0",
+"Language.Basic~~~fr-CA~0.0.1.0",
+"Language.Basic~~~fr-CH~0.0.1.0",
+"Language.Basic~~~fr-FR~0.0.1.0",
+"Language.Basic~~~ga-IE~0.0.1.0",
+"Language.Basic~~~gd-GB~0.0.1.0",
+"Language.Basic~~~gl-ES~0.0.1.0",
+"Language.Basic~~~gu-IN~0.0.1.0",
+"Language.Basic~~~ha-LATN-NG~0.0.1.0",
+"Language.Basic~~~haw-US~0.0.1.0",
+"Language.Basic~~~he-IL~0.0.1.0",
+"Language.Basic~~~hi-IN~0.0.1.0",
+"Language.Basic~~~hr-HR~0.0.1.0",
+"Language.Basic~~~hu-HU~0.0.1.0",
+"Language.Basic~~~hy-AM~0.0.1.0",
+"Language.Basic~~~id-ID~0.0.1.0",
+"Language.Basic~~~ig-NG~0.0.1.0",
+"Language.Basic~~~is-IS~0.0.1.0",
+"Language.Basic~~~it-IT~0.0.1.0",
+"Language.Basic~~~ja-JP~0.0.1.0",
+"Language.Basic~~~ka-GE~0.0.1.0",
+"Language.Basic~~~kk-KZ~0.0.1.0",
+"Language.Basic~~~kl-GL~0.0.1.0",
+"Language.Basic~~~kn-IN~0.0.1.0",
+"Language.Basic~~~ko-KR~0.0.1.0",
+"Language.Basic~~~kok-DEVA-IN~0.0.1.0",
+"Language.Basic~~~ky-KG~0.0.1.0",
+"Language.Basic~~~lb-LU~0.0.1.0",
+"Language.Basic~~~lt-LT~0.0.1.0",
+"Language.Basic~~~lv-LV~0.0.1.0",
+"Language.Basic~~~mi-NZ~0.0.1.0",
+"Language.Basic~~~mk-MK~0.0.1.0",
+"Language.Basic~~~ml-IN~0.0.1.0",
+"Language.Basic~~~mn-MN~0.0.1.0",
+"Language.Basic~~~mr-IN~0.0.1.0",
+"Language.Basic~~~ms-BN~0.0.1.0",
+"Language.Basic~~~ms-MY~0.0.1.0",
+"Language.Basic~~~mt-MT~0.0.1.0",
+"Language.Basic~~~nb-NO~0.0.1.0",
+"Language.Basic~~~ne-NP~0.0.1.0",
+"Language.Basic~~~nl-NL~0.0.1.0",
+"Language.Basic~~~nn-NO~0.0.1.0",
+"Language.Basic~~~nso-ZA~0.0.1.0",
+"Language.Basic~~~or-IN~0.0.1.0",
+"Language.Basic~~~pa-IN~0.0.1.0",
+"Language.Basic~~~pl-PL~0.0.1.0",
+"Language.Basic~~~ps-AF~0.0.1.0",
+"Language.Basic~~~pt-BR~0.0.1.0",
+"Language.Basic~~~pt-PT~0.0.1.0",
+"Language.Basic~~~rm-CH~0.0.1.0",
+"Language.Basic~~~ro-RO~0.0.1.0",
+"Language.Basic~~~ru-RU~0.0.1.0",
+"Language.Basic~~~rw-RW~0.0.1.0",
+"Language.Basic~~~sah-RU~0.0.1.0",
+"Language.Basic~~~si-LK~0.0.1.0",
+"Language.Basic~~~sk-SK~0.0.1.0",
+"Language.Basic~~~sl-SI~0.0.1.0",
+"Language.Basic~~~sq-AL~0.0.1.0",
+"Language.Basic~~~sr-CYRL-RS~0.0.1.0",
+"Language.Basic~~~sr-LATN-RS~0.0.1.0",
+"Language.Basic~~~sv-SE~0.0.1.0",
+"Language.Basic~~~sw-KE~0.0.1.0",
+"Language.Basic~~~ta-IN~0.0.1.0",
+"Language.Basic~~~te-IN~0.0.1.0",
+"Language.Basic~~~tg-CYRL-TJ~0.0.1.0",
+"Language.Basic~~~th-TH~0.0.1.0",
+"Language.Basic~~~tk-TM~0.0.1.0",
+"Language.Basic~~~tn-ZA~0.0.1.0",
+"Language.Basic~~~tr-TR~0.0.1.0",
+"Language.Basic~~~tt-RU~0.0.1.0",
+"Language.Basic~~~ug-CN~0.0.1.0",
+"Language.Basic~~~uk-UA~0.0.1.0",
+"Language.Basic~~~ur-PK~0.0.1.0",
+"Language.Basic~~~uz-LATN-UZ~0.0.1.0",
+"Language.Basic~~~vi-VN~0.0.1.0",
+"Language.Basic~~~wo-SN~0.0.1.0",
+"Language.Basic~~~xh-ZA~0.0.1.0",
+"Language.Basic~~~yo-NG~0.0.1.0",
+"Language.Basic~~~zh-CN~0.0.1.0",
+"Language.Basic~~~zh-HK~0.0.1.0",
+"Language.Basic~~~zh-TW~0.0.1.0",
+"Language.Basic~~~zu-ZA~0.0.1.0",
+"Language.Fonts.Arab~~~und-ARAB~0.0.1.0",
+"Language.Fonts.Beng~~~und-BENG~0.0.1.0",
+"Language.Fonts.Cans~~~und-CANS~0.0.1.0",
+"Language.Fonts.Cher~~~und-CHER~0.0.1.0",
+"Language.Fonts.Deva~~~und-DEVA~0.0.1.0",
+"Language.Fonts.Ethi~~~und-ETHI~0.0.1.0",
+"Language.Fonts.Gujr~~~und-GUJR~0.0.1.0",
+"Language.Fonts.Guru~~~und-GURU~0.0.1.0",
+"Language.Fonts.Hans~~~und-HANS~0.0.1.0",
+"Language.Fonts.Hant~~~und-HANT~0.0.1.0",
+"Language.Fonts.Hebr~~~und-HEBR~0.0.1.0",
+"Language.Fonts.Jpan~~~und-JPAN~0.0.1.0",
+"Language.Fonts.Khmr~~~und-KHMR~0.0.1.0",
+"Language.Fonts.Knda~~~und-KNDA~0.0.1.0",
+"Language.Fonts.Kore~~~und-KORE~0.0.1.0",
+"Language.Fonts.Laoo~~~und-LAOO~0.0.1.0",
+"Language.Fonts.Mlym~~~und-MLYM~0.0.1.0",
+"Language.Fonts.Orya~~~und-ORYA~0.0.1.0",
+"Language.Fonts.PanEuropeanSupplementalFonts~~~~0.0.1.0",
+"Language.Fonts.Sinh~~~und-SINH~0.0.1.0",
+"Language.Fonts.Syrc~~~und-SYRC~0.0.1.0",
+"Language.Fonts.Taml~~~und-TAML~0.0.1.0",
+"Language.Fonts.Telu~~~und-TELU~0.0.1.0",
+"Language.Fonts.Thai~~~und-THAI~0.0.1.0",
+"Language.Handwriting~~~af-ZA~0.0.1.0",
+"Language.Handwriting~~~bs-LATN-BA~0.0.1.0",
+"Language.Handwriting~~~ca-ES~0.0.1.0",
+"Language.Handwriting~~~cs-CZ~0.0.1.0",
+"Language.Handwriting~~~cy-GB~0.0.1.0",
+"Language.Handwriting~~~da-DK~0.0.1.0",
+"Language.Handwriting~~~de-DE~0.0.1.0",
+"Language.Handwriting~~~el-GR~0.0.1.0",
+"Language.Handwriting~~~en-GB~0.0.1.0",
+"Language.Handwriting~~~en-US~0.0.1.0",
+"Language.Handwriting~~~es-ES~0.0.1.0",
+"Language.Handwriting~~~es-MX~0.0.1.0",
+"Language.Handwriting~~~eu-ES~0.0.1.0",
+"Language.Handwriting~~~fi-FI~0.0.1.0",
+"Language.Handwriting~~~fr-FR~0.0.1.0",
+"Language.Handwriting~~~ga-IE~0.0.1.0",
+"Language.Handwriting~~~gd-GB~0.0.1.0",
+"Language.Handwriting~~~gl-ES~0.0.1.0",
+"Language.Handwriting~~~hi-IN~0.0.1.0",
+"Language.Handwriting~~~hr-HR~0.0.1.0",
+"Language.Handwriting~~~id-ID~0.0.1.0",
+"Language.Handwriting~~~it-IT~0.0.1.0",
+"Language.Handwriting~~~ja-JP~0.0.1.0",
+"Language.Handwriting~~~ko-KR~0.0.1.0",
+"Language.Handwriting~~~lb-LU~0.0.1.0",
+"Language.Handwriting~~~mi-NZ~0.0.1.0",
+"Language.Handwriting~~~ms-BN~0.0.1.0",
+"Language.Handwriting~~~ms-MY~0.0.1.0",
+"Language.Handwriting~~~nb-NO~0.0.1.0",
+"Language.Handwriting~~~nl-NL~0.0.1.0",
+"Language.Handwriting~~~nn-NO~0.0.1.0",
+"Language.Handwriting~~~nso-ZA~0.0.1.0",
+"Language.Handwriting~~~pl-PL~0.0.1.0",
+"Language.Handwriting~~~pt-BR~0.0.1.0",
+"Language.Handwriting~~~pt-PT~0.0.1.0",
+"Language.Handwriting~~~rm-CH~0.0.1.0",
+"Language.Handwriting~~~ro-RO~0.0.1.0",
+"Language.Handwriting~~~ru-RU~0.0.1.0",
+"Language.Handwriting~~~rw-RW~0.0.1.0",
+"Language.Handwriting~~~sk-SK~0.0.1.0",
+"Language.Handwriting~~~sl-SI~0.0.1.0",
+"Language.Handwriting~~~sq-AL~0.0.1.0",
+"Language.Handwriting~~~sr-CYRL-RS~0.0.1.0",
+"Language.Handwriting~~~sr-LATN-RS~0.0.1.0",
+"Language.Handwriting~~~sv-SE~0.0.1.0",
+"Language.Handwriting~~~sw-KE~0.0.1.0",
+"Language.Handwriting~~~tn-ZA~0.0.1.0",
+"Language.Handwriting~~~tr-TR~0.0.1.0",
+"Language.Handwriting~~~wo-SN~0.0.1.0",
+"Language.Handwriting~~~xh-ZA~0.0.1.0",
+"Language.Handwriting~~~zh-CN~0.0.1.0",
+"Language.Handwriting~~~zh-HK~0.0.1.0",
+"Language.Handwriting~~~zh-TW~0.0.1.0",
+"Language.Handwriting~~~zu-ZA~0.0.1.0",
+"Language.OCR~~~ar-SA~0.0.1.0",
+"Language.OCR~~~bg-BG~0.0.1.0",
+"Language.OCR~~~bs-LATN-BA~0.0.1.0",
+"Language.OCR~~~cs-CZ~0.0.1.0",
+"Language.OCR~~~da-DK~0.0.1.0",
+"Language.OCR~~~de-DE~0.0.1.0",
+"Language.OCR~~~el-GR~0.0.1.0",
+"Language.OCR~~~en-GB~0.0.1.0",
+"Language.OCR~~~en-US~0.0.1.0",
+"Language.OCR~~~es-ES~0.0.1.0",
+"Language.OCR~~~es-MX~0.0.1.0",
+"Language.OCR~~~fi-FI~0.0.1.0",
+"Language.OCR~~~fr-CA~0.0.1.0",
+"Language.OCR~~~fr-FR~0.0.1.0",
+"Language.OCR~~~hr-HR~0.0.1.0",
+"Language.OCR~~~hu-HU~0.0.1.0",
+"Language.OCR~~~it-IT~0.0.1.0",
+"Language.OCR~~~ja-JP~0.0.1.0",
+"Language.OCR~~~ko-KR~0.0.1.0",
+"Language.OCR~~~nb-NO~0.0.1.0",
+"Language.OCR~~~nl-NL~0.0.1.0",
+"Language.OCR~~~pl-PL~0.0.1.0",
+"Language.OCR~~~pt-BR~0.0.1.0",
+"Language.OCR~~~pt-PT~0.0.1.0",
+"Language.OCR~~~ro-RO~0.0.1.0",
+"Language.OCR~~~ru-RU~0.0.1.0",
+"Language.OCR~~~sk-SK~0.0.1.0",
+"Language.OCR~~~sl-SI~0.0.1.0",
+"Language.OCR~~~sr-CYRL-RS~0.0.1.0",
+"Language.OCR~~~sr-LATN-RS~0.0.1.0",
+"Language.OCR~~~sv-SE~0.0.1.0",
+"Language.OCR~~~tr-TR~0.0.1.0",
+"Language.OCR~~~zh-CN~0.0.1.0",
+"Language.OCR~~~zh-HK~0.0.1.0",
+"Language.OCR~~~zh-TW~0.0.1.0",
+"Language.Speech~~~da-DK~0.0.1.0",
+"Language.Speech~~~de-DE~0.0.1.0",
+"Language.Speech~~~en-AU~0.0.1.0",
+"Language.Speech~~~en-CA~0.0.1.0",
+"Language.Speech~~~en-GB~0.0.1.0",
+"Language.Speech~~~en-IN~0.0.1.0",
+"Language.Speech~~~en-US~0.0.1.0",
+"Language.Speech~~~es-ES~0.0.1.0",
+"Language.Speech~~~es-MX~0.0.1.0",
+"Language.Speech~~~fr-CA~0.0.1.0",
+"Language.Speech~~~fr-FR~0.0.1.0",
+"Language.Speech~~~it-IT~0.0.1.0",
+"Language.Speech~~~ja-JP~0.0.1.0",
+"Language.Speech~~~pt-BR~0.0.1.0",
+"Language.Speech~~~zh-CN~0.0.1.0",
+"Language.Speech~~~zh-HK~0.0.1.0",
+"Language.Speech~~~zh-TW~0.0.1.0",
+"Language.TextToSpeech~~~ar-EG~0.0.1.0",
+"Language.TextToSpeech~~~ar-SA~0.0.1.0",
+"Language.TextToSpeech~~~bg-BG~0.0.1.0",
+"Language.TextToSpeech~~~ca-ES~0.0.1.0",
+"Language.TextToSpeech~~~cs-CZ~0.0.1.0",
+"Language.TextToSpeech~~~da-DK~0.0.1.0",
+"Language.TextToSpeech~~~de-AT~0.0.1.0",
+"Language.TextToSpeech~~~de-CH~0.0.1.0",
+"Language.TextToSpeech~~~de-DE~0.0.1.0",
+"Language.TextToSpeech~~~el-GR~0.0.1.0",
+"Language.TextToSpeech~~~en-AU~0.0.1.0",
+"Language.TextToSpeech~~~en-CA~0.0.1.0",
+"Language.TextToSpeech~~~en-GB~0.0.1.0",
+"Language.TextToSpeech~~~en-IE~0.0.1.0",
+"Language.TextToSpeech~~~en-IN~0.0.1.0",
+"Language.TextToSpeech~~~en-US~0.0.1.0",
+"Language.TextToSpeech~~~es-ES~0.0.1.0",
+"Language.TextToSpeech~~~es-MX~0.0.1.0",
+"Language.TextToSpeech~~~fi-FI~0.0.1.0",
+"Language.TextToSpeech~~~fr-CA~0.0.1.0",
+"Language.TextToSpeech~~~fr-CH~0.0.1.0",
+"Language.TextToSpeech~~~fr-FR~0.0.1.0",
+"Language.TextToSpeech~~~he-IL~0.0.1.0",
+"Language.TextToSpeech~~~hi-IN~0.0.1.0",
+"Language.TextToSpeech~~~hr-HR~0.0.1.0",
+"Language.TextToSpeech~~~hu-HU~0.0.1.0",
+"Language.TextToSpeech~~~id-ID~0.0.1.0",
+"Language.TextToSpeech~~~it-IT~0.0.1.0",
+"Language.TextToSpeech~~~ja-JP~0.0.1.0",
+"Language.TextToSpeech~~~ko-KR~0.0.1.0",
+"Language.TextToSpeech~~~ms-MY~0.0.1.0",
+"Language.TextToSpeech~~~nb-NO~0.0.1.0",
+"Language.TextToSpeech~~~nl-BE~0.0.1.0",
+"Language.TextToSpeech~~~nl-NL~0.0.1.0",
+"Language.TextToSpeech~~~pl-PL~0.0.1.0",
+"Language.TextToSpeech~~~pt-BR~0.0.1.0",
+"Language.TextToSpeech~~~pt-PT~0.0.1.0",
+"Language.TextToSpeech~~~ro-RO~0.0.1.0",
+"Language.TextToSpeech~~~ru-RU~0.0.1.0",
+"Language.TextToSpeech~~~sk-SK~0.0.1.0",
+"Language.TextToSpeech~~~sl-SI~0.0.1.0",
+"Language.TextToSpeech~~~sv-SE~0.0.1.0",
+"Language.TextToSpeech~~~ta-IN~0.0.1.0",
+"Language.TextToSpeech~~~th-TH~0.0.1.0",
+"Language.TextToSpeech~~~tr-TR~0.0.1.0",
+"Language.TextToSpeech~~~vi-VN~0.0.1.0",
+"Language.TextToSpeech~~~zh-CN~0.0.1.0",
+"Language.TextToSpeech~~~zh-HK~0.0.1.0",
+"Language.TextToSpeech~~~zh-TW~0.0.1.0",
+"MathRecognizer~~~~0.0.1.0",
+"Media.WindowsMediaPlayer~~~~0.0.12.0",
+"Microsoft.Onecore.StorageManagement~~~~0.0.1.0",
+"Microsoft.WebDriver~~~~0.0.1.0",
+"Microsoft.Windows.StorageManagement~~~~0.0.1.0",
+"Msix.PackagingTool.Driver~~~~0.0.1.0",
+"NetFX3~~~~",
+"Network.Irda~~~~0.0.1.0",
+"OneCoreUAP.OneSync~~~~0.0.1.0",
+"OpenSSH.Client~~~~0.0.1.0",
+"OpenSSH.Server~~~~0.0.1.0",
+"RasCMAK.Client~~~~0.0.1.0",
+"RIP.Listener~~~~0.0.1.0",
+"Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0",
+"Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0",
+"Rsat.CertificateServices.Tools~~~~0.0.1.0",
+"Rsat.DHCP.Tools~~~~0.0.1.0",
+"Rsat.Dns.Tools~~~~0.0.1.0",
+"Rsat.FailoverCluster.Management.Tools~~~~0.0.1.0",
+"Rsat.FileServices.Tools~~~~0.0.1.0",
+"Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0",
+"Rsat.IPAM.Client.Tools~~~~0.0.1.0",
+"Rsat.LLDP.Tools~~~~0.0.1.0",
+"Rsat.NetworkController.Tools~~~~0.0.1.0",
+"Rsat.NetworkLoadBalancing.Tools~~~~0.0.1.0",
+"Rsat.RemoteAccess.Management.Tools~~~~0.0.1.0",
+"Rsat.RemoteDesktop.Services.Tools~~~~0.0.1.0",
+"Rsat.ServerManager.Tools~~~~0.0.1.0",
+"Rsat.Shielded.VM.Tools~~~~0.0.1.0",
+"Rsat.StorageMigrationService.Management.Tools~~~~0.0.1.0",
+"Rsat.StorageReplica.Tools~~~~0.0.1.0",
+"Rsat.SystemInsights.Management.Tools~~~~0.0.1.0",
+"Rsat.VolumeActivation.Tools~~~~0.0.1.0",
+"Rsat.WSUS.Tools~~~~0.0.1.0",
+"SNMP.Client~~~~0.0.1.0",
+"Tools.DeveloperMode.Core~~~~0.0.1.0",
+"Tools.DTrace.Platform~~~~0.0.1.0",
+"Tools.Graphics.DirectX~~~~0.0.1.0",
+"WMI-SNMP-Provider.Client~~~~0.0.1.0",
+"XPS.Viewer~~~~0.0.1.0")
+    $Win10_1903_FODs = @()
+    $Win10_1809_FODs = @()
+
+    If ($WinOS -eq "Windows 10"){
+        write-host "$WinOS"
+        If ($Winver -eq "1909"){$items = ($Win10_1909_FODs | Out-GridView -PassThru) }
+
+        }
+
+    foreach ($item in $items){$WPFCustomLBFOD.Items.Add($item)}
+    }
+ 
+#Function to apply the selected Langauge Packs to the mounted WIM                                                                    
+function apply-LanguagePacks{
+
+    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
+        Else
+            {$WinOS = "Windows Server"}
+
+    
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
+    $mountdir = $WPFMISMountTextBox.text
+
+$LPSourceFolder = $PSScriptRoot + '\imports\Lang\' + $WinOS + '\' + $winver + '\LanguagePacks\'
+$items = $WPFCustomLBLangPacks.items
+
+foreach ($item in $items){
+    $source = $LPSourceFolder + $item
+    write-host $source
+    Add-WindowsPackage -PackagePath $source -Path $mountdir
+    }
+}
+
+#Function to apply selected LXPs to the mounted WIM      
+function apply-localexperiencepack{
+
+    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
+        Else
+            {$WinOS = "Windows Server"}
+
+    
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
+    $mountdir = $WPFMISMountTextBox.text
+
+$LPSourceFolder = $PSScriptRoot + '\imports\Lang\' + $WinOS + '\' + $winver + '\localexperiencepack\'
+$items = $WPFCustomLBLEP.items
+
+foreach ($item in $items){
+    $source = $LPSourceFolder + $item
+    $license = get-item -Path $source\*.xml
+    $file = get-item -Path $source\*.appx
+    write-host "Adding Package"
+    Add-ProvisionedAppxPackage -PackagePath $file -LicensePath $license -Path $mountdir
+    write-host "Package added"
+    }
+
+}
+
+#Function to apply selected FODs to the mounted WIM
+function apply-FODs{
+
+    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
+        Else
+            {$WinOS = "Windows Server"}
+
+    
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
+    $mountdir = $WPFMISMountTextBox.text
+
+$FODsource = $PSScriptRoot + '\imports\FODs\' + $winOS + '\' + $Winver + '\'
+write-host $FODSource
+
+$items = $WPFCustomLBFOD.items
+
+foreach ($item in $items){
+    write-host "Adding FOD Package"
+    Add-WindowsCapability -Path $mountdir -Name $item -Source $FODsource
+    Write-host "FOD Package Added"
+    }
+}
+
+#Function to import the selected LP's in to the Imports folder
+Function import-LanguagePacks($Winver,$LPSourceFolder,$WinOS){
+
+New-Item -Path $PSScriptRoot\imports\Lang\$WinOS\$winver -Name LanguagePacks -ItemType Directory
+$items = $WPFImportOtherLBList.items
+foreach ($item in $items){
+    $source = $LPSourceFolder + $item
+    Copy-Item $source -destination $PSScriptRoot\imports\Lang\$WinOS\$Winver\LanguagePacks}
+}
+
+#Function to import the selected LXP's into the imports forlder
+Function import-LocalExperiencePack($Winver,$LPSourceFolder,$WinOS){
+
+$items = $WPFImportOtherLBList.items
+foreach ($item in $items){
+    $name = $item
+    $source = $LPSourceFolder + $name
+    New-Item -Path $PSScriptRoot\imports\lang\$WinOS\$winver\localexperiencepack -Name $name -ItemType Directory
+    Write-Host $source
+
+  get-childitem -path $source | Copy-Item -destination $PSScriptRoot\imports\Lang\$WinOS\$Winver\LocalExperiencePack\$name}
+}
+
+#Function to import the contents of the selected FODs into the imports forlder
+Function import-FOD($Winver,$LPSourceFolder,$WinOS){
+
+$langpacks = Get-ChildItem -path $LPSourceFolder 
+New-Item -Path $PSScriptRoot\imports\FODs\$WinOS -Name $Winver -ItemType Directory
+
+foreach ($langpack in $langpacks){
+    $source = $LPSourceFolder + $langpack.name
+    Write-Host $source
+    Copy-Item $source -destination $PSScriptRoot\imports\FODs\$WinOS\$Winver\
+    }
+get-childitem -path ($LPSourceFolder + '\metadata\') | Copy-Item -destination $PSScriptRoot\imports\FODs\$WinOS\$Winver\metadata 
+}
+
+#Function to update winver cobmo box
+function update-importverCB{
+    $WPFImportOtherCBWinVer.Items.Clear()
+   # write-host $WPFImportOtherCBWinOS.text
+    write-host $WPFImportOtherCBWinOS.SelectedItem
+    if ($WPFImportOtherCBWinOS.SelectedItem -eq "Windows Server"){Foreach ($WinSrvVer in $WinSrvVer){$WPFImportOtherCBWinVer.Items.Add($WinSrvVer)}}
+    if ($WPFImportOtherCBWinOS.SelectedItem -eq "Windows 10"){Foreach ($Win10Ver in $Win10ver){$WPFImportOtherCBWinVer.Items.Add($Win10Ver)}}
+
+}
+
+#function to select other object import source path
+function select-importotherpath{
+    Add-Type -AssemblyName System.Windows.Forms
+    $browser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $browser.Description = "Source folder"
+    $null = $browser.ShowDialog()
+    $ImportPath = $browser.SelectedPath + '\'
+    $WPFImportOtherTBPath.text = $ImportPath
 }
 
 #===========================================================================
@@ -2414,9 +2987,6 @@ if ($DownloadUpdates -eq $true) {
 
 #===========================================================================
 
-
-
-
 #===========================================================================
 # Set default values for certain variables
 #===========================================================================
@@ -2433,6 +3003,17 @@ $WPFMISUpdatesTextBox.Text = "False"
 $WPFMISAppxTextBox.Text = "False"
 
 #$WPFAppTab.IsEnabled = $False
+
+#Set the combo box values of the other import tab
+#--- Start combox box
+$ObjectTypes = @("Language Pack","Local Expereince Pack","Feature On Demand")
+$WinOS = @("Windows Server","Windows 10")
+$WinSrvVer = @("2016","2019")
+$Win10Ver = @("1809","1903","1909")
+
+Foreach ($ObjectType in $ObjectTypes){$WPFImportOtherCBType.Items.Add($ObjectType) | out-null}
+Foreach ($WinOS in $WinOS){$WPFImportOtherCBWinOS.Items.Add($WinOS) | out-null}  
+#--- End combo box
 
 #===========================================================================
 # Section for Buttons to call functions
@@ -2458,7 +3039,6 @@ $WPFDriverDir4Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDr
 $WPFDriverDir5Button.Add_Click( { SelectDriverSource -DriverTextBoxNumber $WPFDriverDir5TextBox }) 
 
 #Make it So Button, which builds the WIM file
-#$WPFMISMakeItSoButton.Add_Click({MakeItSo}) 
 $WPFMISMakeItSoButton.Add_Click( { MakeItSo -appx $global:SelectedAppx }) 
 
 #Update OSDBuilder Button
@@ -2500,6 +3080,36 @@ $WPFImportImportButton.Add_click( {
 
     })
 
+#Combo Box dynamic change for Winver combo box
+$WPFImportOtherCBWinOS.add_SelectionChanged({update-importverCB})
+
+#Button to select the import path in the other components
+$WPFImportOtherBSelectPath.add_click({select-importotherpath
+        
+        if ($WPFImportOtherCBType.SelectedItem -ne "Feature On Demand"){$items = (Get-ChildItem -path $WPFImportOtherTBPath.text | Select-Object -Property Name | Out-GridView -PassThru)}
+        if ($WPFImportOtherCBType.SelectedItem -eq "Feature On Demand"){$items = (get-Childitem -path $WPFImportOtherTBPath.text)}    
+        $WPFImportOtherLBList.Items.Clear()
+        foreach ($item in $items){$WPFImportOtherLBList.Items.Add($item.name)}
+
+    })
+
+#Button to import Other Components content
+$WPFImportOtherBImport.add_click({
+     if ($WPFImportOtherCBType.SelectedItem -eq "Language Pack"){import-LanguagePacks -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
+     if ($WPFImportOtherCBType.SelectedItem -eq "Local Expereince Pack"){import-LocalExperiencePack -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
+     if ($WPFImportOtherCBType.SelectedItem -eq "Feature On Demand"){import-FOD -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}})
+
+
+#Button Select LP's for importation
+$WPFCustomBLangPacksSelect.add_click({select-LPFODCriteria -type "LP"})
+
+#Button to select FODs for importation
+$WPFCustomBFODSelect.add_click({select-LPFODCriteria -type "FOD"})
+
+#Button to select LXPs for importation
+$WPFCustomBLEPSelect.add_click({select-LPFODCriteria -type "LXP" })
+
+
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -2540,24 +3150,9 @@ $WPFDriverCheckBox.Add_Click( {
 #Enable Updates Selection
 $WPFUpdatesEnableCheckBox.Add_Click( {
         If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
-            # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-            # $WPFUpdatesDownloadNewButton.IsEnabled = $True
-            # $WPFUpdates1903CheckBox.IsEnabled = $True
-            # $WPFUpdates1809CheckBox.IsEnabled = $True
-            # $WPFUpdates1803CheckBox.IsEnabled = $True
-            # $WPFUpdates1709CheckBox.IsEnabled = $True
-            # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-            $WPFMISUpdatesTextBox.Text = "True"
+             $WPFMISUpdatesTextBox.Text = "True"
         }
         else {
-            # $WPFUpdatesOSDBVersion.IsEnabled = $False
-            #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
-            #  $WPFUpdatesDownloadNewButton.IsEnabled = $False
-            #  $WPFUpdates1903CheckBox.IsEnabled = $False
-            #  $WPFUpdates1809CheckBox.IsEnabled = $False
-            #  $WPFUpdates1803CheckBox.IsEnabled = $False
-            #  $WPFUpdates1709CheckBox.IsEnabled = $False
-            #  $WPFUpdateOSDBUpdateButton.IsEnabled = $False
             $WPFMISUpdatesTextBox.Text = "False"
         }
     })
@@ -2615,19 +3210,41 @@ $WPFUpdatesW10Main.Add_Click( {
            
         }
     })
+
+#Enable LP Selection
+$WPFCustomCBLangPacks.Add_Click({
+    If ($WPFCustomCBLangPacks.IsChecked -eq $true){$WPFCustomBLangPacksSelect.IsEnabled = $True}
+        else
+        {$WPFCustomBLangPacksSelect.IsEnabled = $False}
+ })
+
+#ENable Language Experience Pack selection
+$WPFCustomCBLEP.Add_Click({
+    If ($WPFCustomCBLEP.IsChecked -eq $true){$WPFCustomBLEPSelect.IsEnabled = $True}
+        else
+        {$WPFCustomBLEPSelect.IsEnabled = $False}
+ })
+
+#Enable Feature On Demand selection
+$WPFCustomCBFOD.Add_Click({
+    If ($WPFCustomCBFOD.IsChecked -eq $true){$WPFCustomBFODSelect.IsEnabled = $True}
+        else
+        {$WPFCustomBFODSelect.IsEnabled = $False}
+ })
  
 #==========================================================
 #Run WIM Witch below
 #==========================================================
 
+
 #Runs WIM Witch from a single file, bypassing the GUI
-if (($auto -eq $true) -and ($autofile -ne $null)) {
+if (($auto -eq $true) -and ($autofile -ne "")) { 
     run-configfile -filename $autofile
     display-closingtext
     exit 0
 }
 
-if (($auto -eq $true) -and ($autopath -ne $null)) {
+if (($auto -eq $true) -and ($autopath -ne "")) {
     Update-Log -data "Running batch job from config folder $autopath" -Class Information
     $files = Get-ChildItem -Path $autopath
     Update-Log -data "Setting batch job for the folling configs:" -Class Information
