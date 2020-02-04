@@ -457,14 +457,11 @@ function import-wiminfo($IndexNumber) {
     }
     $text = "WIM file selected: " + $SourceWIM.FileName
     Update-Log -data $text -Class Information
-#    $text = "Edition selected: " + $ImageInfo.ImageDescription
     $text = "Edition selected: " + $ImageInfo.ImageName
 
     Update-Log -data $text -Class Information
     $ImageIndex = $IndexNumber
 
-
- #   $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageDescription
     $WPFSourceWIMImgDesTextBox.text = $ImageInfo.ImageName
     $WPFSourceWimVerTextBox.Text = $ImageInfo.Version
     $WPFSourceWimSPBuildTextBox.text = $ImageInfo.SPBuild
@@ -491,7 +488,6 @@ function import-wiminfo($IndexNumber) {
         $WPFAutopilotTab.IsEnabled = $True
         $WPFMISOneDriveCheckBox.IsEnabled = $True
         }
-
 }
  
 #Function to Select JSON File
@@ -507,7 +503,6 @@ Function SelectJSONFile {
     $text = "JSON file selected: " + $JSON.FileName
     update-log -Data $text -Class Information
     Parse-JSON -file $JSON.FileName
-
 }
 
 #Function to parse the JSON file for user valuable info
@@ -533,15 +528,12 @@ Function Parse-JSON($file) {
 
 #Function to select the paths for the driver fields
 Function SelectDriverSource($DriverTextBoxNumber) {
-    #write-host $DriverTextBoxNumber
     Add-Type -AssemblyName System.Windows.Forms
     $browser = New-Object System.Windows.Forms.FolderBrowserDialog
     $browser.Description = "Select the Driver Source folder"
     $null = $browser.ShowDialog()
     $DriverDir = $browser.SelectedPath
     $DriverTextBoxNumber.Text = $DriverDir
-
-
     update-log -Data "Driver path selected: $DriverDir" -Class Information
 }
 
@@ -558,19 +550,16 @@ Function MakeItSo ($appx) {
         return 
     }
 
-   # if ($auto -ne "yes") {
+   
      if ($auto -eq $false) {
         $checkresult = (check-name) 
         if ($checkresult -eq "stop") { return }
     }
 
-   # if ($auto -eq "yes") {
-   if ($auto -eq $true) {
+     if ($auto -eq $true) {
         $checkresult = (check-name -conflict append)
         if ($checkresult -eq "stop") { return }
     }
-
-
 
     #check for working directory, make if does not exist, delete files if they exist
     $FolderExist = Test-Path $PSScriptRoot\Staging -PathType Any
@@ -644,15 +633,13 @@ Function MakeItSo ($appx) {
 
     #Mount the WIM File
 
-
     $wimname = Get-Item -Path $PSScriptRoot\Staging\*.wim
     update-log -Data "Mounting source WIM $wimname" -Class Information
     update-log -Data "to mount point:" -Class Information
     update-log -data $WPFMISMountTextBox.Text -Class Information
 
     try {
-        #write-host $IndexNumber
-         Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
+          Mount-WindowsImage -Path $WPFMISMountTextBox.Text -ImagePath $wimname -Index 1 -ErrorAction Stop | Out-Null
          }
     catch {
         Update-Log -data $_.Exception.Message -class Error
@@ -661,14 +648,21 @@ Function MakeItSo ($appx) {
         return
     }
 
-##Bolt in the LP stuff here
-    #Inject the selected language packs
-    if ($WPFCustomCBLangPacks.IsChecked -eq $true){apply-LanguagePacks }
+    #Language Packs and FOD
+    if ($WPFCustomCBLangPacks.IsChecked -eq $true){
+        apply-LanguagePacks }
+        else{
+        update-log -Data "Language Packs Injection not selected. Skipping..."}
 
-    if ($WPFCustomCBLEP.IsChecked -eq $true){apply-localexperiencepack}
+    if ($WPFCustomCBLEP.IsChecked -eq $true){
+        apply-localexperiencepack}
+        else{
+        update-log -Data "Local Experience Packs not selected. Skipping..."}
 
-    if ($WPFCustomCBFOD.IsChecked -eq $true){apply-FODs}
-##
+    if ($WPFCustomCBFOD.IsChecked -eq $true){
+        apply-FODs}
+        else{
+        update-log -Data "Features On Demand not selected. Skipping..."}
 
 
     #Inject .Net Binaries
@@ -769,7 +763,6 @@ Function MakeItSo ($appx) {
     update-log -Data "WIM dismounted" -Class Information 
 
     try {
-        #Move-Item -Path $wimname -Destination $WPFMISWimFolderTextBox.Text -ErrorAction Stop
         update-log -Data "Exporting WIM file" -Class Information
         Export-WindowsImage -SourceImagePath $wimname -SourceIndex 1 -DestinationImagePath ($WPFMISWimFolderTextBox.Text + '\' + $WPFMISWimNameTextBox.Text) -DestinationName ('WW - ' + $WPFSourceWIMImgDesTextBox.text) |Out-Null
     }
@@ -879,15 +872,14 @@ Function Set-Logging {
     #logging folder
     $FileExist = Test-Path -Path $PSScriptRoot\logging\WIMWitch.Log -PathType Leaf
     if ($FileExist -eq $False) {
-        #update-log -data "Logging folder does not exist" -class Warning
         New-Item -ItemType Directory -Force -Path $PSScriptRoot\Logging | Out-Null
         New-Item -Path $PSScriptRoot\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
-        #update-log -data "Logging folder and log created successfully" -Class Information 
+       
     }
     Else {
         Remove-Item -Path $PSScriptRoot\logging\WIMWitch.log
         New-Item -Path $PSScriptRoot\logging -Name "WIMWitch.log" -ItemType "file" -Value "***Logging Started***" | Out-Null
-        #Update-Log -Data "Logging started successfully" -Class Information
+       
     }
    
 
@@ -1100,10 +1092,8 @@ Function update-OSDSUS {
         Update-Log -Data "Attempting to install and import OSDSUS" -Class Information
         try {
             Install-Module OSDUpdate -Force -ErrorAction Stop
-            #Write-Host "Installed module"
             Update-Log -data "OSDSUS module has been installed" -Class Information
             Import-Module -Name OSDUpdate -Force -ErrorAction Stop
-            #Write-Host "Imported module"
             Update-Log -Data "OSDSUS module has been imported" -Class Information
             Update-Log -Data "****************************************************************************" -Class Warning
             Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
@@ -1124,7 +1114,6 @@ Function update-OSDSUS {
         try {
             uninstall-module -Name osdsus -AllVersions -force
             install-module -name osdsus -force
-           # Update-OSDSUS -ErrorAction Stop
             Update-Log -Data "Updated OSDSUS" -Class Information
             Update-Log -Data "****************************************************************************" -Class Warning
             Update-Log -Data "Please close WIM Witch and all PowerShell windows, then rerun to continue..." -Class Warning
@@ -1186,10 +1175,7 @@ Function check-superceded($action, $OS, $Build) {
     foreach ($Children in $Children) {
         $path1 = $path + $Children  
         $sprout = Get-ChildItem -Path $path1
- 
-      #  foreach ($kids in $kids) {
-      #      $path2 = $path1 + '\' + $kids
-      #      $sprout = get-childitem -path $path2
+
         
             foreach ($sprout in $sprout) {
                 $path3 = $path1 + '\' + $sprout
@@ -1203,7 +1189,7 @@ Function check-superceded($action, $OS, $Build) {
                             remove-item -path $path3 -Recurse -Force
                         }
                     if ($action -eq 'audit') {
-                        #write-host "set variable"
+                       
                         $WPFUpdatesOSDBSupercededExistTextBlock.Visibility = "Visible"
 
                         Return
@@ -1236,26 +1222,8 @@ Function download-patches($build,$OS) {
 #Function to remove superceded updates and initate new patch download
 Function update-patchsource {
 
-
-
-    #try {
-        #write-host "starting purge"
-        #Get-DownOSDBuilder -Superseded Remove -ErrorAction Stop
-        #Update-Log -Data "Deleting superseded updates..." -Class Warning
-    #    Check-Superceded -action delete -ErrorAction Stop
-    #} 
-    #catch {
-    #    Update-Log -Data "Updates not superceded" -Class Information
-    #    Return
-    #}
     Update-Log -Data "attempting to start download function" -Class Information
-  #  If ($WPFUpdates1909CheckBox.IsChecked -eq $true) { download-patches -build 1909 }
-  #  If ($WPFUpdates1903CheckBox.IsChecked -eq $true) { download-patches -build 1903 }
-  #  If ($WPFUpdates1809CheckBox.IsChecked -eq $true) { download-patches -build 1809 }
-  #  If ($WPFUpdates1803CheckBox.IsChecked -eq $true) { download-patches -build 1803 }
-  #  If ($WPFUpdates1709CheckBox.IsChecked -eq $true) { download-patches -build 1709 }
-
-  
+    
 if ($WPFUpdatesW10Main.IsChecked -eq $true){
     if ($WPFUpdatesW10_1909.IsChecked -eq $true){
         check-superceded -action delete -build 1909 -OS "Windows 10"
@@ -1298,8 +1266,7 @@ Function Apply-Updates($class) {
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
-    #If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
-
+  
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { 
         $mountdir = $WPFMISMountTextBox.Text
         reg LOAD HKLM\OFFLINE $mountdir\Windows\System32\Config\SOFTWARE | Out-Null
@@ -1307,8 +1274,7 @@ Function Apply-Updates($class) {
         $buildnum = $regvalues.ReleaseId
         reg UNLOAD HKLM\OFFLINE | Out-Null}
 
-
-    
+   
     $path = $PSScriptRoot + '\updates\' + $OS + '\' + $buildnum + '\' + $class + '\'
     $Children = Get-ChildItem -Path $path
     foreach ($Children in $Children) {
@@ -1316,7 +1282,6 @@ Function Apply-Updates($class) {
         update-log -Data "Applying $Children" -Class Information
         Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $compound | Out-Null
     }
-
 }
 
 #Function to select AppX packages to yank
@@ -1619,8 +1584,6 @@ function get-WWAutopilotProfile ($login, $path) {
     Get-AutoPilotProfile | Out-GridView -title "Select Autopilot profile" -PassThru | ConvertTo-AutoPilotConfigurationJSON | Out-File $path\AutopilotConfigurationFile.json -Encoding ASCII
     $text = $path + "\AutopilotConfigurationFile.json"
     Update-Log -data "Profile successfully created at $text" -Class Information
-
-
 }
 
 #Function to save current configuration
@@ -1656,7 +1619,6 @@ function save-config($filename) {
     catch {
         Update-Log -data "Couldn't save file" -Class Error 
     }
-
 }
 
 #Function to import configurations from file
@@ -1692,7 +1654,7 @@ function load-config($filename) {
         import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
 
         if ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
-            #Update-Log -data "Parsing Autopilot JSON file" -Class Information
+            
             Parse-JSON -file $WPFJSONTextBox.text 
         }
 
@@ -1709,7 +1671,6 @@ function load-config($filename) {
 Function select-config {
     $SourceXML = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
         InitialDirectory = "$PSScriptRoot\Configs"
-        #InitialDirectory = [Environment]::GetFolderPath('Desktop') 
         Filter           = 'XML (*.XML)|'
     }
     $null = $SourceXML.ShowDialog()
@@ -1734,13 +1695,6 @@ function reset-MISCheckBox {
         $WPFMISDriverTextBox.Text = "True"
     }
     If ($WPFUpdatesEnableCheckBox.IsChecked -eq $true) {
-       # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
-       # $WPFUpdatesDownloadNewButton.IsEnabled = $True
-       # $WPFUpdates1903CheckBox.IsEnabled = $True
-       # $WPFUpdates1809CheckBox.IsEnabled = $True
-       # $WPFUpdates1803CheckBox.IsEnabled = $True
-       # $WPFUpdates1709CheckBox.IsEnabled = $True
-       # $WPFUpdateOSDBUpdateButton.IsEnabled = $True
         $WPFMISUpdatesTextBox.Text = "True"
     }
     If ($WPFAppxCheckBox.IsChecked -eq $true) {
@@ -1967,7 +1921,6 @@ function check-install {
             Copy-Item -Path $MyInvocation.ScriptName -Destination $installpath -Force
             Write-Output "WIM Witch script copied to installation path"
             Set-Location -Path $installpath
-            #Set-Location -path $installpath
             foreach ($subfolder in $subfolders) {
 
                 if ((Test-Path -Path "$subfolder") -eq $true) { Write-Host "$subfolder exists" }
@@ -1977,7 +1930,6 @@ function check-install {
                 } 
             }
                 
-            #Set-Location $PSScriptRoot
             Write-Output "============================================="
             Write-Output "WIM Witch has been installed to $installpath"
             Write-Output "Start WIM witch from that folder to continue."
@@ -1985,8 +1937,7 @@ function check-install {
             Write-Output "Exiting..."
             break
         }
-  
-    }
+     }
 
     $subfolders = @(
         "CompletedWIMs"
@@ -2086,11 +2037,14 @@ function import-iso($file, $type, $newname) {
    
         #Copy out the WIM file from the selected ISO
         try {
+            update-log -data "Purging staging folder..." -Class Information
+            Remove-Item -Path $PSScriptRoot\staging\*.* -Force
+            update-log -data "Purge complete." -Class Information
             Update-Log -Data "Copying WIM file to the staging folder..." -Class Information	
-            Copy-Item -Path $iso\sources\install.wim -Destination $PSScriptRoot\staging -Force -ErrorAction Stop
+            Copy-Item -Path $iso\sources\install.wim -Destination $PSScriptRoot\staging -Force -ErrorAction Stop -PassThru
         }
         catch {
-            Update-Log "Couldn't copy from the source" -Class Error
+            Update-Log -data "Couldn't copy from the source" -Class Error
             return
         }
     
@@ -2180,7 +2134,6 @@ function select-iso {
 #function to inject the .Net 3.5 binaries from the import folder
 function inject-dotnet {
 
-    #If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1903 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
@@ -2249,8 +2202,7 @@ Function Check-WIMWitchVer{
         }
 
         if ($yesno -eq "y") {
-           # Update-Log -Data "Calling script backup function..." -Class Information
-            Backup-WIMWitch
+           Backup-WIMWitch
  
             try{
                 Save-Script -Name "WIMWitch" -Path $PSScriptRoot -Force -ErrorAction Stop
@@ -2289,14 +2241,8 @@ catch{
 
 
 If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq $false)){upgrade-wimwitch}
-#If (($WWCurrentVer -gt $WWScriptVer) -and ($auto -ne "yes")){upgrade-wimwitch}
-
-#if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq "yes")){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
 if (($WWCurrentVer -gt $WWScriptVer) -and ($auto -eq $true)){update-log -data "Skipping WIM Witch upgrade because she is in auto-mode. Please launch WIM Witch in GUI mode to update." -class warning} 
-
-
 If ($WWCurrentVer -eq $WWScriptVer){Update-Log -data "WIM Witch is up to date. Starting WIM Witch" -Class Information}
-
 If ($WWCurrentVer -lt $WWScriptVer){
     Update-Log -Data "The local copy of WIM Witch is more current that the most current" -class Warning
     Update-Log -Data "version available. Did you violate the Temporal Prime Directive?" -class Warning
@@ -2394,6 +2340,9 @@ function copy-onedrive{
     }
 }
 
+
+################################
+
 #Function to call the next three functions. This determines WinOS and WinVer and calls the function
 function select-LPFODCriteria($Type){
 
@@ -2415,7 +2364,7 @@ function select-LanguagePacks($winver,$WinOS){
     
     $LPSourceFolder = $PSScriptRoot + '\imports\lang\' + $WinOS + '\' + $winver + '\'+ 'LanguagePacks' + '\' 
     
-    write-host $LPSourceFolder
+   # write-host $LPSourceFolder
     $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -PassThru)
     foreach ($item in $items){$WPFCustomLBLangPacks.Items.Add($item.name)}
 }
@@ -2425,11 +2374,9 @@ function select-localexperiencepack($winver,$WinOS){
     
     $LPSourceFolder = $PSScriptRoot + '\imports\lang\' + $WinOS + '\' + $winver + '\'+ 'localexperiencepack' + '\' 
     
-    write-host $LPSourceFolder
+   # write-host $LPSourceFolder
     $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -PassThru)
     foreach ($item in $items){$WPFCustomLBLEP.Items.Add($item.name)}
-
-
 }
 
 #Function to select FODs for injection
@@ -2775,9 +2722,8 @@ function select-FODs($winver,$WinOS){
     $Win10_1809_FODs = @()
 
     If ($WinOS -eq "Windows 10"){
-        write-host "$WinOS"
+       # write-host "$WinOS"
         If ($Winver -eq "1909"){$items = ($Win10_1909_FODs | Out-GridView -PassThru) }
-
         }
 
     foreach ($item in $items){$WPFCustomLBFOD.Items.Add($item)}
@@ -2785,11 +2731,10 @@ function select-FODs($winver,$WinOS){
  
 #Function to apply the selected Langauge Packs to the mounted WIM                                                                    
 function apply-LanguagePacks{
-
+    Update-Log -data "Applying Language Packs..." -Class Information
     if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
         Else
             {$WinOS = "Windows Server"}
-
     
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
@@ -2800,18 +2745,21 @@ $items = $WPFCustomLBLangPacks.items
 
 foreach ($item in $items){
     $source = $LPSourceFolder + $item
-    write-host $source
+  #  write-host $source
+    $text = 'Applying ' + $item
+    Update-Log -Data $text -Class Information
     Add-WindowsPackage -PackagePath $source -Path $mountdir
+    Update-Log -Data "Injection Successful" -Class Information
     }
+Update-Log -Data "Language Pack injections complete" -Class Information
 }
 
 #Function to apply selected LXPs to the mounted WIM      
 function apply-localexperiencepack{
-
+     Update-Log -data "Applying Local Experience Packs..." -Class Information
     if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
         Else
             {$WinOS = "Windows Server"}
-
     
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
@@ -2824,82 +2772,127 @@ foreach ($item in $items){
     $source = $LPSourceFolder + $item
     $license = get-item -Path $source\*.xml
     $file = get-item -Path $source\*.appx
-    write-host "Adding Package"
+    $text = 'Applying ' + $item
+    Update-Log -Data $text -Class Information
     Add-ProvisionedAppxPackage -PackagePath $file -LicensePath $license -Path $mountdir
-    write-host "Package added"
+    Update-Log -Data "Injection Successful" -Class Information
     }
-
+Update-Log -Data "Local Experience Pack injections complete" -Class Information
 }
 
 #Function to apply selected FODs to the mounted WIM
 function apply-FODs{
-
+    Update-Log -data "Applying Features On Demand..." -Class Information
     if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
         Else
             {$WinOS = "Windows Server"}
-
     
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
     $mountdir = $WPFMISMountTextBox.text
 
 $FODsource = $PSScriptRoot + '\imports\FODs\' + $winOS + '\' + $Winver + '\'
-write-host $FODSource
-
 $items = $WPFCustomLBFOD.items
 
 foreach ($item in $items){
-    write-host "Adding FOD Package"
+    $text = "Applying " + $item
+    update-log -Data $text -Class Information
     Add-WindowsCapability -Path $mountdir -Name $item -Source $FODsource
-    Write-host "FOD Package Added"
+    Update-Log -Data "Injection Successful" -Class Information
     }
+Update-Log -Data "Feature on Demand injections complete" -Class Information
 }
 
 #Function to import the selected LP's in to the Imports folder
 Function import-LanguagePacks($Winver,$LPSourceFolder,$WinOS){
+update-log -Data "Importing Language Packs..." -Class Information
 
-New-Item -Path $PSScriptRoot\imports\Lang\$WinOS\$winver -Name LanguagePacks -ItemType Directory
+if ((test-path -Path $PSScriptRoot\imports\Lang\$WinOS\$winver\LanguagePacks) -eq $False){
+    Update-Log -Data "Destination folder does not exist. Creating..." -Class Warning
+    $path = $PSScriptRoot + '\imports\Lang\' + $WinOS + '\' + $winver +'\LanguagePacks'
+    $text = 'Creating folder ' + $path
+    update-log -data $text -Class Information
+    New-Item -Path $PSScriptRoot\imports\Lang\$WinOS\$winver -Name LanguagePacks -ItemType Directory
+    update-log -Data "Folder created successfully" -Class Information
+    }
+
 $items = $WPFImportOtherLBList.items
 foreach ($item in $items){
     $source = $LPSourceFolder + $item
-    Copy-Item $source -destination $PSScriptRoot\imports\Lang\$WinOS\$Winver\LanguagePacks}
+    $text = 'Importing ' + $item
+    update-log -Data $text -Class Information
+    Copy-Item $source -destination $PSScriptRoot\imports\Lang\$WinOS\$Winver\LanguagePacks -Force}
+update-log -Data "Importation Complete" -Class Information
 }
 
 #Function to import the selected LXP's into the imports forlder
 Function import-LocalExperiencePack($Winver,$LPSourceFolder,$WinOS){
 
+update-log -Data "Importing Local Experience Packs..." -Class Information
+
+if ((test-path -Path $PSScriptRoot\imports\Lang\$WinOS\$winver\localexperiencepack) -eq $False){
+    Update-Log -Data "Destination folder does not exist. Creating..." -Class Warning
+    $path = $PSScriptRoot + '\imports\Lang\' + $WinOS + '\' + $winver +'\localexperiencepack'
+    $text = 'Creating folder ' + $path
+    update-log -data $text -Class Information
+    New-Item -Path $PSScriptRoot\imports\Lang\$WinOS\$winver -Name localexperiencepack -ItemType Directory
+    update-log -Data "Folder created successfully" -Class Information
+    }
+
 $items = $WPFImportOtherLBList.items
 foreach ($item in $items){
     $name = $item
     $source = $LPSourceFolder + $name
-    New-Item -Path $PSScriptRoot\imports\lang\$WinOS\$winver\localexperiencepack -Name $name -ItemType Directory
-    Write-Host $source
+    $text = 'Creating destination folder for ' + $item
+    update-log -Data $text -Class Information
 
-  get-childitem -path $source | Copy-Item -destination $PSScriptRoot\imports\Lang\$WinOS\$Winver\LocalExperiencePack\$name}
+    if ((test-path -Path $PSScriptRoot\imports\lang\$WinOS\$winver\localexperiencepack\$name) -eq $False){New-Item -Path $PSScriptRoot\imports\lang\$WinOS\$winver\localexperiencepack -Name $name -ItemType Directory}
+        else
+        {$text = 'The folder for ' + $item + ' already exists. Skipping creation...'
+        Update-Log -Data $text -Class Warning}
+
+    Update-Log -Data "Copying source to destination folders..." -Class Information   
+    get-childitem -path $source | Copy-Item -destination $PSScriptRoot\imports\Lang\$WinOS\$Winver\LocalExperiencePack\$name -Force}
+Update-log -Data "Importation complete" -Class Information
 }
 
 #Function to import the contents of the selected FODs into the imports forlder
 Function import-FOD($Winver,$LPSourceFolder,$WinOS){
 
+$path = $WPFImportOtherTBPath.text
+$text = 'Starting importation of Feature On Demand binaries from ' + $path
+update-log -Data $text -Class Information
+
 $langpacks = Get-ChildItem -path $LPSourceFolder 
-New-Item -Path $PSScriptRoot\imports\FODs\$WinOS -Name $Winver -ItemType Directory
+
+if ((test-path -Path $PSScriptRoot\imports\FODs\$WinOS\$Winver) -eq $False){
+    Update-Log -Data "Destination folder does not exist. Creating..." -Class Warning
+    $path = $PSScriptRoot + '\imports\FODs\' + $WinOS + '\' + $winver
+    $text = 'Creating folder ' + $path
+    update-log -data $text -Class Information
+    New-Item -Path $PSScriptRoot\imports\fods\$WinOS -Name $winver -ItemType Directory
+    update-log -Data "Folder created successfully" -Class Information
+    }
 
 foreach ($langpack in $langpacks){
     $source = $LPSourceFolder + $langpack.name
-    Write-Host $source
-    Copy-Item $source -destination $PSScriptRoot\imports\FODs\$WinOS\$Winver\
+  
+    Copy-Item $source -destination $PSScriptRoot\imports\FODs\$WinOS\$Winver\ -Force
+    $name = $langpack.name
+    $text = 'Copying ' + $name
+    Update-Log -Data $text -Class Information
+
     }
-get-childitem -path ($LPSourceFolder + '\metadata\') | Copy-Item -destination $PSScriptRoot\imports\FODs\$WinOS\$Winver\metadata 
+Update-Log -Data "Importing metadata subfolder..." -Class Information
+get-childitem -path ($LPSourceFolder + '\metadata\') | Copy-Item -destination $PSScriptRoot\imports\FODs\$WinOS\$Winver\metadata -force
+update-log -data "Feature On Demand imporation complete."
 }
 
 #Function to update winver cobmo box
 function update-importverCB{
     $WPFImportOtherCBWinVer.Items.Clear()
-   # write-host $WPFImportOtherCBWinOS.text
-    write-host $WPFImportOtherCBWinOS.SelectedItem
     if ($WPFImportOtherCBWinOS.SelectedItem -eq "Windows Server"){Foreach ($WinSrvVer in $WinSrvVer){$WPFImportOtherCBWinVer.Items.Add($WinSrvVer)}}
     if ($WPFImportOtherCBWinOS.SelectedItem -eq "Windows 10"){Foreach ($Win10Ver in $Win10ver){$WPFImportOtherCBWinVer.Items.Add($Win10Ver)}}
-
 }
 
 #function to select other object import source path
@@ -2910,7 +2903,10 @@ function select-importotherpath{
     $null = $browser.ShowDialog()
     $ImportPath = $browser.SelectedPath + '\'
     $WPFImportOtherTBPath.text = $ImportPath
-}
+
+    }
+
+################################################
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
@@ -2943,11 +2939,7 @@ if ($DownloadUpdates -eq $true) {
         update-OSDB
         Update-OSDSUS 
     }
-    
-    #if ($Superseded -eq "audit") { check-superceded -action "audit" }
-    #if ($Superseded -eq "delete") { check-superceded -action "delete" }
 
-    
     if ($Server2016 -eq $true){
         check-superceded -action delete -OS "Windows Server 2016" -Build 1607
         download-patches -OS "Windows Server 2016" -build 1607}
@@ -2973,17 +2965,7 @@ if ($DownloadUpdates -eq $true) {
             download-patches -OS "Windows 10" -build 1909}
         download-onedrive
      }
-
-   # if ($DownUpdates -ne $null) {
-   #     if (($DownUpdates -eq "1903") -or ($DownUpdates -eq "all")) { download-patches -build 1903 }
-   #     if (($DownUpdates -eq "1809") -or ($DownUpdates -eq "all")) { download-patches -build 1809 }
-   #     if (($DownUpdates -eq "1803") -or ($DownUpdates -eq "all")) { download-patches -build 1803 }
-   #     if (($DownUpdates -eq "1709") -or ($DownUpdates -eq "all")) { download-patches -build 1709 }
-   #     if (($DownUpdates -eq "1909") -or ($DownUpdates -eq "all")) { download-patches -build 1909 }
-    }
-
-    #check-superceded #checks to see if superceded patches exist
-    
+  }
 
 #===========================================================================
 
@@ -3006,7 +2988,7 @@ $WPFMISAppxTextBox.Text = "False"
 
 #Set the combo box values of the other import tab
 #--- Start combox box
-$ObjectTypes = @("Language Pack","Local Expereince Pack","Feature On Demand")
+$ObjectTypes = @("Language Pack","Local Experience Pack","Feature On Demand")
 $WinOS = @("Windows Server","Windows 10")
 $WinSrvVer = @("2016","2019")
 $Win10Ver = @("1809","1903","1909")
@@ -3077,7 +3059,6 @@ $WPFImportImportButton.Add_click( {
         if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)) { import-iso -type all -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
         if (($WPFImportDotNetCheckBox.IsChecked -eq $true) -and ($WPFImportWIMCheckBox.IsChecked -eq $false)) { import-iso -type DotNet -file $WPFImportISOTextBox.text }
         if (($WPFImportDotNetCheckBox.IsChecked -eq $false) -and ($WPFImportWIMCheckBox.IsChecked -eq $true)) { import-iso -type wim -file $WPFImportISOTextBox.text -newname $WPFImportNewNameTextBox.text }
-
     })
 
 #Combo Box dynamic change for Winver combo box
@@ -3089,14 +3070,23 @@ $WPFImportOtherBSelectPath.add_click({select-importotherpath
         if ($WPFImportOtherCBType.SelectedItem -ne "Feature On Demand"){$items = (Get-ChildItem -path $WPFImportOtherTBPath.text | Select-Object -Property Name | Out-GridView -PassThru)}
         if ($WPFImportOtherCBType.SelectedItem -eq "Feature On Demand"){$items = (get-Childitem -path $WPFImportOtherTBPath.text)}    
         $WPFImportOtherLBList.Items.Clear()
-        foreach ($item in $items){$WPFImportOtherLBList.Items.Add($item.name)}
+        $count = 0
+        $path = $WPFImportOtherTBPath.text
+        foreach ($item in $items){
+            $WPFImportOtherLBList.Items.Add($item.name)
+            $count = $count + 1
+            }
+
+        if ($wpfImportOtherCBType.SelectedItem -eq "Language Pack"){update-log -data "$count Language Packs selected from $path" -Class Information}
+        if ($wpfImportOtherCBType.SelectedItem -eq "Local Experience Pack"){update-log -data "$count Local Experience Packs selected from $path" -Class Information}
+        if ($wpfImportOtherCBType.SelectedItem -eq "Feature On Demand"){update-log -data "Features On Demand source selected from $path" -Class Information}
 
     })
 
 #Button to import Other Components content
 $WPFImportOtherBImport.add_click({
      if ($WPFImportOtherCBType.SelectedItem -eq "Language Pack"){import-LanguagePacks -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
-     if ($WPFImportOtherCBType.SelectedItem -eq "Local Expereince Pack"){import-LocalExperiencePack -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
+     if ($WPFImportOtherCBType.SelectedItem -eq "Local Experience Pack"){import-LocalExperiencePack -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
      if ($WPFImportOtherCBType.SelectedItem -eq "Feature On Demand"){import-FOD -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}})
 
 
@@ -3108,8 +3098,6 @@ $WPFCustomBFODSelect.add_click({select-LPFODCriteria -type "FOD"})
 
 #Button to select LXPs for importation
 $WPFCustomBLEPSelect.add_click({select-LPFODCriteria -type "LXP" })
-
-
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -3176,7 +3164,6 @@ $WPFImportWIMCheckBox.Add_Click( {
         }
         else {
             $WPFImportNewNameTextBox.IsEnabled = $False
-            #$WPFImportImportButton.IsEnabled = $False
             if ($WPFImportDotNetCheckBox.IsChecked -eq $False) { $WPFImportImportButton.IsEnabled = $False }
         }
     })
@@ -3187,7 +3174,6 @@ $WPFImportDotNetCheckBox.Add_Click( {
             $WPFImportImportButton.IsEnabled = $True
         }
         else {
-            #$WPFImportImportButton.IsEnabled = $False
             if ($WPFImportWIMCheckBox.IsChecked -eq $False) { $WPFImportImportButton.IsEnabled = $False }
         }
     })
