@@ -1,6 +1,6 @@
 ﻿<#PSScriptInfo
 
-.VERSION 1.4.0
+.VERSION 1.4.1
 
 .GUID ee1ba506-ac68-45f8-9f37-4555f1902353
 
@@ -38,19 +38,16 @@
  Image (WIM) files. It can also create WIM configuration templates and
  apply them either with the GUI or programatically for bulk creation.
 
- Version 1.3.2
-
- -Added "-PassThru" parameter to ISO Import command. This fixes importation
- issues for certain users
-
- Version 1.3.1
-
- -Fix commandline bug that provented "-autopath" from working
- -Autopilot module now has a version check. Authentication processes
-    changed to reflect changes in the WindowsAutopilotIntune module.
- -OneDrive installer copy process now restores the original ACLs
- -Fixed bug in OneDrive copy process that broke custom mount paths
+ version 1.4.1
+ -Added ability to save LP, LXP, and FOD configurations
+ -Validated save file with GUI and CLI functionality
+ -Updated out-grid titles for LP, LXP, and FOD 
   
+ Version 1.4.0
+
+ -Adds functionality to import and apply Language Packs, Features on Demand, and Local
+ -Bug fix for importing WIM and .Net from ISO files.
+
 #>
 #===========================================================================
 # WIM Witch 
@@ -60,8 +57,11 @@
 # Twitter: @TheNotoriousDRR
 # www.TheNotoriousDRR.com
 # www.SCConfigMgr.com
+# 
+# Current WIM Witch Doc (v1.4.0)
+# https://www.scconfigmgr.com/2020/02/05/wim-witch-v1-4-0-language-packs-features-on-demand-and-local-experience-packs/ 
 #
-# Current WIM Witch Doc (v1.3.0):
+# Previous WIM Witch Doc (v1.3.0):
 # https://www.scconfigmgr.com/2019/12/08/wim-witch-v1-3-0-server-support-onedrive-and-command-line/ 
 #
 # Previous WIM Witch Doc (v1.0):
@@ -85,31 +85,8 @@
 # -Create batch jobs for image catalog updating
 # -importing WIM and .Net binaries from an ISO file
 # -injecting .Net 3.5 binaries into image
-#
-#===========================================================================
-# Version 1.3.1
-#
-# -Fix commandline bug that provented "-autopath" from working
-# -Autopilot module now has a version check. Authentication processes
-#    changed to reflect changes in the WindowsAutopilotIntune module.
-# -OneDrive installer copy process now restores the original ACLs
-# -Fixed bug in OneDrive copy process that broke custom mount paths
-#
-#===========================================================================
-# Version 1.3.0
-#
-# -Added patching support for Server 2016 LTSB and Server 2019 LTSB
-# -Modified command line parameters for easier usage and to support Server
-# -Depricated Supersedense from command line functionality
-# -Downloading updates performs a supersedense check against that particular
-#     OS only. Previously all OS's were checked.
-# -OneDrive update downloaded with any Win10 build
-# -Apply OneDrive update to WIM - Win10 only
-# -Fixed Import ISO field with side scrolling ability
-# -Server Core updates skip Adobe updates as they are not applicable
-# 
-#===========================================================================
-
+# -injecting Language Pack, Local Experience Pack, and FOD's
+# -Supports Windows 10 and Windows Server 2016/2019
 #
 #============================================================================================================
 Param( 
@@ -151,7 +128,7 @@ Param(
  
 )
 
-$WWScriptVer = "1.4.0"
+$WWScriptVer = "1.4.2"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -162,7 +139,7 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.4.0" Height="500" Width="800" Background="#FF610536">
+        Title="WIM Witch - v1.4.2" Height="500" Width="800" Background="#FF610536">
     <Grid>
 
         <TabControl x:Name="TabControl" Margin="0,0,0,-0.5" Background="#FFACACAC" BorderBrush="#FF610536" Grid.ColumnSpan="2" >
@@ -293,7 +270,7 @@ $inputXML = @"
                     <CheckBox x:Name="CustomCBLEP" Content="Inject Local Experience Packs" HorizontalAlignment="Left" Margin="32,217,0,0" VerticalAlignment="Top"/>
                     <Button x:Name="CustomBLEPSelect" Content="Select" HorizontalAlignment="Left" Margin="251,218,0,0" VerticalAlignment="Top" Width="132" IsEnabled="False"/>
                     <ListBox x:Name="CustomLBLEP" HorizontalAlignment="Left" Height="137" Margin="29,258,0,0" VerticalAlignment="Top" Width="355"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="32,237,0,0" TextWrapping="Wrap" Text="Selected LEP's" VerticalAlignment="Top" Width="206"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="32,237,0,0" TextWrapping="Wrap" Text="Selected LXP's" VerticalAlignment="Top" Width="206"/>
                     <CheckBox x:Name="MISDotNetCheckBox" Content="Inject .Net 3.5" HorizontalAlignment="Left" Margin="418,49,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="MISOneDriveCheckBox" Content="Update OneDrive client" HorizontalAlignment="Left" Margin="418,74,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="UpdatesEnableCheckBox" Content="Enable Updates" HorizontalAlignment="Left" Margin="580,49,0,0" VerticalAlignment="Top" ClickMode="Press"/>
@@ -325,6 +302,8 @@ $inputXML = @"
                     <TextBox x:Name="MISUpdatesTextBox" HorizontalAlignment="Left" Height="23" Margin="136,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
                     <Label Content="App removal?" HorizontalAlignment="Left" Margin="29,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" HorizontalAlignment="Left" Height="23" Margin="136,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
+                    <CheckBox x:Name="MISCBPauseMount" Content="Pause after mounting" HorizontalAlignment="Left" Margin="559,21,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="MISCBPauseDismount" Content="Pause before dismounting" HorizontalAlignment="Left" Margin="559,42,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Save/Load" Height="20" MinWidth="102">
@@ -387,9 +366,6 @@ $form.TaskbarItemInfo.Overlay = $bitmap
 $form.TaskbarItemInfo.Description = "WIM Witch - $wwscirptver"
 ###################################################
 
-
-
- 
 Function Get-FormVariables {
     if ($global:ReadmeDisplay -ne $true) { Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow; $global:ReadmeDisplay = $true }
     #write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
@@ -648,6 +624,19 @@ Function MakeItSo ($appx) {
         return
     }
 
+    #Pause after mounting
+    If ($WPFMISCBPauseMount.IsChecked -eq $True){
+        update-log -Data "Pausing image building. Waiting on user to continue..." -Class Warning
+        $Pause = pause-makeitso  
+            if ($Pause -eq "Yes"){update-log -data "Continuing on with making it so..." -Class Information }
+            if ($Pause -eq "No"){update-log -data "Discarding build..." -Class Error
+                update-log -Data "Discarding mounted WIM" -Class Warning
+                Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -discard -ErrorAction Stop | Out-Null
+                update-log -Data "WIM has been discarded. Better luck next time." -Class Warning
+                return
+                }
+    }
+
     #Language Packs and FOD
     if ($WPFCustomCBLangPacks.IsChecked -eq $true){
         apply-LanguagePacks }
@@ -732,6 +721,19 @@ Function MakeItSo ($appx) {
     if ($WPFAppxCheckBox.IsChecked -eq $true) { remove-appx -array $appx }
     Else {
         Update-Log -Data "App removal not enabled" -Class Information
+    }
+
+        #Pause before dismounting
+    If ($WPFMISCBPauseDismount.IsChecked -eq $True){
+        update-log -Data "Pausing image building. Waiting on user to continue..." -Class Warning
+        $Pause = pause-makeitso  
+            if ($Pause -eq "Yes"){update-log -data "Continuing on with making it so..." -Class Information }
+            if ($Pause -eq "No"){update-log -data "Discarding build..." -Class Error
+                update-log -Data "Discarding mounted WIM" -Class Warning
+                Dismount-WindowsImage -Path $WPFMISMountTextBox.Text -discard -ErrorAction Stop | Out-Null
+                update-log -Data "WIM has been discarded. Better luck next time." -Class Warning
+                return
+                }
     }
 
     #Copy log to mounted WIM
@@ -1609,6 +1611,14 @@ function save-config($filename) {
         MountPath        = $WPFMISMountTextBox.text
         DotNetEnabled    = $WPFMISDotNetCheckBox.IsChecked
         OneDriveEnabled  = $WPFMISOneDriveCheckBox.IsChecked
+        LPsEnabled       = $WPFCustomCBLangPacks.IsChecked
+        LXPsEnabled      = $WPFCustomCBLEP.IsChecked
+        FODsEnabled      = $WPFCustomCBFOD.IsChecked
+        LPListBox        = $WPFCustomLBLangPacks.items
+        LXPListBox       = $WPFCustomLBLEP.Items
+        FODListBox       = $WPFCustomLBFOD.Items
+
+
     }
 
     Update-Log -data "Saving configuration file $filename" -Class Information
@@ -1647,9 +1657,19 @@ function load-config($filename) {
         $global:SelectedAppx = $settings.AppxSelected -split " "
         $WPFMISDotNetCheckBox.IsChecked = $settings.DotNetEnabled
         $WPFMISOneDriveCheckBox.IsChecked = $settings.OneDriveEnabled
-
+        $WPFCustomCBLangPacks.IsChecked = $settings.LPsEnabled
+        $WPFCustomCBLEP.IsChecked = $settings.LXPsEnabled  
+        $WPFCustomCBFOD.IsChecked = $settings.FODsEnabled
+        $LEPs =  $settings.LPListBox
+        $LXPs =  $settings.LXPListBox
+        $FODs =  $settings.FODListBox
 
         update-log -data "Configration set" -class Information
+
+        update-log -data "Populating list boxes..." -class Information
+        foreach ($LEP in $LEPs){$WPFCustomLBLangPacks.Items.Add($LEP) | out-null}
+        foreach ($LXP in $LXPs){$WPFCustomLBLEP.Items.Add($LXP) | out-null}
+        foreach ($FOD in $FODs){$WPFCustomLBFOD.Items.Add($FOD) | out-null}
 
         import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
 
@@ -2340,9 +2360,6 @@ function copy-onedrive{
     }
 }
 
-
-################################
-
 #Function to call the next three functions. This determines WinOS and WinVer and calls the function
 function select-LPFODCriteria($Type){
 
@@ -2350,13 +2367,33 @@ function select-LPFODCriteria($Type){
         Else
             {$WinOS = "Windows Server"}
 
-    
-    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
 
-    if ($type -eq "LP"){select-LanguagePacks -winver $Winver -WinOS $WinOS }
-    If ($type -eq "LXP"){select-localexperiencepack -winver $Winver -WinOS $WinOS}
-    if ($type -eq "FOD"){select-FODs -winver $Winver -WinOS $WinOS}
+    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") {
+        if ((get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -Index 1).CreatedTime -gt (Get-Date -Year 2019 -Month 09 -Day 02)){$WinVer = "1909"}
+            else{
+           $WinVer = "1909"}
+      }
+
+    if ($type -eq "LP"){
+        if ((test-path -Path $PSScriptRoot\imports\Lang\$WinOS\$Winver\LanguagePacks) -eq $false){
+            update-log -Data "Source not found. Please import some language packs and try again" -Class Error
+            return}
+        select-LanguagePacks -winver $Winver -WinOS $WinOS
+        }
+
+    If ($type -eq "LXP"){
+         if ((test-path -Path $PSScriptRoot\imports\Lang\$WinOS\$Winver\localexperiencepack) -eq $false){
+            update-log -Data "Source not found. Please import some Local Experience Packs and try again" -Class Error
+            return}
+        select-localexperiencepack -winver $Winver -WinOS $WinOS}
+
+    if ($type -eq "FOD"){
+        if ((test-path -Path $PSScriptRoot\imports\FODs\$WinOS\$Winver\) -eq $false){
+            
+            update-log -Data "Source not found. Please import some Demanding Features and try again" -Class Error
+            return}
+    select-FODs -winver $Winver -WinOS $WinOS}
 }
 
 #Function to select langauge packs for injection
@@ -2365,7 +2402,7 @@ function select-LanguagePacks($winver,$WinOS){
     $LPSourceFolder = $PSScriptRoot + '\imports\lang\' + $WinOS + '\' + $winver + '\'+ 'LanguagePacks' + '\' 
     
    # write-host $LPSourceFolder
-    $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -PassThru)
+    $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -title "Select Language Packs" -PassThru)
     foreach ($item in $items){$WPFCustomLBLangPacks.Items.Add($item.name)}
 }
 
@@ -2375,7 +2412,7 @@ function select-localexperiencepack($winver,$WinOS){
     $LPSourceFolder = $PSScriptRoot + '\imports\lang\' + $WinOS + '\' + $winver + '\'+ 'localexperiencepack' + '\' 
     
    # write-host $LPSourceFolder
-    $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -PassThru)
+    $items = (Get-ChildItem -path $LPSourceFolder | Select-Object -Property Name | Out-GridView -title "Select Local Experience Packs" -PassThru)
     foreach ($item in $items){$WPFCustomLBLEP.Items.Add($item.name)}
 }
 
@@ -2718,12 +2755,668 @@ function select-FODs($winver,$WinOS){
 "Tools.Graphics.DirectX~~~~0.0.1.0",
 "WMI-SNMP-Provider.Client~~~~0.0.1.0",
 "XPS.Viewer~~~~0.0.1.0")
-    $Win10_1903_FODs = @()
-    $Win10_1809_FODs = @()
+    $Win10_1903_FODs = @("Accessibility.Braille~~~~0.0.1.0",
+"Analog.Holographic.Desktop~~~~0.0.1.0",
+"App.Support.QuickAssist~~~~0.0.1.0",
+"Browser.InternetExplorer~~~~0.0.11.0",
+"Hello.Face.17658~~~~0.0.1.0",
+"Hello.Face.Migration.17658~~~~0.0.1.0",
+"Language.Basic~~~af-ZA~0.0.1.0",
+"Language.Basic~~~ar-SA~0.0.1.0",
+"Language.Basic~~~as-IN~0.0.1.0",
+"Language.Basic~~~az-LATN-AZ~0.0.1.0",
+"Language.Basic~~~ba-RU~0.0.1.0",
+"Language.Basic~~~be-BY~0.0.1.0",
+"Language.Basic~~~bg-BG~0.0.1.0",
+"Language.Basic~~~bn-BD~0.0.1.0",
+"Language.Basic~~~bn-IN~0.0.1.0",
+"Language.Basic~~~bs-LATN-BA~0.0.1.0",
+"Language.Basic~~~ca-ES~0.0.1.0",
+"Language.Basic~~~cs-CZ~0.0.1.0",
+"Language.Basic~~~cy-GB~0.0.1.0",
+"Language.Basic~~~da-DK~0.0.1.0",
+"Language.Basic~~~de-DE~0.0.1.0",
+"Language.Basic~~~el-GR~0.0.1.0",
+"Language.Basic~~~en-GB~0.0.1.0",
+"Language.Basic~~~en-US~0.0.1.0",
+"Language.Basic~~~es-ES~0.0.1.0",
+"Language.Basic~~~es-MX~0.0.1.0",
+"Language.Basic~~~et-EE~0.0.1.0",
+"Language.Basic~~~eu-ES~0.0.1.0",
+"Language.Basic~~~fa-IR~0.0.1.0",
+"Language.Basic~~~fi-FI~0.0.1.0",
+"Language.Basic~~~fil-PH~0.0.1.0",
+"Language.Basic~~~fr-CA~0.0.1.0",
+"Language.Basic~~~fr-FR~0.0.1.0",
+"Language.Basic~~~ga-IE~0.0.1.0",
+"Language.Basic~~~gd-GB~0.0.1.0",
+"Language.Basic~~~gl-ES~0.0.1.0",
+"Language.Basic~~~gu-IN~0.0.1.0",
+"Language.Basic~~~ha-LATN-NG~0.0.1.0",
+"Language.Basic~~~haw-US~0.0.1.0",
+"Language.Basic~~~he-IL~0.0.1.0",
+"Language.Basic~~~hi-IN~0.0.1.0",
+"Language.Basic~~~hr-HR~0.0.1.0",
+"Language.Basic~~~hu-HU~0.0.1.0",
+"Language.Basic~~~hy-AM~0.0.1.0",
+"Language.Basic~~~id-ID~0.0.1.0",
+"Language.Basic~~~ig-NG~0.0.1.0",
+"Language.Basic~~~is-IS~0.0.1.0",
+"Language.Basic~~~it-IT~0.0.1.0",
+"Language.Basic~~~ja-JP~0.0.1.0",
+"Language.Basic~~~ka-GE~0.0.1.0",
+"Language.Basic~~~kk-KZ~0.0.1.0",
+"Language.Basic~~~kl-GL~0.0.1.0",
+"Language.Basic~~~kn-IN~0.0.1.0",
+"Language.Basic~~~ko-KR~0.0.1.0",
+"Language.Basic~~~kok-DEVA-IN~0.0.1.0",
+"Language.Basic~~~ky-KG~0.0.1.0",
+"Language.Basic~~~lb-LU~0.0.1.0",
+"Language.Basic~~~lt-LT~0.0.1.0",
+"Language.Basic~~~lv-LV~0.0.1.0",
+"Language.Basic~~~mi-NZ~0.0.1.0",
+"Language.Basic~~~ml-IN~0.0.1.0",
+"Language.Basic~~~mk-MK~0.0.1.0",
+"Language.Basic~~~mn-MN~0.0.1.0",
+"Language.Basic~~~mr-IN~0.0.1.0",
+"Language.Basic~~~ms-BN~0.0.1.0",
+"Language.Basic~~~ms-MY~0.0.1.0",
+"Language.Basic~~~mt-MT~0.0.1.0",
+"Language.Basic~~~nb-NO~0.0.1.0",
+"Language.Basic~~~ne-NP~0.0.1.0",
+"Language.Basic~~~nl-NL~0.0.1.0",
+"Language.Basic~~~nn-NO~0.0.1.0",
+"Language.Basic~~~nso-ZA~0.0.1.0",
+"Language.Basic~~~or-IN~0.0.1.0",
+"Language.Basic~~~pa-IN~0.0.1.0",
+"Language.Basic~~~pl-PL~0.0.1.0",
+"Language.Basic~~~ps-AF~0.0.1.0",
+"Language.Basic~~~pt-BR~0.0.1.0",
+"Language.Basic~~~pt-PT~0.0.1.0",
+"Language.Basic~~~rm-CH~0.0.1.0",
+"Language.Basic~~~ro-RO~0.0.1.0",
+"Language.Basic~~~ru-RU~0.0.1.0",
+"Language.Basic~~~rw-RW~0.0.1.0",
+"Language.Basic~~~sah-RU~0.0.1.0",
+"Language.Basic~~~si-LK~0.0.1.0",
+"Language.Basic~~~sk-SK~0.0.1.0",
+"Language.Basic~~~sl-SI~0.0.1.0",
+"Language.Basic~~~sq-AL~0.0.1.0",
+"Language.Basic~~~sr-CYRL-RS~0.0.1.0",
+"Language.Basic~~~sr-LATN-RS~0.0.1.0",
+"Language.Basic~~~sv-SE~0.0.1.0",
+"Language.Basic~~~sw-KE~0.0.1.0",
+"Language.Basic~~~ta-IN~0.0.1.0",
+"Language.Basic~~~te-IN~0.0.1.0",
+"Language.Basic~~~tg-CYRL-TJ~0.0.1.0",
+"Language.Basic~~~th-TH~0.0.1.0",
+"Language.Basic~~~tk-TM~0.0.1.0",
+"Language.Basic~~~tn-ZA~0.0.1.0",
+"Language.Basic~~~tr-TR~0.0.1.0",
+"Language.Basic~~~tt-RU~0.0.1.0",
+"Language.Basic~~~ug-CN~0.0.1.0",
+"Language.Basic~~~uk-UA~0.0.1.0",
+"Language.Basic~~~ur-PK~0.0.1.0",
+"Language.Basic~~~uz-LATN-UZ~0.0.1.0",
+"Language.Basic~~~vi-VN~0.0.1.0",
+"Language.Basic~~~wo-SN~0.0.1.0",
+"Language.Basic~~~xh-ZA~0.0.1.0",
+"Language.Basic~~~yo-NG~0.0.1.0",
+"Language.Basic~~~zh-CN~0.0.1.0",
+"Language.Basic~~~zh-HK~0.0.1.0",
+"Language.Basic~~~zh-TW~0.0.1.0",
+"Language.Basic~~~zu-ZA~0.0.1.0",
+"Language.Fonts.Arab~~~und-ARAB~0.0.1.0",
+"Language.Fonts.Beng~~~und-BENG~0.0.1.0",
+"Language.Fonts.Cans~~~und-CANS~0.0.1.0",
+"Language.Fonts.Cher~~~und-CHER~0.0.1.0",
+"Language.Fonts.Deva~~~und-DEVA~0.0.1.0",
+"Language.Fonts.Ethi~~~und-ETHI~0.0.1.0",
+"Language.Fonts.Gujr~~~und-GUJR~0.0.1.0",
+"Language.Fonts.Guru~~~und-GURU~0.0.1.0",
+"Language.Fonts.Hans~~~und-HANS~0.0.1.0",
+"Language.Fonts.Hant~~~und-HANT~0.0.1.0",
+"Language.Fonts.Hebr~~~und-HEBR~0.0.1.0",
+"Language.Fonts.Jpan~~~und-JPAN~0.0.1.0",
+"Language.Fonts.Khmr~~~und-KHMR~0.0.1.0",
+"Language.Fonts.Knda~~~und-KNDA~0.0.1.0",
+"Language.Fonts.Kore~~~und-KORE~0.0.1.0",
+"Language.Fonts.Laoo~~~und-LAOO~0.0.1.0",
+"Language.Fonts.Mlym~~~und-MLYM~0.0.1.0",
+"Language.Fonts.Orya~~~und-ORYA~0.0.1.0",
+"Language.Fonts.PanEuropeanSupplementalFonts~~~~0.0.1.0",
+"Language.Fonts.Sinh~~~und-SINH~0.0.1.0",
+"Language.Fonts.Syrc~~~und-SYRC~0.0.1.0",
+"Language.Fonts.Taml~~~und-TAML~0.0.1.0",
+"Language.Fonts.Telu~~~und-TELU~0.0.1.0",
+"Language.Fonts.Thai~~~und-THAI~0.0.1.0",
+"Language.Handwriting~~~af-ZA~0.0.1.0",
+"Language.Handwriting~~~bs-LATN-BA~0.0.1.0",
+"Language.Handwriting~~~ca-ES~0.0.1.0",
+"Language.Handwriting~~~cs-CZ~0.0.1.0",
+"Language.Handwriting~~~cy-GB~0.0.1.0",
+"Language.Handwriting~~~da-DK~0.0.1.0",
+"Language.Handwriting~~~de-DE~0.0.1.0",
+"Language.Handwriting~~~el-GR~0.0.1.0",
+"Language.Handwriting~~~en-GB~0.0.1.0",
+"Language.Handwriting~~~en-US~0.0.1.0",
+"Language.Handwriting~~~es-ES~0.0.1.0",
+"Language.Handwriting~~~es-MX~0.0.1.0",
+"Language.Handwriting~~~eu-ES~0.0.1.0",
+"Language.Handwriting~~~fi-FI~0.0.1.0",
+"Language.Handwriting~~~fr-FR~0.0.1.0",
+"Language.Handwriting~~~ga-IE~0.0.1.0",
+"Language.Handwriting~~~gd-GB~0.0.1.0",
+"Language.Handwriting~~~gl-ES~0.0.1.0",
+"Language.Handwriting~~~hi-IN~0.0.1.0",
+"Language.Handwriting~~~hr-HR~0.0.1.0",
+"Language.Handwriting~~~id-ID~0.0.1.0",
+"Language.Handwriting~~~it-IT~0.0.1.0",
+"Language.Handwriting~~~ja-JP~0.0.1.0",
+"Language.Handwriting~~~ko-KR~0.0.1.0",
+"Language.Handwriting~~~lb-LU~0.0.1.0",
+"Language.Handwriting~~~mi-NZ~0.0.1.0",
+"Language.Handwriting~~~ms-BN~0.0.1.0",
+"Language.Handwriting~~~ms-MY~0.0.1.0",
+"Language.Handwriting~~~nb-NO~0.0.1.0",
+"Language.Handwriting~~~nl-NL~0.0.1.0",
+"Language.Handwriting~~~nn-NO~0.0.1.0",
+"Language.Handwriting~~~nso-ZA~0.0.1.0",
+"Language.Handwriting~~~pl-PL~0.0.1.0",
+"Language.Handwriting~~~pt-BR~0.0.1.0",
+"Language.Handwriting~~~pt-PT~0.0.1.0",
+"Language.Handwriting~~~rm-CH~0.0.1.0",
+"Language.Handwriting~~~ro-RO~0.0.1.0",
+"Language.Handwriting~~~ru-RU~0.0.1.0",
+"Language.Handwriting~~~rw-RW~0.0.1.0",
+"Language.Handwriting~~~sk-SK~0.0.1.0",
+"Language.Handwriting~~~sl-SI~0.0.1.0",
+"Language.Handwriting~~~sq-AL~0.0.1.0",
+"Language.Handwriting~~~sr-CYRL-RS~0.0.1.0",
+"Language.Handwriting~~~sr-LATN-RS~0.0.1.0",
+"Language.Handwriting~~~sv-SE~0.0.1.0",
+"Language.Handwriting~~~sw-KE~0.0.1.0",
+"Language.Handwriting~~~tn-ZA~0.0.1.0",
+"Language.Handwriting~~~tr-TR~0.0.1.0",
+"Language.Handwriting~~~wo-SN~0.0.1.0",
+"Language.Handwriting~~~xh-ZA~0.0.1.0",
+"Language.Handwriting~~~zh-CN~0.0.1.0",
+"Language.Handwriting~~~zh-HK~0.0.1.0",
+"Language.Handwriting~~~zh-TW~0.0.1.0",
+"Language.Handwriting~~~zu-ZA~0.0.1.0",
+"Language.OCR~~~ar-SA~0.0.1.0",
+"Language.OCR~~~bg-BG~0.0.1.0",
+"Language.OCR~~~bs-LATN-BA~0.0.1.0",
+"Language.OCR~~~cs-CZ~0.0.1.0",
+"Language.OCR~~~da-DK~0.0.1.0",
+"Language.OCR~~~de-DE~0.0.1.0",
+"Language.OCR~~~el-GR~0.0.1.0",
+"Language.OCR~~~en-GB~0.0.1.0",
+"Language.OCR~~~en-US~0.0.1.0",
+"Language.OCR~~~es-ES~0.0.1.0",
+"Language.OCR~~~es-MX~0.0.1.0",
+"Language.OCR~~~fi-FI~0.0.1.0",
+"Language.OCR~~~fr-CA~0.0.1.0",
+"Language.OCR~~~fr-FR~0.0.1.0",
+"Language.OCR~~~hr-HR~0.0.1.0",
+"Language.OCR~~~hu-HU~0.0.1.0",
+"Language.OCR~~~it-IT~0.0.1.0",
+"Language.OCR~~~ja-JP~0.0.1.0",
+"Language.OCR~~~ko-KR~0.0.1.0",
+"Language.OCR~~~nb-NO~0.0.1.0",
+"Language.OCR~~~nl-NL~0.0.1.0",
+"Language.OCR~~~pl-PL~0.0.1.0",
+"Language.OCR~~~pt-BR~0.0.1.0",
+"Language.OCR~~~pt-PT~0.0.1.0",
+"Language.OCR~~~ro-RO~0.0.1.0",
+"Language.OCR~~~ru-RU~0.0.1.0",
+"Language.OCR~~~sk-SK~0.0.1.0",
+"Language.OCR~~~sl-SI~0.0.1.0",
+"Language.OCR~~~sr-CYRL-RS~0.0.1.0",
+"Language.OCR~~~sr-LATN-RS~0.0.1.0",
+"Language.OCR~~~sv-SE~0.0.1.0",
+"Language.OCR~~~tr-TR~0.0.1.0",
+"Language.OCR~~~zh-CN~0.0.1.0",
+"Language.OCR~~~zh-HK~0.0.1.0",
+"Language.OCR~~~zh-TW~0.0.1.0",
+"Language.Speech~~~de-DE~0.0.1.0",
+"Language.Speech~~~en-AU~0.0.1.0",
+"Language.Speech~~~en-CA~0.0.1.0",
+"Language.Speech~~~en-GB~0.0.1.0",
+"Language.Speech~~~en-IN~0.0.1.0",
+"Language.Speech~~~en-US~0.0.1.0",
+"Language.Speech~~~es-ES~0.0.1.0",
+"Language.Speech~~~es-MX~0.0.1.0",
+"Language.Speech~~~fr-CA~0.0.1.0",
+"Language.Speech~~~fr-FR~0.0.1.0",
+"Language.Speech~~~it-IT~0.0.1.0",
+"Language.Speech~~~ja-JP~0.0.1.0",
+"Language.Speech~~~pt-BR~0.0.1.0",
+"Language.Speech~~~zh-CN~0.0.1.0",
+"Language.Speech~~~zh-HK~0.0.1.0",
+"Language.Speech~~~zh-TW~0.0.1.0",
+"Language.TextToSpeech~~~ar-EG~0.0.1.0",
+"Language.TextToSpeech~~~ar-SA~0.0.1.0",
+"Language.TextToSpeech~~~bg-BG~0.0.1.0",
+"Language.TextToSpeech~~~ca-ES~0.0.1.0",
+"Language.TextToSpeech~~~cs-CZ~0.0.1.0",
+"Language.TextToSpeech~~~da-DK~0.0.1.0",
+"Language.TextToSpeech~~~de-AT~0.0.1.0",
+"Language.TextToSpeech~~~de-CH~0.0.1.0",
+"Language.TextToSpeech~~~de-DE~0.0.1.0",
+"Language.TextToSpeech~~~el-GR~0.0.1.0",
+"Language.TextToSpeech~~~en-AU~0.0.1.0",
+"Language.TextToSpeech~~~en-CA~0.0.1.0",
+"Language.TextToSpeech~~~en-GB~0.0.1.0",
+"Language.TextToSpeech~~~en-IE~0.0.1.0",
+"Language.TextToSpeech~~~en-IN~0.0.1.0",
+"Language.TextToSpeech~~~en-US~0.0.1.0",
+"Language.TextToSpeech~~~es-ES~0.0.1.0",
+"Language.TextToSpeech~~~es-MX~0.0.1.0",
+"Language.TextToSpeech~~~fi-FI~0.0.1.0",
+"Language.TextToSpeech~~~fr-CA~0.0.1.0",
+"Language.TextToSpeech~~~fr-CH~0.0.1.0",
+"Language.TextToSpeech~~~fr-FR~0.0.1.0",
+"Language.TextToSpeech~~~he-IL~0.0.1.0",
+"Language.TextToSpeech~~~hi-IN~0.0.1.0",
+"Language.TextToSpeech~~~hr-HR~0.0.1.0",
+"Language.TextToSpeech~~~hu-HU~0.0.1.0",
+"Language.TextToSpeech~~~id-ID~0.0.1.0",
+"Language.TextToSpeech~~~it-IT~0.0.1.0",
+"Language.TextToSpeech~~~ja-JP~0.0.1.0",
+"Language.TextToSpeech~~~ko-KR~0.0.1.0",
+"Language.TextToSpeech~~~ms-MY~0.0.1.0",
+"Language.TextToSpeech~~~nb-NO~0.0.1.0",
+"Language.TextToSpeech~~~nl-BE~0.0.1.0",
+"Language.TextToSpeech~~~nl-NL~0.0.1.0",
+"Language.TextToSpeech~~~pl-PL~0.0.1.0",
+"Language.TextToSpeech~~~pt-BR~0.0.1.0",
+"Language.TextToSpeech~~~pt-PT~0.0.1.0",
+"Language.TextToSpeech~~~ro-RO~0.0.1.0",
+"Language.TextToSpeech~~~ru-RU~0.0.1.0",
+"Language.TextToSpeech~~~sk-SK~0.0.1.0",
+"Language.TextToSpeech~~~sl-SI~0.0.1.0",
+"Language.TextToSpeech~~~sv-SE~0.0.1.0",
+"Language.TextToSpeech~~~ta-IN~0.0.1.0",
+"Language.TextToSpeech~~~th-TH~0.0.1.0",
+"Language.TextToSpeech~~~tr-TR~0.0.1.0",
+"Language.TextToSpeech~~~vi-VN~0.0.1.0",
+"Language.TextToSpeech~~~zh-CN~0.0.1.0",
+"Language.TextToSpeech~~~zh-HK~0.0.1.0",
+"Language.TextToSpeech~~~zh-TW~0.0.1.0",
+"MathRecognizer~~~~0.0.1.0",
+"Media.WindowsMediaPlayer~~~~0.0.12.0",
+"Microsoft.Onecore.StorageManagement~~~~0.0.1.0",
+"Microsoft.WebDriver~~~~0.0.1.0",
+"Microsoft.Windows.StorageManagement~~~~0.0.1.0",
+"Msix.PackagingTool.Driver~~~~0.0.1.0",
+"NetFX3~~~~",
+"OneCoreUAP.OneSync~~~~0.0.1.0",
+"OpenSSH.Client~~~~0.0.1.0",
+"OpenSSH.Server~~~~0.0.1.0",
+"RasCMAK.Client~~~~0.0.1.0",
+"RIP.Listener~~~~0.0.1.0",
+"Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0",
+"Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0",
+"Rsat.CertificateServices.Tools~~~~0.0.1.0",
+"Rsat.DHCP.Tools~~~~0.0.1.0",
+"Rsat.Dns.Tools~~~~0.0.1.0",
+"Rsat.FailoverCluster.Management.Tools~~~~0.0.1.0",
+"Rsat.FileServices.Tools~~~~0.0.1.0",
+"Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0",
+"Rsat.IPAM.Client.Tools~~~~0.0.1.0",
+"Rsat.LLDP.Tools~~~~0.0.1.0",
+"Rsat.NetworkController.Tools~~~~0.0.1.0",
+"Rsat.NetworkLoadBalancing.Tools~~~~0.0.1.0",
+"Rsat.RemoteAccess.Management.Tools~~~~0.0.1.0",
+"Rsat.RemoteDesktop.Services.Tools~~~~0.0.1.0",
+"Rsat.ServerManager.Tools~~~~0.0.1.0",
+"Rsat.Shielded.VM.Tools~~~~0.0.1.0",
+"Rsat.StorageMigrationService.Management.Tools~~~~0.0.1.0",
+"Rsat.StorageReplica.Tools~~~~0.0.1.0",
+"Rsat.SystemInsights.Management.Tools~~~~0.0.1.0",
+"Rsat.VolumeActivation.Tools~~~~0.0.1.0",
+"Rsat.WSUS.Tools~~~~0.0.1.0",
+"SNMP.Client~~~~0.0.1.0",
+"Tools.DeveloperMode.Core~~~~0.0.1.0",
+"Tools.DTrace.Platform~~~~0.0.1.0",
+"Tools.Graphics.DirectX~~~~0.0.1.0",
+"WMI-SNMP-Provider.Client~~~~0.0.1.0",
+"XPS.Viewer~~~~0.0.1.0")
+    $Win10_1809_FODs = @("Accessibility.Braille~~~~0.0.1.0",
+"Analog.Holographic.Desktop~~~~0.0.1.0",
+"App.Support.QuickAssist~~~~0.0.1.0",
+"Browser.InternetExplorer~~~~0.0.11.0",
+"Hello.Face.17658~~~~0.0.1.0",
+"Hello.Face.Migration.17658~~~~0.0.1.0",
+"Language.Basic~~~af-ZA~0.0.1.0",
+"Language.Basic~~~ar-SA~0.0.1.0",
+"Language.Basic~~~as-IN~0.0.1.0",
+"Language.Basic~~~az-LATN-AZ~0.0.1.0",
+"Language.Basic~~~ba-RU~0.0.1.0",
+"Language.Basic~~~be-BY~0.0.1.0",
+"Language.Basic~~~bg-BG~0.0.1.0",
+"Language.Basic~~~bn-BD~0.0.1.0",
+"Language.Basic~~~bn-IN~0.0.1.0",
+"Language.Basic~~~bs-LATN-BA~0.0.1.0",
+"Language.Basic~~~ca-ES~0.0.1.0",
+"Language.Basic~~~cs-CZ~0.0.1.0",
+"Language.Basic~~~cy-GB~0.0.1.0",
+"Language.Basic~~~da-DK~0.0.1.0",
+"Language.Basic~~~de-DE~0.0.1.0",
+"Language.Basic~~~el-GR~0.0.1.0",
+"Language.Basic~~~en-GB~0.0.1.0",
+"Language.Basic~~~en-US~0.0.1.0",
+"Language.Basic~~~es-ES~0.0.1.0",
+"Language.Basic~~~es-MX~0.0.1.0",
+"Language.Basic~~~et-EE~0.0.1.0",
+"Language.Basic~~~eu-ES~0.0.1.0",
+"Language.Basic~~~fa-IR~0.0.1.0",
+"Language.Basic~~~fi-FI~0.0.1.0",
+"Language.Basic~~~fil-PH~0.0.1.0",
+"Language.Basic~~~fr-CA~0.0.1.0",
+"Language.Basic~~~fr-FR~0.0.1.0",
+"Language.Basic~~~ga-IE~0.0.1.0",
+"Language.Basic~~~gd-GB~0.0.1.0",
+"Language.Basic~~~gl-ES~0.0.1.0",
+"Language.Basic~~~gu-IN~0.0.1.0",
+"Language.Basic~~~ha-LATN-NG~0.0.1.0",
+"Language.Basic~~~haw-US~0.0.1.0",
+"Language.Basic~~~he-IL~0.0.1.0",
+"Language.Basic~~~hi-IN~0.0.1.0",
+"Language.Basic~~~hr-HR~0.0.1.0",
+"Language.Basic~~~hu-HU~0.0.1.0",
+"Language.Basic~~~hy-AM~0.0.1.0",
+"Language.Basic~~~id-ID~0.0.1.0",
+"Language.Basic~~~ig-NG~0.0.1.0",
+"Language.Basic~~~is-IS~0.0.1.0",
+"Language.Basic~~~it-IT~0.0.1.0",
+"Language.Basic~~~ja-JP~0.0.1.0",
+"Language.Basic~~~ka-GE~0.0.1.0",
+"Language.Basic~~~kk-KZ~0.0.1.0",
+"Language.Basic~~~kl-GL~0.0.1.0",
+"Language.Basic~~~kn-IN~0.0.1.0",
+"Language.Basic~~~ko-KR~0.0.1.0",
+"Language.Basic~~~kok-DEVA-IN~0.0.1.0",
+"Language.Basic~~~ky-KG~0.0.1.0",
+"Language.Basic~~~lb-LU~0.0.1.0",
+"Language.Basic~~~lt-LT~0.0.1.0",
+"Language.Basic~~~lv-LV~0.0.1.0",
+"Language.Basic~~~mi-NZ~0.0.1.0",
+"Language.Basic~~~ml-IN~0.0.1.0",
+"Language.Basic~~~mk-MK~0.0.1.0",
+"Language.Basic~~~mn-MN~0.0.1.0",
+"Language.Basic~~~mr-IN~0.0.1.0",
+"Language.Basic~~~ms-BN~0.0.1.0",
+"Language.Basic~~~ms-MY~0.0.1.0",
+"Language.Basic~~~mt-MT~0.0.1.0",
+"Language.Basic~~~nb-NO~0.0.1.0",
+"Language.Basic~~~ne-NP~0.0.1.0",
+"Language.Basic~~~nl-NL~0.0.1.0",
+"Language.Basic~~~nn-NO~0.0.1.0",
+"Language.Basic~~~nso-ZA~0.0.1.0",
+"Language.Basic~~~or-IN~0.0.1.0",
+"Language.Basic~~~pa-IN~0.0.1.0",
+"Language.Basic~~~pl-PL~0.0.1.0",
+"Language.Basic~~~ps-AF~0.0.1.0",
+"Language.Basic~~~pt-BR~0.0.1.0",
+"Language.Basic~~~pt-PT~0.0.1.0",
+"Language.Basic~~~rm-CH~0.0.1.0",
+"Language.Basic~~~ro-RO~0.0.1.0",
+"Language.Basic~~~ru-RU~0.0.1.0",
+"Language.Basic~~~rw-RW~0.0.1.0",
+"Language.Basic~~~sah-RU~0.0.1.0",
+"Language.Basic~~~si-LK~0.0.1.0",
+"Language.Basic~~~sk-SK~0.0.1.0",
+"Language.Basic~~~sl-SI~0.0.1.0",
+"Language.Basic~~~sq-AL~0.0.1.0",
+"Language.Basic~~~sr-CYRL-RS~0.0.1.0",
+"Language.Basic~~~sr-LATN-RS~0.0.1.0",
+"Language.Basic~~~sv-SE~0.0.1.0",
+"Language.Basic~~~sw-KE~0.0.1.0",
+"Language.Basic~~~ta-IN~0.0.1.0",
+"Language.Basic~~~te-IN~0.0.1.0",
+"Language.Basic~~~tg-CYRL-TJ~0.0.1.0",
+"Language.Basic~~~th-TH~0.0.1.0",
+"Language.Basic~~~tk-TM~0.0.1.0",
+"Language.Basic~~~tn-ZA~0.0.1.0",
+"Language.Basic~~~tr-TR~0.0.1.0",
+"Language.Basic~~~tt-RU~0.0.1.0",
+"Language.Basic~~~ug-CN~0.0.1.0",
+"Language.Basic~~~uk-UA~0.0.1.0",
+"Language.Basic~~~ur-PK~0.0.1.0",
+"Language.Basic~~~uz-LATN-UZ~0.0.1.0",
+"Language.Basic~~~vi-VN~0.0.1.0",
+"Language.Basic~~~wo-SN~0.0.1.0",
+"Language.Basic~~~xh-ZA~0.0.1.0",
+"Language.Basic~~~yo-NG~0.0.1.0",
+"Language.Basic~~~zh-CN~0.0.1.0",
+"Language.Basic~~~zh-HK~0.0.1.0",
+"Language.Basic~~~zh-TW~0.0.1.0",
+"Language.Basic~~~zu-ZA~0.0.1.0",
+"Language.Fonts.Arab~~~und-ARAB~0.0.1.0",
+"Language.Fonts.Beng~~~und-BENG~0.0.1.0",
+"Language.Fonts.Cans~~~und-CANS~0.0.1.0",
+"Language.Fonts.Cher~~~und-CHER~0.0.1.0",
+"Language.Fonts.Deva~~~und-DEVA~0.0.1.0",
+"Language.Fonts.Ethi~~~und-ETHI~0.0.1.0",
+"Language.Fonts.Gujr~~~und-GUJR~0.0.1.0",
+"Language.Fonts.Guru~~~und-GURU~0.0.1.0",
+"Language.Fonts.Hans~~~und-HANS~0.0.1.0",
+"Language.Fonts.Hant~~~und-HANT~0.0.1.0",
+"Language.Fonts.Hebr~~~und-HEBR~0.0.1.0",
+"Language.Fonts.Jpan~~~und-JPAN~0.0.1.0",
+"Language.Fonts.Khmr~~~und-KHMR~0.0.1.0",
+"Language.Fonts.Knda~~~und-KNDA~0.0.1.0",
+"Language.Fonts.Kore~~~und-KORE~0.0.1.0",
+"Language.Fonts.Laoo~~~und-LAOO~0.0.1.0",
+"Language.Fonts.Mlym~~~und-MLYM~0.0.1.0",
+"Language.Fonts.Orya~~~und-ORYA~0.0.1.0",
+"Language.Fonts.PanEuropeanSupplementalFonts~~~~0.0.1.0",
+"Language.Fonts.Sinh~~~und-SINH~0.0.1.0",
+"Language.Fonts.Syrc~~~und-SYRC~0.0.1.0",
+"Language.Fonts.Taml~~~und-TAML~0.0.1.0",
+"Language.Fonts.Telu~~~und-TELU~0.0.1.0",
+"Language.Fonts.Thai~~~und-THAI~0.0.1.0",
+"Language.Handwriting~~~af-ZA~0.0.1.0",
+"Language.Handwriting~~~bs-LATN-BA~0.0.1.0",
+"Language.Handwriting~~~ca-ES~0.0.1.0",
+"Language.Handwriting~~~cs-CZ~0.0.1.0",
+"Language.Handwriting~~~cy-GB~0.0.1.0",
+"Language.Handwriting~~~da-DK~0.0.1.0",
+"Language.Handwriting~~~de-DE~0.0.1.0",
+"Language.Handwriting~~~el-GR~0.0.1.0",
+"Language.Handwriting~~~en-GB~0.0.1.0",
+"Language.Handwriting~~~en-US~0.0.1.0",
+"Language.Handwriting~~~es-ES~0.0.1.0",
+"Language.Handwriting~~~es-MX~0.0.1.0",
+"Language.Handwriting~~~eu-ES~0.0.1.0",
+"Language.Handwriting~~~fi-FI~0.0.1.0",
+"Language.Handwriting~~~fr-FR~0.0.1.0",
+"Language.Handwriting~~~ga-IE~0.0.1.0",
+"Language.Handwriting~~~gd-GB~0.0.1.0",
+"Language.Handwriting~~~gl-ES~0.0.1.0",
+"Language.Handwriting~~~hi-IN~0.0.1.0",
+"Language.Handwriting~~~hr-HR~0.0.1.0",
+"Language.Handwriting~~~id-ID~0.0.1.0",
+"Language.Handwriting~~~it-IT~0.0.1.0",
+"Language.Handwriting~~~ja-JP~0.0.1.0",
+"Language.Handwriting~~~ko-KR~0.0.1.0",
+"Language.Handwriting~~~lb-LU~0.0.1.0",
+"Language.Handwriting~~~mi-NZ~0.0.1.0",
+"Language.Handwriting~~~ms-BN~0.0.1.0",
+"Language.Handwriting~~~ms-MY~0.0.1.0",
+"Language.Handwriting~~~nb-NO~0.0.1.0",
+"Language.Handwriting~~~nl-NL~0.0.1.0",
+"Language.Handwriting~~~nn-NO~0.0.1.0",
+"Language.Handwriting~~~nso-ZA~0.0.1.0",
+"Language.Handwriting~~~pl-PL~0.0.1.0",
+"Language.Handwriting~~~pt-BR~0.0.1.0",
+"Language.Handwriting~~~pt-PT~0.0.1.0",
+"Language.Handwriting~~~rm-CH~0.0.1.0",
+"Language.Handwriting~~~ro-RO~0.0.1.0",
+"Language.Handwriting~~~ru-RU~0.0.1.0",
+"Language.Handwriting~~~rw-RW~0.0.1.0",
+"Language.Handwriting~~~sk-SK~0.0.1.0",
+"Language.Handwriting~~~sl-SI~0.0.1.0",
+"Language.Handwriting~~~sq-AL~0.0.1.0",
+"Language.Handwriting~~~sr-CYRL-RS~0.0.1.0",
+"Language.Handwriting~~~sr-LATN-RS~0.0.1.0",
+"Language.Handwriting~~~sv-SE~0.0.1.0",
+"Language.Handwriting~~~sw-KE~0.0.1.0",
+"Language.Handwriting~~~tn-ZA~0.0.1.0",
+"Language.Handwriting~~~tr-TR~0.0.1.0",
+"Language.Handwriting~~~wo-SN~0.0.1.0",
+"Language.Handwriting~~~xh-ZA~0.0.1.0",
+"Language.Handwriting~~~zh-CN~0.0.1.0",
+"Language.Handwriting~~~zh-HK~0.0.1.0",
+"Language.Handwriting~~~zh-TW~0.0.1.0",
+"Language.Handwriting~~~zu-ZA~0.0.1.0",
+"Language.OCR~~~ar-SA~0.0.1.0",
+"Language.OCR~~~bg-BG~0.0.1.0",
+"Language.OCR~~~bs-LATN-BA~0.0.1.0",
+"Language.OCR~~~cs-CZ~0.0.1.0",
+"Language.OCR~~~da-DK~0.0.1.0",
+"Language.OCR~~~de-DE~0.0.1.0",
+"Language.OCR~~~el-GR~0.0.1.0",
+"Language.OCR~~~en-GB~0.0.1.0",
+"Language.OCR~~~en-US~0.0.1.0",
+"Language.OCR~~~es-ES~0.0.1.0",
+"Language.OCR~~~es-MX~0.0.1.0",
+"Language.OCR~~~fi-FI~0.0.1.0",
+"Language.OCR~~~fr-CA~0.0.1.0",
+"Language.OCR~~~fr-FR~0.0.1.0",
+"Language.OCR~~~hr-HR~0.0.1.0",
+"Language.OCR~~~hu-HU~0.0.1.0",
+"Language.OCR~~~it-IT~0.0.1.0",
+"Language.OCR~~~ja-JP~0.0.1.0",
+"Language.OCR~~~ko-KR~0.0.1.0",
+"Language.OCR~~~nb-NO~0.0.1.0",
+"Language.OCR~~~nl-NL~0.0.1.0",
+"Language.OCR~~~pl-PL~0.0.1.0",
+"Language.OCR~~~pt-BR~0.0.1.0",
+"Language.OCR~~~pt-PT~0.0.1.0",
+"Language.OCR~~~ro-RO~0.0.1.0",
+"Language.OCR~~~ru-RU~0.0.1.0",
+"Language.OCR~~~sk-SK~0.0.1.0",
+"Language.OCR~~~sl-SI~0.0.1.0",
+"Language.OCR~~~sr-CYRL-RS~0.0.1.0",
+"Language.OCR~~~sr-LATN-RS~0.0.1.0",
+"Language.OCR~~~sv-SE~0.0.1.0",
+"Language.OCR~~~tr-TR~0.0.1.0",
+"Language.OCR~~~zh-CN~0.0.1.0",
+"Language.OCR~~~zh-HK~0.0.1.0",
+"Language.OCR~~~zh-TW~0.0.1.0",
+"Language.Speech~~~de-DE~0.0.1.0",
+"Language.Speech~~~en-AU~0.0.1.0",
+"Language.Speech~~~en-CA~0.0.1.0",
+"Language.Speech~~~en-GB~0.0.1.0",
+"Language.Speech~~~en-IN~0.0.1.0",
+"Language.Speech~~~en-US~0.0.1.0",
+"Language.Speech~~~es-ES~0.0.1.0",
+"Language.Speech~~~es-MX~0.0.1.0",
+"Language.Speech~~~fr-CA~0.0.1.0",
+"Language.Speech~~~fr-FR~0.0.1.0",
+"Language.Speech~~~it-IT~0.0.1.0",
+"Language.Speech~~~ja-JP~0.0.1.0",
+"Language.Speech~~~pt-BR~0.0.1.0",
+"Language.Speech~~~zh-CN~0.0.1.0",
+"Language.Speech~~~zh-HK~0.0.1.0",
+"Language.Speech~~~zh-TW~0.0.1.0",
+"Language.TextToSpeech~~~ar-EG~0.0.1.0",
+"Language.TextToSpeech~~~ar-SA~0.0.1.0",
+"Language.TextToSpeech~~~bg-BG~0.0.1.0",
+"Language.TextToSpeech~~~ca-ES~0.0.1.0",
+"Language.TextToSpeech~~~cs-CZ~0.0.1.0",
+"Language.TextToSpeech~~~da-DK~0.0.1.0",
+"Language.TextToSpeech~~~de-AT~0.0.1.0",
+"Language.TextToSpeech~~~de-CH~0.0.1.0",
+"Language.TextToSpeech~~~de-DE~0.0.1.0",
+"Language.TextToSpeech~~~el-GR~0.0.1.0",
+"Language.TextToSpeech~~~en-AU~0.0.1.0",
+"Language.TextToSpeech~~~en-CA~0.0.1.0",
+"Language.TextToSpeech~~~en-GB~0.0.1.0",
+"Language.TextToSpeech~~~en-IE~0.0.1.0",
+"Language.TextToSpeech~~~en-IN~0.0.1.0",
+"Language.TextToSpeech~~~en-US~0.0.1.0",
+"Language.TextToSpeech~~~es-ES~0.0.1.0",
+"Language.TextToSpeech~~~es-MX~0.0.1.0",
+"Language.TextToSpeech~~~fi-FI~0.0.1.0",
+"Language.TextToSpeech~~~fr-CA~0.0.1.0",
+"Language.TextToSpeech~~~fr-CH~0.0.1.0",
+"Language.TextToSpeech~~~fr-FR~0.0.1.0",
+"Language.TextToSpeech~~~he-IL~0.0.1.0",
+"Language.TextToSpeech~~~hi-IN~0.0.1.0",
+"Language.TextToSpeech~~~hr-HR~0.0.1.0",
+"Language.TextToSpeech~~~hu-HU~0.0.1.0",
+"Language.TextToSpeech~~~id-ID~0.0.1.0",
+"Language.TextToSpeech~~~it-IT~0.0.1.0",
+"Language.TextToSpeech~~~ja-JP~0.0.1.0",
+"Language.TextToSpeech~~~ko-KR~0.0.1.0",
+"Language.TextToSpeech~~~ms-MY~0.0.1.0",
+"Language.TextToSpeech~~~nb-NO~0.0.1.0",
+"Language.TextToSpeech~~~nl-BE~0.0.1.0",
+"Language.TextToSpeech~~~nl-NL~0.0.1.0",
+"Language.TextToSpeech~~~pl-PL~0.0.1.0",
+"Language.TextToSpeech~~~pt-BR~0.0.1.0",
+"Language.TextToSpeech~~~pt-PT~0.0.1.0",
+"Language.TextToSpeech~~~ro-RO~0.0.1.0",
+"Language.TextToSpeech~~~ru-RU~0.0.1.0",
+"Language.TextToSpeech~~~sk-SK~0.0.1.0",
+"Language.TextToSpeech~~~sl-SI~0.0.1.0",
+"Language.TextToSpeech~~~sv-SE~0.0.1.0",
+"Language.TextToSpeech~~~ta-IN~0.0.1.0",
+"Language.TextToSpeech~~~th-TH~0.0.1.0",
+"Language.TextToSpeech~~~tr-TR~0.0.1.0",
+"Language.TextToSpeech~~~vi-VN~0.0.1.0",
+"Language.TextToSpeech~~~zh-CN~0.0.1.0",
+"Language.TextToSpeech~~~zh-HK~0.0.1.0",
+"Language.TextToSpeech~~~zh-TW~0.0.1.0",
+"MathRecognizer~~~~0.0.1.0",
+"Media.WindowsMediaPlayer~~~~0.0.12.0",
+"Microsoft.Onecore.StorageManagement~~~~0.0.1.0",
+"Microsoft.WebDriver~~~~0.0.1.0",
+"Microsoft.Windows.StorageManagement~~~~0.0.1.0",
+"Msix.PackagingTool.Driver~~~~0.0.1.0",
+"NetFX3~~~~"
+"OneCoreUAP.OneSync~~~~0.0.1.0",
+"OpenSSH.Client~~~~0.0.1.0",
+"OpenSSH.Server~~~~0.0.1.0",
+"RasCMAK.Client~~~~0.0.1.0",
+"RIP.Listener~~~~0.0.1.0",
+"Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0",
+"Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0",
+"Rsat.CertificateServices.Tools~~~~0.0.1.0",
+"Rsat.DHCP.Tools~~~~0.0.1.0",
+"Rsat.Dns.Tools~~~~0.0.1.0",
+"Rsat.FailoverCluster.Management.Tools~~~~0.0.1.0",
+"Rsat.FileServices.Tools~~~~0.0.1.0",
+"Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0",
+"Rsat.IPAM.Client.Tools~~~~0.0.1.0",
+"Rsat.LLDP.Tools~~~~0.0.1.0",
+"Rsat.NetworkController.Tools~~~~0.0.1.0",
+"Rsat.NetworkLoadBalancing.Tools~~~~0.0.1.0",
+"Rsat.RemoteAccess.Management.Tools~~~~0.0.1.0",
+"Rsat.RemoteDesktop.Services.Tools~~~~0.0.1.0",
+"Rsat.ServerManager.Tools~~~~0.0.1.0",
+"Rsat.Shielded.VM.Tools~~~~0.0.1.0",
+"Rsat.StorageMigrationService.Management.Tools~~~~0.0.1.0",
+"Rsat.StorageReplica.Tools~~~~0.0.1.0",
+"Rsat.SystemInsights.Management.Tools~~~~0.0.1.0",
+"Rsat.VolumeActivation.Tools~~~~0.0.1.0",
+"Rsat.WSUS.Tools~~~~0.0.1.0",
+"SNMP.Client~~~~0.0.1.0",
+"Tools.DeveloperMode.Core~~~~0.0.1.0",
+"Tools.DTrace.Platform~~~~0.0.1.0",
+"Tools.Graphics.DirectX~~~~0.0.1.0",
+"WMI-SNMP-Provider.Client~~~~0.0.1.0",
+"XPS.Viewer~~~~0.0.1.0"
+)
 
     If ($WinOS -eq "Windows 10"){
-       # write-host "$WinOS"
-        If ($Winver -eq "1909"){$items = ($Win10_1909_FODs | Out-GridView -PassThru) }
+        If ($Winver -eq "1909"){$items = ($Win10_1909_FODs | Out-GridView -title "Select Features On Demand" -PassThru) }
+        If ($Winver -eq "1903"){$items = ($Win10_1903_FODs | Out-GridView -title "Select Features On Demand" -PassThru) }
+        If ($Winver -eq "1809"){$items = ($Win10_1809_FODs | Out-GridView -title "Select Features On Demand" -PassThru) }
         }
 
     foreach ($item in $items){$WPFCustomLBFOD.Items.Add($item)}
@@ -2748,7 +3441,7 @@ foreach ($item in $items){
   #  write-host $source
     $text = 'Applying ' + $item
     Update-Log -Data $text -Class Information
-    Add-WindowsPackage -PackagePath $source -Path $mountdir
+    Add-WindowsPackage -PackagePath $source -Path $mountdir | out-null
     Update-Log -Data "Injection Successful" -Class Information
     }
 Update-Log -Data "Language Pack injections complete" -Class Information
@@ -2774,7 +3467,7 @@ foreach ($item in $items){
     $file = get-item -Path $source\*.appx
     $text = 'Applying ' + $item
     Update-Log -Data $text -Class Information
-    Add-ProvisionedAppxPackage -PackagePath $file -LicensePath $license -Path $mountdir
+    Add-ProvisionedAppxPackage -PackagePath $file -LicensePath $license -Path $mountdir | out-null
     Update-Log -Data "Injection Successful" -Class Information
     }
 Update-Log -Data "Local Experience Pack injections complete" -Class Information
@@ -2797,7 +3490,7 @@ $items = $WPFCustomLBFOD.items
 foreach ($item in $items){
     $text = "Applying " + $item
     update-log -Data $text -Class Information
-    Add-WindowsCapability -Path $mountdir -Name $item -Source $FODsource
+    Add-WindowsCapability -Path $mountdir -Name $item -Source $FODsource | out-null
     Update-Log -Data "Injection Successful" -Class Information
     }
 Update-Log -Data "Feature on Demand injections complete" -Class Information
@@ -2906,7 +3599,21 @@ function select-importotherpath{
 
     }
 
-################################################
+#function to allow user to pause MAke it so process
+function pause-makeitso{
+$MISPause = ([System.Windows.MessageBox]::Show("Click Yes to continue the image build. Click No to cancel and discard the wim file.",'WIM Witch Paused','YesNo','Warning'))
+if ($MISPause -eq "Yes"){
+   # write-host "OK"
+    return "Yes"
+    #$form.Close()
+    }
+      
+if ($MISPause -eq "No"){
+    #write-host "No"
+
+    return "No"}
+  }  
+
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
@@ -2990,7 +3697,7 @@ $WPFMISAppxTextBox.Text = "False"
 #--- Start combox box
 $ObjectTypes = @("Language Pack","Local Experience Pack","Feature On Demand")
 $WinOS = @("Windows Server","Windows 10")
-$WinSrvVer = @("2016","2019")
+$WinSrvVer = @("2019")
 $Win10Ver = @("1809","1903","1909")
 
 Foreach ($ObjectType in $ObjectTypes){$WPFImportOtherCBType.Items.Add($ObjectType) | out-null}
@@ -3067,7 +3774,7 @@ $WPFImportOtherCBWinOS.add_SelectionChanged({update-importverCB})
 #Button to select the import path in the other components
 $WPFImportOtherBSelectPath.add_click({select-importotherpath
         
-        if ($WPFImportOtherCBType.SelectedItem -ne "Feature On Demand"){$items = (Get-ChildItem -path $WPFImportOtherTBPath.text | Select-Object -Property Name | Out-GridView -PassThru)}
+        if ($WPFImportOtherCBType.SelectedItem -ne "Feature On Demand"){$items = (Get-ChildItem -path $WPFImportOtherTBPath.text | Select-Object -Property Name | Out-GridView -title "Select Objects" -PassThru)}
         if ($WPFImportOtherCBType.SelectedItem -eq "Feature On Demand"){$items = (get-Childitem -path $WPFImportOtherTBPath.text)}    
         $WPFImportOtherLBList.Items.Clear()
         $count = 0
@@ -3088,7 +3795,6 @@ $WPFImportOtherBImport.add_click({
      if ($WPFImportOtherCBType.SelectedItem -eq "Language Pack"){import-LanguagePacks -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
      if ($WPFImportOtherCBType.SelectedItem -eq "Local Experience Pack"){import-LocalExperiencePack -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}
      if ($WPFImportOtherCBType.SelectedItem -eq "Feature On Demand"){import-FOD -Winver $WPFImportOtherCBWinVer.SelectedItem -WinOS $WPFImportOtherCBWinOS.SelectedItem -LPSourceFolder $WPFImportOtherTBPath.text}})
-
 
 #Button Select LP's for importation
 $WPFCustomBLangPacksSelect.add_click({select-LPFODCriteria -type "LP"})
@@ -3222,7 +3928,6 @@ $WPFCustomCBFOD.Add_Click({
 #Run WIM Witch below
 #==========================================================
 
-
 #Runs WIM Witch from a single file, bypassing the GUI
 if (($auto -eq $true) -and ($autofile -ne "")) { 
     run-configfile -filename $autofile
@@ -3250,4 +3955,3 @@ Register-ObjectEvent -InputObject $form -EventName Closed -Action ( { display-cl
 #Start GUI 
 update-log -data "Starting WIM Witch GUI" -class Information
 $Form.ShowDialog() | out-null #This starts the GUI
-
