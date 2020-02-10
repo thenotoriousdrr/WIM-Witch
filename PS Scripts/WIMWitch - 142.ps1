@@ -129,7 +129,7 @@ Param(
  
 )
 
-$WWScriptVer = "1.5.0"
+$WWScriptVer = "1.4.2"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -140,9 +140,10 @@ $inputXML = @"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WIM_Witch_Tabbed"
         mc:Ignorable="d"
-        Title="WIM Witch - v1.5.0" Height="500" Width="800" Background="#FF610536">
+        Title="WIM Witch - v1.4.2" Height="500" Width="800" Background="#FF610536">
     <Grid>
-      <TabControl x:Name="TabControl" Margin="0,0,0,-0.5" Background="#FFACACAC" BorderBrush="#FF610536" Grid.ColumnSpan="2" >
+
+        <TabControl x:Name="TabControl" Margin="0,0,0,-0.5" Background="#FFACACAC" BorderBrush="#FF610536" Grid.ColumnSpan="2" >
             <TabItem Header="Import WIM + .Net" Height="20" MinWidth="100">
                 <Grid>
                     <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="42" Margin="26,85,0,0" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False" HorizontalScrollBarVisibility="Visible"/>
@@ -284,17 +285,6 @@ $inputXML = @"
                     <Button x:Name="AppxButton" Content="Select" HorizontalAlignment="Left" Margin="202,33,0,0" VerticalAlignment="Top" Width="75"/>
                 </Grid>
             </TabItem>
-            <TabItem x:Name="CustomTab" Header="Custom" MinWidth="100">
-                <Grid>
-                    <TextBox x:Name="CustomTBFile" HorizontalAlignment="Left" Height="23" Margin="49,157,0,0" TextWrapping="Wrap" Text="PowerShell Script" VerticalAlignment="Top" Width="501" IsEnabled="False"/>
-                    <TextBox x:Name="CustomTBParameters" HorizontalAlignment="Left" Height="23" Margin="49,207,0,0" TextWrapping="Wrap" Text="Parameters" VerticalAlignment="Top" Width="501" IsEnabled="False"/>
-                    <Button x:Name="CustomBSelectPath" Content="Select" HorizontalAlignment="Left" Margin="566,158,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
-                    <CheckBox x:Name="CustomCBRunScript" Content="Run Script" HorizontalAlignment="Left" Margin="49,102,0,0" VerticalAlignment="Top"/>
-                    <ComboBox x:Name="CustomCBScriptTiming" HorizontalAlignment="Left" Margin="163,102,0,0" VerticalAlignment="Top" Width="172" IsEnabled="False"/>
-                    <CheckBox x:Name="MISCBPauseMount" Content="Pause after mounting" HorizontalAlignment="Left" Margin="49,42,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="MISCBPauseDismount" Content="Pause before dismounting" HorizontalAlignment="Left" Margin="49,71,0,0" VerticalAlignment="Top"/>
-                </Grid>
-            </TabItem>
             <TabItem Header="Make It So" Height="20" MinWidth="100">
                 <Grid>
                     <Button x:Name="MISFolderButton" Content="Select" HorizontalAlignment="Left" Margin="444,155,0,0" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.39,-2.647"/>
@@ -313,6 +303,8 @@ $inputXML = @"
                     <TextBox x:Name="MISUpdatesTextBox" HorizontalAlignment="Left" Height="23" Margin="136,314,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
                     <Label Content="App removal?" HorizontalAlignment="Left" Margin="29,280,0,0" VerticalAlignment="Top" Width="109"/>
                     <TextBox x:Name="MISAppxTextBox" HorizontalAlignment="Left" Height="23" Margin="136,283,0,0" TextWrapping="Wrap" Text="Updates Y/N" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.171,0.142" IsEnabled="False"/>
+                    <CheckBox x:Name="MISCBPauseMount" Content="Pause after mounting" HorizontalAlignment="Left" Margin="559,21,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="MISCBPauseDismount" Content="Pause before dismounting" HorizontalAlignment="Left" Margin="559,42,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Save/Load" Height="20" MinWidth="102">
@@ -646,14 +638,6 @@ Function MakeItSo ($appx) {
                 }
     }
 
-    #Run Script after mounting
-    if (($WPFCustomCBRunScript.IsChecked -eq $True) -and ($WPFCustomCBScriptTiming.SelectedItem -eq "After image mount")){
-        update-log -data "Running PowerShell script..." -Class Information
-        run-script -file $WPFCustomTBFile.text -parameter $WPFCustomTBParameters.text
-        Update-Log -data "Script completed." -Class Information
-        }
-       
-
     #Language Packs and FOD
     if ($WPFCustomCBLangPacks.IsChecked -eq $true){
         apply-LanguagePacks }
@@ -740,12 +724,7 @@ Function MakeItSo ($appx) {
         Update-Log -Data "App removal not enabled" -Class Information
     }
 
-    #Run Script before dismount
-    if (($WPFCustomCBRunScript.IsChecked -eq $True) -and ($WPFCustomCBScriptTiming.SelectedItem -eq "Before image dismount")){
-        run-script -file $WPFCustomTBFile.text -parameter $WPFCustomTBParameters.text
-        }
-
-    #Pause before dismounting
+        #Pause before dismounting
     If ($WPFMISCBPauseDismount.IsChecked -eq $True){
         update-log -Data "Pausing image building. Waiting on user to continue..." -Class Warning
         $Pause = pause-makeitso  
@@ -798,10 +777,6 @@ Function MakeItSo ($appx) {
     }
     update-log -Data "WIM successfully exported to target folder" -Class Information 
 
-    #Run Script when build complete
-    if (($WPFCustomCBRunScript.IsChecked -eq $True) -and ($WPFCustomCBScriptTiming.SelectedItem -eq "On build completion")){
-        run-script -file $WPFCustomTBFile.text -parameter $WPFCustomTBParameters.text
-        }
 
     #Copy log here
     try {
@@ -3633,19 +3608,6 @@ $MISPause = ([System.Windows.MessageBox]::Show("Click Yes to continue the image 
     if ($MISPause -eq "No"){ return "No"}
   }  
 
-#function to run a powershell script with supplied paramenters
-function run-script($file,$parameter){
-    $string = "$file $parameter"
-    try{
-    update-log -Data "Running script" -Class Information
-    Invoke-Expression -command $string -ErrorAction Stop
-    update-log -data "Script complete" -Class Information
-    }
-    catch
-    {
-    update-log -Data "Script failed" -Class Error
-    }
-}
 
 #===========================================================================
 # Run commands to set values of files and variables, etc.
@@ -3725,22 +3687,16 @@ $WPFMISAppxTextBox.Text = "False"
 
 #$WPFAppTab.IsEnabled = $False
 
-#===========================================================================
-# Section for Combo box functions
-#===========================================================================
-
 #Set the combo box values of the other import tab
-
+#--- Start combox box
 $ObjectTypes = @("Language Pack","Local Experience Pack","Feature On Demand")
 $WinOS = @("Windows Server","Windows 10")
 $WinSrvVer = @("2019")
 $Win10Ver = @("1809","1903","1909")
+
 Foreach ($ObjectType in $ObjectTypes){$WPFImportOtherCBType.Items.Add($ObjectType) | out-null}
 Foreach ($WinOS in $WinOS){$WPFImportOtherCBWinOS.Items.Add($WinOS) | out-null}  
-
-#Run Script Timing combox box
-$RunScriptActions = @("After image mount","Before image dismount","On build completion")
-Foreach ($RunScriptAction in $RunScriptActions){$WPFCustomCBScriptTiming.Items.add($RunScriptAction) | out-null}
+#--- End combo box
 
 #===========================================================================
 # Section for Buttons to call functions
@@ -3842,15 +3798,6 @@ $WPFCustomBFODSelect.add_click({select-LPFODCriteria -type "FOD"})
 
 #Button to select LXPs for importation
 $WPFCustomBLEPSelect.add_click({select-LPFODCriteria -type "LXP" })
-
-#Button to select PS1 script
-$WPFCustomBSelectPath.add_click({    
-    $Script = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
-    InitialDirectory = [Environment]::GetFolderPath('Desktop') 
-    Filter           = 'PS1 (*.ps1)|'
-    }
-    $null = $Script.ShowDialog()
-    $WPFCustomTBFile.text = $Script.FileName }) 
 
 #===========================================================================
 # Section for Checkboxes to call functions
@@ -3971,20 +3918,6 @@ $WPFCustomCBFOD.Add_Click({
         {$WPFCustomBFODSelect.IsEnabled = $False}
  })
  
-#Enable Run Script settings
-$WPFCustomCBRunScript.Add_Click({ 
-    If ($WPFCustomCBRunScript.IsChecked -eq $true){
-        $WPFCustomTBFile.IsEnabled = $True
-        $WPFCustomBSelectPath.IsEnabled = $True
-        $WPFCustomTBParameters.IsEnabled = $True
-        $WPFCustomCBScriptTiming.IsEnabled = $True 
-        }
-      else
-        {$WPFCustomTBFile.IsEnabled = $False
-        $WPFCustomBSelectPath.IsEnabled = $False
-        $WPFCustomTBParameters.IsEnabled = $False
-        $WPFCustomCBScriptTiming.IsEnabled = $False}  })
-
 #==========================================================
 #Run WIM Witch below
 #==========================================================
