@@ -735,7 +735,7 @@ Function MakeItSo ($appx) {
         $mountlogdir = $WPFMISMountTextBox.Text + "\windows\"
         Copy-Item $PSScriptRoot\logging\WIMWitch.log -Destination $mountlogdir -ErrorAction Stop
         $CopyLogExist = Test-Path $mountlogdir\WIMWitch.log -PathType Leaf
-        if ($CopyLogExist -eq $true) { update-log -Data "Log filed copied successfully" -Class Information }
+        if ($CopyLogExist -eq $true) { update-log -Data "Log file copied successfully" -Class Information }
     }
     catch {
         Update-Log -data $_.Exception.Message -class Error
