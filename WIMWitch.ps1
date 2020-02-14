@@ -34,7 +34,7 @@
 #
 # -Added patching support for Server 2016 LTSB and Server 2019 LTSB
 # -Modified command line parameters for easier usage and to support Server
-# -Depricated Supersedense from command line functionality
+# -Deprecated Supersedence from command line functionality
 # -Downloading updates performs a supersedense check against that particular
 #     OS only. Previously all OS's were checked.
 # -OneDrive update downloaded with any Win10 build
@@ -1199,12 +1199,12 @@ Function check-superceded($action, $OS, $Build) {
                     }
                     }   
                      else {
-                    Update-Log -data "$file is stil current" -Class Information
+                    Update-Log -data "$file is still current" -Class Information
                 }    
                  }
             }
             }
-        Update-Log -data "Supersedense check complete." -Class Information
+        Update-Log -data "Supersedence check complete." -Class Information
     }
 
 #Function to download new patches
