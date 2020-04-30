@@ -679,7 +679,8 @@ Function MakeItSo ($appx) {
 
         try {
             $autopilotdir = $WPFMISMountTextBox.Text + "\windows\Provisioning\Autopilot"
-            Copy-Item $WPFJSONTextBox.Text -Destination $autopilotdir -ErrorAction Stop
+            $autopilotJSONFilePath = Join-Path -Path $autopilotdir -ChildPath "AutopilotConfigurationFile.json"
+            Copy-Item $WPFJSONTextBox.Text -Destination $autopilotJSONFilePath -ErrorAction Stop
         }
         catch {
             Update-Log -data $_.Exception.Message -class Error
