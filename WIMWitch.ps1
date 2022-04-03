@@ -37,6 +37,10 @@
  apply them either with the GUI or programatically for bulk creation. WIM Witch
  works as a stand alone tool, as well as integrating with Configuration Manager
  
+ Version 3.3.1
+
+ -Supports updated media. Users get confirmation prompt on certain Win10 images.
+ 
  Version 3.3.0
 
  -Support for remote ConfigMgr useage. Installation on PSS no longer required. 
