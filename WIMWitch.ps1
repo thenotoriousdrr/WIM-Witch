@@ -219,7 +219,7 @@ $inputXML = @"
             <TabItem Header="Import WIM + .Net" Height="20" MinWidth="100">
                 <Grid>
                     <TextBox x:Name="ImportISOTextBox" HorizontalAlignment="Left" Height="42" Margin="26,85,0,0" Text="ISO to import from..." VerticalAlignment="Top" Width="500" IsEnabled="False" HorizontalScrollBarVisibility="Visible"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,56,0,0" TextWrapping="Wrap" Text="Select a Windows 10 ISO:" VerticalAlignment="Top" Height="26" Width="353"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="26,56,0,0" TextWrapping="Wrap" Text="Select a Windows ISO:" VerticalAlignment="Top" Height="26" Width="353"/>
                     <Button x:Name="ImportImportSelectButton" Content="Select" HorizontalAlignment="Left" Margin="553,85,0,0" VerticalAlignment="Top" Width="75"/>
                     <TextBlock HorizontalAlignment="Left" Margin="26,149,0,0" TextWrapping="Wrap" Text="Select the item(s) to import:" VerticalAlignment="Top" Width="263"/>
                     <CheckBox x:Name="ImportWIMCheckBox" Content="Install.wim" HorizontalAlignment="Left" Margin="44,171,0,0" VerticalAlignment="Top"/>
@@ -573,7 +573,7 @@ Function SelectSourceWIM {
     import-wiminfo -IndexNumber $IndexNumber
 }
 
-function import-wiminfo($IndexNumber) {
+function import-wiminfo($IndexNumber,[switch]$SkipUserConfirmation) {
     Update-Log -Data "Importing Source WIM Info" -Class Information
     try {
         #Gets WIM metadata to populate fields on the Source tab.
@@ -620,7 +620,7 @@ function import-wiminfo($IndexNumber) {
         }
 
     ######right here
-    $WPFSourceWimTBVersionNum.text = get-winvernum
+    if ($SkipUserConfirmation -eq $False){$WPFSourceWimTBVersionNum.text = get-winvernum}
 }
  
 #Function to Select JSON File
@@ -2458,6 +2458,8 @@ function save-config{
         UpgradePackageCB = $WPFMISCBUpgradePackage.IsChecked
         UpgradePackPath  = $WPFMISTBUpgradePackage.Text
         IncludeOptionCB  = $WPFUpdatesOptionalEnableCheckBox.IsChecked
+
+        SourceVersion    = $WPFSourceWimTBVersionNum.text
     }
 
     if ($CM -eq $False){
@@ -2571,7 +2573,9 @@ function load-config($filename) {
         $WPFMISTBFilePath.Text = $settings.ISOFilePath      
         $WPFMISCBUpgradePackage.IsChecked = $settings.UpgradePackageCB 
         $WPFMISTBUpgradePackage.Text = $settings.UpgradePackPath  
-        $WPFUpdatesOptionalEnableCheckBox.IsChecked = $settings.IncludeOptionCB          
+        $WPFUpdatesOptionalEnableCheckBox.IsChecked = $settings.IncludeOptionCB
+        
+        $WPFSourceWimTBVersionNum.text = $settings.SourceVersion          
         
         $LEPs =  $settings.LPListBox
         $LXPs =  $settings.LXPListBox
@@ -2599,7 +2603,7 @@ function load-config($filename) {
         foreach ($REG in $REGs){$WPFCustomLBRegistry.Items.Add($REG) | Out-null}
 
 
-        import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text
+        import-wiminfo -IndexNumber $WPFSourceWimIndexTextBox.text -SkipUserConfirmation
 
         if ($WPFJSONEnableCheckBox.IsChecked -eq $true) {
             
@@ -3458,22 +3462,9 @@ function copy-onedrive{
 #Function to call the next three functions. This determines WinOS and WinVer and calls the function
 function select-LPFODCriteria($Type){
 
-#Delete block after 2/2022
-#    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
-#        Else
-#            {$WinOS = "Windows Server"}
-
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.19041.*") { $WinVer = "2004" }
-
- #   If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") {
- #       if ((get-windowsimage -ImagePath $WPFSourceWIMSelectWIMTextBox.text -Index 1).CreatedTime -gt (Get-Date -Year 2019 -Month 09 -Day 02)){$WinVer = "1909"}
- #           else{
- #          $WinVer = "1909"}
- #     }
-
     $WinOS = get-windowstype
-    $WinVer = get-winvernum
+    #$WinVer = get-winvernum
+    $WinVer = $WPFSourceWimTBVersionNum.text
 
     if ($WinOS -eq "Windows 10"){
         if (($Winver -eq "2009") -or ($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "21H2")) {$winver = "2004"} 
@@ -6741,26 +6732,15 @@ function get-winvernum{
 
         If ($IsMountPoint -eq $False){
             $global:Win10Version = $null
+            update-log -data "Prompting user for Win10 version confirmation..." -class Information
             invoke-19041select
-            write-host $global:Win10Version
+           
             if ($global:Win10Version -eq $null){return}
             $temp = $global:Win10Version
             $buildnum = $temp
-            
-            write-host $buildnum
+            update-log -data "User selected $buildnum" -class Information
+          
             $global:Win10Version = $null
-
-###old code
-#              $windowsver = Get-WindowsImage -ImagePath ($WPFSourceWIMSelectWIMTextBox.text) -Index 1
-#
-#              if ($windowsver.CreatedTime.Year -eq "2020"){$buildnum = 2009}
-#              if ($windowsver.CreatedTime.Year -eq "2021"){
-#                    #$windowsver.CreatedTime.Month        
-#                    if ($windowsver.CreatedTime.Month -lt 10){$buildnum = '21H1'}
-#                  else
-#                    {$buildnum = "21H2"}
-#              }
-##########
 
         } 
     }
@@ -7138,10 +7118,14 @@ function invoke-textnotification{
     update-log -data "*********************************" -class Comment
     update-log -data "This version brings: " -class Comment
     update-log -data " " -class Comment
-    update-log -data "-support for ConfigMgr integration on remote systems"  -class Comment
+    update-log -data "Support for updated WIMs. RTM media is no longer required."  -class Comment
+    update-log -data "Console users are now prompted to confirm the version of certain Win10 versions."  -class Comment
+    update-log -data "This should fix errors selecting Win10 images and their customizations"  -class Comment
+    update-log -data " " -class Comment
+    update-log -data "If you are using Save/Load functionality, this update adds an"  -class Comment
+    update-log -data "an additional field that is saved. While the older save files should"  -class Comment
+    update-log -data "still work, if you need to edit them, you may need to re-select the source WIM."  -class Comment
     update-log -data " "  -Class Comment
-    update-log -data "For more information, see the following post" -Class Comment
-    update-log -data "https://msendpointmgr.com/2021/12/10/wim-witch-v3-3-0-remote-configuration-manager-integration/" -Class Comment
     update-log -data "*********************************" -class Comment
 
 }
@@ -7204,23 +7188,17 @@ Foreach ($Win10VerNum in $Win10VerNums){$WPFWin10PUCombo.Items.Add($Win10VerNum)
 
 #Button_OK_Click
 $WPFWin10PUOK.Add_Click({
-
-    write-host "OK"
     $global:Win10Version = $WPFWin10PUCombo.SelectedItem
     $Form.Close()
     return 
-
 })
 
 #Button_Cancel_Click
 $WPFWin10PUCancel.Add_Click({
-
-    write-host "Cancel"
     $global:Win10Version = $null
-
+    update-log -data "User cancelled the confirmation dialog box" -Class Warning
     $Form.Close()
     return 
-
 })
 
 
@@ -7278,8 +7256,6 @@ invoke-admincheck
 #Check for 32 bit architecture
 invoke-architecturecheck
 
-
-
 #End Prereq segment
 ###################
 
@@ -7288,7 +7264,6 @@ invoke-architecturecheck
 Check-WIMWitchVer #Checks installed version of WIM Witch and updates if selected
 
 #This randon line was inserted on 7/3/2020.
-
 
 #===========================================================================
 
