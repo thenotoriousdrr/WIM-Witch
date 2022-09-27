@@ -185,6 +185,9 @@ Param(
     [ValidateSet("all","21H2")] 
     [string]$Win11Version = "none",
 
+    [parameter(mandatory = $false, HelpMessage = "Specify WW install folder")] 
+    [string]$installpath,
+
     [parameter(mandatory = $false, HelpMessage = "Windows Server 2016")] 
     [switch]$Server2016,
 
@@ -1107,7 +1110,7 @@ Function MakeItSo ($appx) {
 Function SelectTargetDir {
 
     Add-Type -AssemblyName System.Windows.Forms
-      
+    
     $browser = New-Object System.Windows.Forms.FolderBrowserDialog
     $browser.Description = "Select the target folder"
     $null = $browser.ShowDialog()
@@ -1115,7 +1118,8 @@ Function SelectTargetDir {
     
     $WPFMISWimFolderTextBox.text = $TargetDir #I SCREWED UP THIS VARIABLE
     update-log -Data "Target directory selected" -Class Information 
-}
+}   
+
 
 #Function to enable logging and folder check
 Function Update-Log {
@@ -2859,39 +2863,13 @@ function check-install {
     }
 
     function install-wimwitch {
-        Write-Output "Would you like to install WIM Witch here?"
-        $yesno = Read-Host -Prompt "(Y/N)"
-        Write-Output $yesno
-        if (($yesno -ne "Y") -and ($yesno -ne "N")) {
-            Write-Output "Invalid entry, try again."
-            install-wimwitch
-        }
-
-        if (($yesno -eq "y") -and ($PSScriptRoot -notlike "*WindowsPowerShell\Scripts*")){
-            foreach ($subfolder in $subfolders) {
-                New-Item -Path $subfolder -ItemType Directory | Out-Null
-                Write-Output "Created folder: $subfolder"
-            }
-        }
-        if (($yesno -eq "y") -and ($PSScriptRoot -like "*WindowsPowerShell\Scripts*")){
-            Write-Output " "
-            write-output "You cannot install WIM Witch in the script repository folder."
-            Write-Output "Also, you probably shouldn't install this in My Downloads, or My Desktop"
-            write-output "Please select another folder"
-            $yesno = "n"
-
-        }
-        if ($yesno -eq "n") {
-            Write-Output "Select an installation folder"
-            $installpath = select-installfolder
+        #if $installpath param is specified install there }Else{
+        if (-not ([string]::IsNullOrEmpty($installpath))){
             
-            if ($installpath -like "*WindowsPowerShell\Scripts*"){
-                Write-Output "You cannot install WIM Witch in the script repository folder"
-                Write-Output "Exiting installer. Please try again"
-                exit 0
-                }
-
             Write-Output "Installing WIM Witch in: $installpath"
+            If (-NOT(Test-path -PathType container $installpath)){
+                New-Item -ItemType "directory" -Path $installpath -Force
+            }
             Copy-Item -Path $MyInvocation.ScriptName -Destination $installpath -Force
             Write-Output "WIM Witch script copied to installation path"
             Set-Location -Path $installpath
@@ -2910,8 +2888,63 @@ function check-install {
             Write-Output " "
             Write-Output "Exiting..."
             break
+
+        }Else{
+
+            Write-Output "Would you like to install WIM Witch here?"
+            $yesno = Read-Host -Prompt "(Y/N)"
+            Write-Output $yesno
+            if (($yesno -ne "Y") -and ($yesno -ne "N")) {
+                Write-Output "Invalid entry, try again."
+                install-wimwitch
+            }
+
+            if (($yesno -eq "y") -and ($PSScriptRoot -notlike "*WindowsPowerShell\Scripts*")){
+                foreach ($subfolder in $subfolders) {
+                    New-Item -Path $subfolder -ItemType Directory | Out-Null
+                    Write-Output "Created folder: $subfolder"
+                }
+            }
+            if (($yesno -eq "y") -and ($PSScriptRoot -like "*WindowsPowerShell\Scripts*")){
+                Write-Output " "
+                write-output "You cannot install WIM Witch in the script repository folder."
+                Write-Output "Also, you probably shouldn't install this in My Downloads, or My Desktop"
+                write-output "Please select another folder"
+                $yesno = "n"
+
+            }
+            if ($yesno -eq "n") {
+                Write-Output "Select an installation folder"
+                $installpath = select-installfolder
+                
+                if ($installpath -like "*WindowsPowerShell\Scripts*"){
+                    Write-Output "You cannot install WIM Witch in the script repository folder"
+                    Write-Output "Exiting installer. Please try again"
+                    exit 0
+                    }
+
+                Write-Output "Installing WIM Witch in: $installpath"
+                Copy-Item -Path $MyInvocation.ScriptName -Destination $installpath -Force
+                Write-Output "WIM Witch script copied to installation path"
+                Set-Location -Path $installpath
+                foreach ($subfolder in $subfolders) {
+
+                    if ((Test-Path -Path "$subfolder") -eq $true) { Write-Host "$subfolder exists" }
+                    if ((Test-Path -Path "$subfolder") -eq $false) {
+                        New-Item -Path $subfolder -ItemType Directory | out-null
+                        Write-Output "Created folder: $subfolder"
+                    } 
+                }
+                    
+                Write-Output "============================================="
+                Write-Output "WIM Witch has been installed to $installpath"
+                Write-Output "Start WIM witch from that folder to continue."
+                Write-Output " "
+                Write-Output "Exiting..."
+                break
+            }
         }
-     }
+    }
 
     $subfolders = @(
         "CompletedWIMs"
