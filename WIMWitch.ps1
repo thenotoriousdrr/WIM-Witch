@@ -1,6 +1,6 @@
 ﻿<#PSScriptInfo
 
-.VERSION 3.3.1
+.VERSION 3.4.6
 
 .GUID ee1ba506-ac68-45f8-9f37-4555f1902353
 
@@ -36,48 +36,30 @@
  Image (WIM) files and ISOs. It can also create WIM configuration templates and
  apply them either with the GUI or programatically for bulk creation. WIM Witch
  works as a stand alone tool, as well as integrating with Configuration Manager
+
+-version 3.4.5
+Fix Win10 22H2 check box label on Updates tab
+Added Win10 22H2 to the LP/LXP/FOD selection logic
+Fix for Win10 22H2 updates downloading with ConfigMgr
+
+-version 3.4.4
+Support for Win10 22H2
+Fixed bug when selection Windows 10 on Updates tab
+Added try/catch to APPX removal function
+
+-version 3.4.3
+Support for Win11 22H2
+Support for x64 OneDrive client
+Bugfix for OneDrive client not updating
+
+-version 3.4.2
+Bug Fix on greeting message that caused an error.
+
  
- Version 3.3.1
-
- -Supports updated media. Users get confirmation prompt on certain Win10 images.
- 
- Version 3.3.0
-
- -Support for remote ConfigMgr useage. Installation on PSS no longer required. 
- 
- Version 3.2.5
-
- -Bugfix for applying LP/LXP/FOD for Win10 21H2
-
- Version 3.2.4
-
- -Bugfix for selecting LP/LXP/FOD for 21H2
- 
- Version 3.2.3
-
- -Added support for Windows 10 21H2
- -Dropped support for Windows 10 2004
- -Fixed bug with .Net / ISO import with 20H2+21H1
- -Added workaround to make Windows 11 LCUs work (CAB -> MSU)
- -Added Comment type / Green text to Update-Log function
- -Bugfix for APPX selection
- 
- Version 3.2.2
-
- -Fixed bug in downloading OneDrive client with Windows 11
- -Fixed bug with Windows 11 ISO creation
- -Fixed bug with Downloading Dynamic Updates for Win11 in CM
- 
- Version 3.2.1
-
- -Fixed bug for download Server 2019/2022 and Win11 with OSDSUS
-
- Version 3.2.0.
-
- -Adds support for Windows 11 and Server 2022
- -Adds functionality to better handle SSUs with certain win10 versions
- -Adds functionality to select XML or JSON for Windows 11 Start Menu
- -Improves Windows Type and version during runtime
+-version 3.4.1
+Bug fix for applying .Net binaries to Windows 10 20H2
+Bug fix for applying LCU to Windows 11
+Added error output from DISM for .Net injection
  
  #>
 
@@ -178,11 +160,11 @@ Param(
     [switch]$DownloadUpdates,
   
     [parameter(mandatory = $false, HelpMessage = "Win10 Version")] 
-    [ValidateSet("all", "1809", "1909","20H2","21H1","21H2")] 
+    [ValidateSet("all", "1809","20H2","21H1","21H2","22H2")] 
     [string]$Win10Version = "none",
 
     [parameter(mandatory = $false, HelpMessage = "Win11 Version")] 
-    [ValidateSet("all","21H2")] 
+    [ValidateSet("all","21H2","22H2")] 
     [string]$Win11Version = "none",
 
     [parameter(mandatory = $false, HelpMessage = "Windows Server 2016")] 
@@ -202,11 +184,14 @@ Param(
     [string]$CM = "none",
 
     [parameter(mandatory = $false, HelpMessage ="Skip free space check")]
-    [switch]$SkipFreeSpaceCheck
+    [switch]$SkipFreeSpaceCheck,
+
+    [parameter(mandatory = $false, HelpMessage ="Used to skip lengthy steps")]
+    [switch]$demomode
  
 )
 
-$WWScriptVer = "3.3.1"
+$WWScriptVer = "3.4.6"
 
 #Your XAML goes here :)
 $inputXML = @"
@@ -232,6 +217,7 @@ $inputXML = @"
                     <TextBox x:Name="ImportNewNameTextBox" HorizontalAlignment="Left" Height="23" Margin="26,261,0,0" TextWrapping="Wrap" Text="Name for the imported WIM" VerticalAlignment="Top" Width="500" IsEnabled="False"/>
                     <Button x:Name="ImportImportButton" Content="Import" HorizontalAlignment="Left" Margin="553,261,0,0" VerticalAlignment="Top" Width="75" IsEnabled="False"/>
                     <CheckBox x:Name="ImportISOCheckBox" Content="ISO / Upgrade Package Files" HorizontalAlignment="Left" Margin="44,212,0,0" VerticalAlignment="Top"/>
+                    <Button x:Name="ImportBDJ" Content="Tell Me a Dad Joke" HorizontalAlignment="Left" Margin="639,383,0,0" VerticalAlignment="Top" Width="109" Visibility="Hidden"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Import LP+FOD" Margin="0" MinWidth="100">
@@ -340,7 +326,7 @@ $inputXML = @"
                     <Button x:Name="UpdateOSDBUpdateButton" Content="Install / Update" HorizontalAlignment="Left" Margin="218,362,0,0" VerticalAlignment="Top" Width="120"/>
                     <TextBlock HorizontalAlignment="Left" Height="42" Margin="31,85,0,0" TextWrapping="Wrap" Text="Select which versions of Windows to download current patches for. Downloading will also purge superseded updates." VerticalAlignment="Top" Width="335"/>
                     <CheckBox x:Name="UpdatesW10_1903" Content="1903" HorizontalAlignment="Left" Margin="67,183,0,0" VerticalAlignment="Top" IsEnabled="False" Visibility="Hidden"/>
-                    <CheckBox x:Name="UpdatesW10_1809" Content="1809" HorizontalAlignment="Left" Margin="163,191,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_1809" Content="1809" HorizontalAlignment="Left" Margin="282,190,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                     <CheckBox x:Name="UpdatesW10_1803" Content="1803" HorizontalAlignment="Left" Margin="194,182,0,0" VerticalAlignment="Top" IsEnabled="False" Visibility="Hidden"/>
                     <CheckBox x:Name="UpdatesW10_1709" Content="1709" HorizontalAlignment="Left" Margin="251,182,0,0" VerticalAlignment="Top" IsEnabled="False" Visibility="Hidden"/>
                     <Button x:Name="UpdatesDownloadNewButton" Content="Download" HorizontalAlignment="Left" Margin="291,239,0,0" VerticalAlignment="Top" Width="75"/>
@@ -353,21 +339,23 @@ $inputXML = @"
                     <TextBlock HorizontalAlignment="Left" Margin="26,334,0,0" TextWrapping="Wrap" Text="OSDSUS" VerticalAlignment="Top"/>
                     <TextBox x:Name="UpdatesOSDSUSVersion" HorizontalAlignment="Left" Height="23" Margin="91,330,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
                     <TextBox x:Name="UpdatesOSDSUSCurrentVerTextBox" HorizontalAlignment="Left" Height="23" Margin="218,330,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW10Main" Content="Windows 10" HorizontalAlignment="Left" Margin="46,157,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesW10Main" Content="Windows 10" HorizontalAlignment="Left" Margin="46,172,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="UpdatesS2016" Content="Windows Server 2016" HorizontalAlignment="Left" Margin="44,251,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="UpdatesS2019" Content="Windows Server 2019" HorizontalAlignment="Left" Margin="44,232,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="UpdatesW10_1909" Content="1909" HorizontalAlignment="Left" Margin="105,191,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                     <TextBlock x:Name="UpdatesOSDBClosePowerShellTextBlock_Copy" HorizontalAlignment="Left" Margin="26,27,0,0" TextWrapping="Wrap" Text="Select Update Catalog Source" VerticalAlignment="Top" RenderTransformOrigin="0.493,0.524" Width="321"/>
                     <ListBox x:Name="UpdatesOSDListBox" HorizontalAlignment="Left" Height="107" Margin="391,275,0,0" VerticalAlignment="Top" Width="347"/>
                     <CheckBox x:Name="UpdatesW10_2004" Content="2004" HorizontalAlignment="Left" Margin="193,175,0,0" VerticalAlignment="Top" IsEnabled="False" Visibility="Hidden"/>
                     <TextBlock HorizontalAlignment="Left" Margin="391,35,0,0" TextWrapping="Wrap" Text="Download Additional Update Types" VerticalAlignment="Top"/>
                     <CheckBox x:Name="UpdatesCBEnableOptional" Content="Optional Updates" HorizontalAlignment="Left" Margin="421,55,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="UpdatesCBEnableDynamic" Content="Dynamic Updates" HorizontalAlignment="Left" Margin="421,77,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="UpdatesW10_20H2" Content="20H2" HorizontalAlignment="Left" Margin="191,175,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW10_21h1" Content="21H1" HorizontalAlignment="Left" Margin="135,175,0,0" VerticalAlignment="Top" IsEnabled="False"/>
-                    <CheckBox x:Name="UpdatesW11Main1" Content="Windows 11" HorizontalAlignment="Left" Margin="46,135,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="UpdatesW10_20H2" Content="20H2" HorizontalAlignment="Left" Margin="225,190,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_21h1" Content="21H1" HorizontalAlignment="Left" Margin="169,190,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW11Main" Content="Windows 11" HorizontalAlignment="Left" Margin="46,135,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="UpdatesS2022" Content="Windows Server 2022" HorizontalAlignment="Left" Margin="44,215,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="UpdatesW10_21h2" Content="21H2" HorizontalAlignment="Left" Margin="74,175,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_21h2" Content="21H2" HorizontalAlignment="Left" Margin="112,190,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW11_22h2" Content="22H2" HorizontalAlignment="Left" Margin="58,153,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW11_21h2" Content="21H2" HorizontalAlignment="Left" Margin="111,153,0,0" VerticalAlignment="Top" IsEnabled="False"/>
+                    <CheckBox x:Name="UpdatesW10_22h2" Content="22H2" HorizontalAlignment="Left" Margin="58,190,0,0" VerticalAlignment="Top" IsEnabled="False"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Customizations" Height="20" MinWidth="100">
@@ -727,9 +715,10 @@ Function MakeItSo ($appx) {
     }
 
     if ($WPFMISDotNetCheckBox.IsChecked -eq $true) {
+     #ping
         if ((check-dotnetexists) -eq $False) { return }
     }
-
+     
 
     #Check for free space
     if ($SkipFreeSpaceCheck -eq $false){
@@ -905,7 +894,7 @@ Function MakeItSo ($appx) {
     #Check for updates when ConfigMgr source is selected
     if ($WPFMISCBCheckForUpdates.IsChecked -eq $true){
         invoke-MISUpdates
-        if ( $WPFSourceWIMImgDesTextBox.text -like "*Windows 10*"){download-onedrive}
+        if (($WPFSourceWIMImgDesTextBox.text -like "*Windows 10*") -or ($WPFSourceWIMImgDesTextBox.text -like "*Windows 11*")){download-onedrive}
         }
 
 
@@ -928,9 +917,14 @@ Function MakeItSo ($appx) {
 
     #Copy the current OneDrive installer
     if ($WPFMISOneDriveCheckBox.IsChecked -eq $true) {
-        copy-onedrive
+        
+        $os = get-windowstype
+        $build = get-winvernum
+
+        if(($os -eq "Windows 11") -and ($build -eq "22H2")){copy-onedrivex64}
+            else{copy-onedrive}
         }
-    else{
+        else{
         update-log -data "OneDrive agent update skipped as it was not selected" -Class Information
     }
 
@@ -1521,6 +1515,10 @@ Function check-superceded($action, $OS, $Build) {
 
 #Function to download new patches with OSDSUS
 Function download-patches($build,$OS) {
+
+    write-host $build
+    write-host $OS
+
     Update-Log -Data "Downloading SSU updates for $OS $build" -Class Information
     try{
     Get-OSDUpdate -ErrorAction Stop| Where-Object { $_.UpdateOS -eq $OS -and $_.UpdateArch -eq 'x64' -and $_.UpdateBuild -eq $build -and $_.UpdateGroup -eq 'SSU' } | Get-DownOSDUpdate -DownloadPath $PSScriptRoot\updates\$OS\$build\SSU
@@ -1610,6 +1608,9 @@ Function update-patchsource {
     Update-Log -Data "attempting to start download function" -Class Information
     if ($WPFUSCBSelectCatalogSource.SelectedItem -eq "OSDSUS"){   
         if ($WPFUpdatesW10Main.IsChecked -eq $true){
+            if ($WPFUpdatesW10_22H2.IsChecked -eq $true){
+                check-superceded -action delete -build 22H2 -OS "Windows 10"
+                download-patches -build 22H2 -OS "Windows 10"}
             if ($WPFUpdatesW10_21H2.IsChecked -eq $true){
                 check-superceded -action delete -build 21H2 -OS "Windows 10"
                 download-patches -build 21H2 -OS "Windows 10"}
@@ -1637,7 +1638,7 @@ Function update-patchsource {
             if ($WPFUpdatesW10_1709.IsChecked -eq $true){
         check-superceded -action delete -build 1709 -OS "Windows 10"
         download-patches -build 1709 -OS "Windows 10"}
-        download-onedrive
+        #download-onedrive
         }
         if ($WPFUpdatesS2019.IsChecked -eq $true){
     check-superceded -action delete -build 1809 -OS "Windows Server"
@@ -1649,22 +1650,31 @@ Function update-patchsource {
             check-superceded -action delete -build 21H2 -OS "Windows Server"
             download-patches -build 21H2 -OS "Windows Server"}
 
-        if ($WPFUpdatesW11Main1.IsChecked -eq $true){
+        if ($WPFUpdatesW11Main.IsChecked -eq $true){
 
-            check-superceded -action delete -build 21H2 -OS "Windows 11"
-            download-patches -build 21H2 -OS "Windows 11"
-            download-onedrive
+            if ($WPFUpdatesW11_22H2.IsChecked -eq $true){
+
+                check-superceded -action delete -build 22H2 -OS "Windows 11"
+                download-patches -build 22H2 -OS "Windows 11"}
+            if ($WPFUpdatesW11_21h2.IsChecked -eq $true){
+                write-host "21H2"
+                check-superceded -action delete -build 21H2 -OS "Windows 11"
+                download-patches -build 21H2 -OS "Windows 11"
+                
+                }
+
             }
-
-
+    download-onedrive
     }
 
      if ($WPFUSCBSelectCatalogSource.SelectedItem -eq "ConfigMgr"){   
         if ($WPFUpdatesW10Main.IsChecked -eq $true){
+            if ($WPFUpdatesW10_22H2.IsChecked -eq $true){
+                invoke-MEMCMUpdateSupersedence -prod "Windows 10" -Ver "22H2"
+                invoke-MEMCMUpdatecatalog -prod "Windows 10" -ver "22H2"}
             if ($WPFUpdatesW10_21H2.IsChecked -eq $true){
                 invoke-MEMCMUpdateSupersedence -prod "Windows 10" -Ver "21H2"
                 invoke-MEMCMUpdatecatalog -prod "Windows 10" -ver "21H2"}
-
             if ($WPFUpdatesW10_21H1.IsChecked -eq $true){
                 invoke-MEMCMUpdateSupersedence -prod "Windows 10" -Ver "21H1"
                 invoke-MEMCMUpdatecatalog -prod "Windows 10" -ver "21H1"}
@@ -1689,7 +1699,7 @@ Function update-patchsource {
             if ($WPFUpdatesW10_1709.IsChecked -eq $true){
                 invoke-MEMCMUpdateSupersedence -prod "Windows 10" -Ver "1709"
                 invoke-MEMCMUpdatecatalog -prod "Windows 10" -ver "1709"}
-        download-onedrive
+        #download-onedrive
         }
         if ($WPFUpdatesS2019.IsChecked -eq $true){
                 invoke-MEMCMUpdateSupersedence -prod "Windows Server" -Ver "1809"
@@ -1700,12 +1710,19 @@ Function update-patchsource {
         if ($WPFUpdatesS2022.IsChecked -eq $true){
             invoke-MEMCMUpdateSupersedence -prod "Windows Server" -Ver "21H2"
             invoke-MEMCMUpdatecatalog -prod "Windows Server" -Ver "21H2"}
-        if ($WPFUpdatesW11Main1.IsChecked -eq $true){
-            invoke-MEMCMUpdateSupersedence -prod "Windows 11" -Ver "21H2"
-            invoke-MEMCMUpdatecatalog -prod "Windows 11" -Ver "21H2"
-            download-onedrive
-            }
+        if ($WPFUpdatesW11Main.IsChecked -eq $true){
+            if ($WPFUpdatesW11_21H2.IsChecked -eq $true){
+                invoke-MEMCMUpdateSupersedence -prod "Windows 11" -Ver "21H2"
+                invoke-MEMCMUpdatecatalog -prod "Windows 11" -ver "21H2"}
+            if ($WPFUpdatesW11_22H2.IsChecked -eq $true){
+                invoke-MEMCMUpdateSupersedence -prod "Windows 11" -Ver "22H2"
+                invoke-MEMCMUpdatecatalog -prod "Windows 11" -ver "22H2"}
 
+            #invoke-MEMCMUpdateSupersedence -prod "Windows 11" -Ver "21H2"
+            #invoke-MEMCMUpdatecatalog -prod "Windows 11" -Ver "21H2"
+            #download-onedrive
+            }
+    download-onedrive
     }
         update-log -data "All downloads complete" -class Information
 }
@@ -1714,6 +1731,7 @@ Function update-patchsource {
 Function Apply-Updates($class) {
    function Apply-LCU($packagepath){
     $osver = get-windowstype
+    #write-host $osver
 
     if ($osver -eq "Windows 10"){
         $executable = "$env:windir\system32\expand.exe"
@@ -1724,20 +1742,40 @@ Function Apply-Updates($class) {
         Start-Process $executable -args @("`"$packagepath\$filename`"",'/f:*.CAB',"`"$PSScriptRoot\staging`"") -wait -ErrorAction Stop
         $cabs = (Get-Item $PSScriptRoot\staging\*.cab)
 
-
+        #MMSMOA2022
         update-log  -data "Applying SSU..." -class information
         foreach ($cab in $cabs){
         
             if ($cab -like "*SSU*"){
                 update-log -data $cab -class Information
-                Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $cab -erroraction stop| Out-Null}}
-    
+                
+                if ($demomode -eq $false){Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $cab -erroraction stop| Out-Null}
+                    else{
+                    $string = "Demo mode active - Not applying " + $cab
+                    update-log -data $string -Class Warning
+                        }
+                    }
+
+                }
+                
+
+
         update-log -data "Applying LCU..." -class information
         foreach ($cab in $cabs){
             if ($cab -notlike "*SSU*"){
                 update-log -data $cab -class information
-                Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $cab -erroraction stop| Out-Null}}
+                if ($demomode -eq $false){Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $cab -erroraction stop| Out-Null}
+                    else{
+                    $string = "Demo mode active - Not applying " + $cab
+                    update-log -data $string -Class Warning
+                        }
+                    }
+
+                #Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $cab -erroraction stop| Out-Null}}
     }
+
+    
+   }
     if ($osver -eq "Windows 11"){
         #copy file to staging
         update-log -data "Copying LCU file to staging folder..." -class information
@@ -1760,7 +1798,14 @@ Function Apply-Updates($class) {
 
         try
         {
-            Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $PSScriptRoot\staging\$newname -ErrorAction Stop
+        #    Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $PSScriptRoot\staging\$newname -ErrorAction Stop
+        if ($demomode -eq $false){Add-WindowsPackage -path $WPFMISMountTextBox.Text -PackagePath $PSScriptRoot\staging\$newname -ErrorAction Stop | Out-Null}
+            else{
+            $string = "Demo mode active - Not applying " + $updatename
+            update-log -data $string -Class Warning
+         }
+        
+        
         }
         
         catch
@@ -1771,8 +1816,8 @@ Function Apply-Updates($class) {
 
 
     }
-   }
-   
+
+  } # Function end
    
    
    if (($class -eq 'AdobeSU') -and ($WPFSourceWIMImgDesTextBox.text -like "Windows Server 20*") -and ($WPFSourceWIMImgDesTextBox.text -notlike "*(Desktop Experience)")){
@@ -1781,6 +1826,8 @@ Function Apply-Updates($class) {
 
     $OS = get-windowstype
     $buildnum = get-winvernum
+
+
     if ($buildnum -eq "2009"){$buildnum = "20H2"}
 
   
@@ -1838,7 +1885,7 @@ Function Apply-Updates($class) {
         elseif($IsPE -eq $true){Add-WindowsPackage -path ($PSScriptRoot + '\staging\mount') -PackagePath $compound -erroraction stop| Out-Null}
         else{
             if ($class -eq "LCU"){
-                if (($os -eq "Windows 10") -and (($buildnum -eq "2004") -or ($buildnum -eq "2009") -or ($buildnum -eq "20H2") -or ($buildnum -eq "21H1") -or ($buildnum -eq "21H2"))) {
+                if (($os -eq "Windows 10") -and (($buildnum -eq "2004") -or ($buildnum -eq "2009") -or ($buildnum -eq "20H2") -or ($buildnum -eq "21H1") -or ($buildnum -eq "21H2") -or ($buildnum -eq "22H2"))) {
                     update-log -data "Processing the LCU package to retrieve SSU..." -class information
                     Apply-LCU -packagepath $compound
                 }
@@ -2231,6 +2278,95 @@ Function Select-Appx {
         "Microsoft.ZuneMusic_2019.19071.19011.0_neutral_~_8wekyb3d8bbwe",
         "Microsoft.ZuneVideo_2019.19071.19011.0_neutral_~_8wekyb3d8bbwe"
         )
+    $appxWin11_22H2 = @("Clipchamp.Clipchamp_2.2.8.0_neutral_~_yxz26nhyzhsrt",
+        "Microsoft.549981C3F5F10_3.2204.14815.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.BingNews_4.2.27001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.BingWeather_4.53.33420.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.DesktopAppInstaller_2022.310.2333.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.GamingApp_2021.427.138.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.GetHelp_10.2201.421.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Getstarted_2021.2204.1.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.HEIFImageExtension_1.0.43012.0_x64__8wekyb3d8bbwe",
+        "Microsoft.HEVCVideoExtension_1.0.50361.0_x64__8wekyb3d8bbwe",
+        "Microsoft.MicrosoftOfficeHub_18.2204.1141.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MicrosoftSolitaireCollection_4.12.3171.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MicrosoftStickyNotes_4.2.2.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Paint_11.2201.22.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.People_2020.901.1724.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.PowerAutomateDesktop_10.0.3735.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.RawImageExtension_2.1.30391.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.ScreenSketch_2022.2201.12.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.SecHealthUI_1000.22621.1.0_x64__8wekyb3d8bbwe",
+        "Microsoft.StorePurchaseApp_12008.1001.113.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Todos_2.54.42772.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.VCLibs.140.00_14.0.30704.0_x64__8wekyb3d8bbwe",
+        "Microsoft.VP9VideoExtensions_1.0.50901.0_x64__8wekyb3d8bbwe",
+        "Microsoft.WebMediaExtensions_1.0.42192.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WebpImageExtension_1.0.42351.0_x64__8wekyb3d8bbwe",
+        "Microsoft.Windows.Photos_21.21030.25003.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsAlarms_2022.2202.24.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsCalculator_2020.2103.8.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsCamera_2022.2201.4.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.windowscommunicationsapps_16005.14326.20544.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsFeedbackHub_2022.106.2230.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsMaps_2022.2202.6.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsNotepad_11.2112.32.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsSoundRecorder_2021.2103.28.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsStore_22204.1400.4.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsTerminal_3001.12.10983.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Xbox.TCUI_1.23.28004.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxGameOverlay_1.47.2385.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxGamingOverlay_2.622.3232.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxIdentityProvider_12.50.6001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.YourPhone_1.22022.147.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.ZuneMusic_11.2202.46.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.ZuneVideo_2019.22020.10021.0_neutral_~_8wekyb3d8bbwe",
+        "MicrosoftCorporationII.QuickAssist_2022.414.1758.0_neutral_~_8wekyb3d8bbwe",
+        "MicrosoftWindows.Client.WebExperience_421.20070.195.0_neutral_~_cw5n1h2txyewy"
+    )
+    $appxWin10_22H2 = @(
+        "Microsoft.549981C3F5F10_1.1911.21713.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.BingWeather_4.25.20211.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.DesktopAppInstaller_2019.125.2243.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.GetHelp_10.1706.13331.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Getstarted_8.2.22942.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.HEIFImageExtension_1.0.22742.0_x64__8wekyb3d8bbwe",
+        "Microsoft.Microsoft3DViewer_6.1908.2042.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MicrosoftOfficeHub_18.1903.1152.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MicrosoftSolitaireCollection_4.4.8204.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MicrosoftStickyNotes_3.6.73.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MixedReality.Portal_2000.19081.1301.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.MSPaint_2019.729.2301.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Office.OneNote_16001.12026.20112.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.People_2019.305.632.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.ScreenSketch_2019.904.1644.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.SkypeApp_14.53.77.0_neutral_~_kzf8qxf38zg5c",
+        "Microsoft.StorePurchaseApp_11811.1001.1813.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.VCLibs.140.00_14.0.27323.0_x64__8wekyb3d8bbwe",
+        "Microsoft.VP9VideoExtensions_1.0.22681.0_x64__8wekyb3d8bbwe",
+        "Microsoft.Wallet_2.4.18324.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WebMediaExtensions_1.0.20875.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WebpImageExtension_1.0.22753.0_x64__8wekyb3d8bbwe",
+        "Microsoft.Windows.Photos_2019.19071.12548.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsAlarms_2019.807.41.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsCalculator_2020.1906.55.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsCamera_2018.826.98.0_neutral_~_8wekyb3d8bbwe",
+        "microsoft.windowscommunicationsapps_16005.11629.20316.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsFeedbackHub_2019.1111.2029.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsMaps_2019.716.2316.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsSoundRecorder_2019.716.2313.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.WindowsStore_11910.1002.513.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.Xbox.TCUI_1.23.28002.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxApp_48.49.31001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxGameOverlay_1.46.11001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxGamingOverlay_2.34.28001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxIdentityProvider_12.50.6001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.XboxSpeechToTextOverlay_1.17.29001.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.YourPhone_2019.430.2026.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.ZuneMusic_2019.19071.19011.0_neutral_~_8wekyb3d8bbwe",
+        "Microsoft.ZuneVideo_2019.19071.19011.0_neutral_~_8wekyb3d8bbwe"
+)
  
     $OS = get-windowstype
     #$buildnum = get-winvernum
@@ -2242,10 +2378,13 @@ Function Select-Appx {
         if (($buildnum -eq "2009") -or ($buildnum -eq "20H2")){$exappxs = write-output $appx2009 | out-gridview -title "Select apps to remove" -passthru}
         if ($buildnum -eq "21H1"){$exappxs = write-output $appx21H1 | out-gridview -title "Select apps to remove" -passthru}
         if ($buildnum -eq "21H2"){$exappxs = write-output $appxWin10_21H2 | out-gridview -title "Select apps to remove" -passthru}            
+        if ($buildnum -eq "22H2"){$exappxs = write-output $appxWin10_22H2 | out-gridview -title "Select apps to remove" -passthru}    
 
         }
-    if ($OS -eq "Windows 11"){$exappxs = write-output $appxWin11_21H2 | out-gridview -title "Select apps to remove" -passthru}
-
+    if ($OS -eq "Windows 11"){
+        if ($buildnum -eq "21H2"){$exappxs = write-output $appxWin11_21H2 | out-gridview -title "Select apps to remove" -passthru}
+        if ($buildnum -eq "22H2"){$exappxs = write-output $appxWin11_22H2 | out-gridview -title "Select apps to remove" -passthru}
+        }
 
     if ($exappxs -eq $null) {
         Update-Log -Data "No apps were selected" -Class Warning
@@ -2266,8 +2405,14 @@ function remove-appx($array) {
     $exappxs = $array
     update-log -data "Starting AppX removal" -class Information
     foreach ($exappx in $exappxs) {
-        Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx | Out-Null
+        try{
+        Remove-AppxProvisionedPackage -Path $WPFMISMountTextBox.Text -PackageName $exappx -ErrorAction Stop | Out-Null
         update-log -data "Removing $exappx" -Class Information
+        }
+        catch{
+        update-log -Data "Failed to remove $exappx" -Class Error
+        update-log -Data $_.Exception.Message -Class Error
+        }
     }
     return
 }
@@ -2689,9 +2834,12 @@ function display-closingtext {
     Write-Host " "
     Write-Host "-Donna Ryan" 
     Write-Host " "
-    Write-Host "twitter: @TheNotoriousDRR"
+#    Write-Host "twitter: @TheNotoriousDRR"
     Write-Host "www.MSEndpointmgr.com"
-    Write-Host "www.TheNotoriousDRR.com"
+#    Write-Host "www.TheNotoriousDRR.com"
+    write-host "Reddit: /u/TheNotoriousDRR"
+    write-host "WinAdmins Discord: TheNotoriousDRR"
+    write-host "Github: https://github.com/thenotoriousdrr/WIM-Witch"
     Write-Host " "
     Write-Host "##########################################################"
     if ($HiHungryImDad -eq $true){
@@ -2975,6 +3123,8 @@ function import-iso{
         if ($wimversion -like '10.0.19041.*') { $version = "2004" }
         if ($wimversion -like '10.0.22000.*') { $version = "21H2" }
         if ($wimversion -like '10.0.20348.*') { $version = "21H2" }
+        if ($wimversion -like '10.0.22621.*') { $version = "22H2" }
+
 
         return $version
     }
@@ -3055,16 +3205,16 @@ function import-iso{
         $version = set-version -wimversion $windowsver.version
         
         if ($version -eq 2004){
-        $global:Win10Version = $null
+        $global:Win10VerDet = $null
         invoke-19041select
-        if ($global:Win10Version -eq $null){
+        if ($global:Win10VerDet -eq $null){
             write-host "cancelling"
             return
             }
             else
             {
-            $version = $global:Win10Version
-            $global:Win10Version = $null
+            $version = $global:Win10VerDet
+            $global:Win10VerDet = $null
             }
         
         if ($version -eq "20H2"){$version = "2009"}
@@ -3150,9 +3300,9 @@ function import-iso{
     if ($WPFImportDotNetCheckBox.IsChecked -eq $true){
  
 
- If (($windowsver.imagename -like '*Windows 10*') -or (($windowsver.imagename -like '*server') -and ($windowsver.version -lt 10.0.20248.0))) {$Path = "$PSScriptRoot\Imports\DotNet\$version"}
- If (($windowsver.Imagename -like '*server*') -and ($windowsver.version -gt 10.0.20348.0)){$Path = "$PSScriptRoot\Imports\Dotnet\Windows Server\$version"}
- If ($windowsver.imagename -like '*Windows 11*')  {$Path = "$PSScriptRoot\Imports\Dotnet\Windows 11\$version"}
+        If (($windowsver.imagename -like '*Windows 10*') -or (($windowsver.imagename -like '*server') -and ($windowsver.version -lt 10.0.20248.0))) {$Path = "$PSScriptRoot\Imports\DotNet\$version"}
+        If (($windowsver.Imagename -like '*server*') -and ($windowsver.version -gt 10.0.20348.0)){$Path = "$PSScriptRoot\Imports\Dotnet\Windows Server\$version"}
+        If ($windowsver.imagename -like '*Windows 11*')  {$Path = "$PSScriptRoot\Imports\Dotnet\Windows 11\$version"}
  
  
         if ((Test-Path -Path $Path) -eq $false) {
@@ -3268,6 +3418,7 @@ function inject-dotnet {
     }
     catch {
         Update-Log -Data "Couldn't inject .Net Binaries" -Class Warning
+        Update-Log -data $_.Exception.Message -Class Error
         return
     } 
     Update-Log -Data ".Net 3.5 injection complete" -Class Information
@@ -3277,9 +3428,13 @@ function inject-dotnet {
 function check-dotnetexists {
     
     $OSType = get-windowstype
-    $buildnum = get-winvernum
+    #$buildnum = get-winvernum
+    $buildnum = $WPFSourceWimTBVersionNum.text
 
-    if ($OSType -eq "Windows 10"){$DotNetFiles = "$PSScriptRoot\imports\DotNet\$buildnum"}
+    if ($OSType -eq "Windows 10"){
+        if ($buildnum -eq "20H2"){$Buildnum = "2009"}
+        $DotNetFiles = "$PSScriptRoot\imports\DotNet\$buildnum"
+        }
     if (($OSType -eq "Windows 11") -or ($OSType -eq "Windows Server")) {$DotNetFiles = "$PSScriptRoot\imports\DotNet\$OSType\$buildnum"}
 
 
@@ -3396,8 +3551,10 @@ catch {
 #Most of this was stolen from David Segura @SeguraOSD
 function download-onedrive{
     #https://go.microsoft.com/fwlink/p/?LinkID=844652 -Possible new link location.
+    #https://go.microsoft.com/fwlink/?linkid=2181064 - x64 installer
     
-    update-log -Data "Downloading latest OneDrive agent installer..." -class Information
+
+    update-log -Data "Downloading latest 32-bit OneDrive agent installer..." -class Information
     $DownloadUrl = 'https://go.microsoft.com/fwlink/p/?LinkId=248256'
     $DownloadPath = "$PSScriptRoot\updates\OneDrive"
     $DownloadFile = 'OneDriveSetup.exe'
@@ -3409,11 +3566,26 @@ function download-onedrive{
         } else {
         Update-log -Data 'OneDrive could not be downloaded' -Class Error
     }
+
+
+    update-log -Data "Downloading latest 64-bit OneDrive agent installer..." -class Information
+    $DownloadUrl = 'https://go.microsoft.com/fwlink/?linkid=2181064'
+    $DownloadPath = "$PSScriptRoot\updates\OneDrive\x64"
+    $DownloadFile = 'OneDriveSetup.exe'
+
+    if (!(Test-Path "$DownloadPath")) {New-Item -Path $DownloadPath -ItemType Directory -Force | Out-Null}
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile "$DownloadPath\$DownloadFile"
+    if (Test-Path "$DownloadPath\$DownloadFile") {
+        Update-Log -Data 'OneDrive Download Complete' -Class Information
+        } else {
+        Update-log -Data 'OneDrive could not be downloaded' -Class Error
+    }
+
 }
 
 #function to copy new OneDrive client installer to mount path
 function copy-onedrive{
-  
+    update-log -data "Updating OneDrive x86 client" -class information
     try{
     update-log -Data "Setting ACL on the original OneDriveSetup.exe file" -Class Information
     $mountpath = $WPFMISMountTextBox.text
@@ -3463,6 +3635,57 @@ function copy-onedrive{
     }
 }
 
+#function to copy new OneDrive client installer to mount path
+function copy-onedrivex64{
+    update-log -data "Updating OneDrive x64 client" -class information
+    try{
+    update-log -Data "Setting ACL on the original OneDriveSetup.exe file" -Class Information
+    $mountpath = $WPFMISMountTextBox.text
+
+    $AclBAK = Get-Acl "$mountpath\Windows\System32\OneDriveSetup.exe"
+    $user = $env:USERDOMAIN + '\' + $env:USERNAME   
+    $Account = New-Object -TypeName System.Security.Principal.NTAccount -ArgumentList $user
+    $item = Get-Item "$mountpath\Windows\System32\OneDriveSetup.exe"
+    
+    $Acl = $null # Reset the $Acl variable to $null
+    $Acl = Get-Acl -Path $Item.FullName # Get the ACL from the item
+    $Acl.SetOwner($Account) # Update the in-memory ACL
+    Set-Acl -Path $Item.FullName -AclObject $Acl -ErrorAction Stop  # Set the updated ACL on the target item
+    update-log -Data "Ownership of OneDriveSetup.exe siezed" -Class Information
+
+    $Ar = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "FullControl", "Allow")
+    $Acl.SetAccessRule($Ar)
+    Set-Acl "$mountpath\Windows\System32\OneDriveSetup.exe" $Acl -ErrorAction Stop |out-null
+    
+    update-log -Data "ACL successfully updated. Continuing..."
+    }
+    catch{
+    Update-Log -data "Couldn't set the ACL on the original file" -Class Error
+    return
+    } 
+    
+    try{
+       
+    Update-Log -data "Copying updated OneDrive agent installer..." -Class Information
+    copy-item "$PSScriptRoot\updates\OneDrive\x64\OneDriveSetup.exe" -Destination "$mountpath\Windows\System32" -Force -ErrorAction Stop
+    Update-Log -Data "OneDrive installer successfully copied." -Class Information
+    }
+    catch{
+    Update-Log -data "Couldn't copy the OneDrive installer file." -class Error
+    Update-Log -data $_.Exception.Message -Class Error
+    return
+    }
+
+    try{
+    update-log -data "Restoring original ACL to OneDrive installer." -Class Information
+    Set-Acl "$mountpath\Windows\System32\OneDriveSetup.exe" $AclBAK -ErrorAction Stop |out-null
+    update-log -data "Restoration complete" -Class Information
+    }
+    catch{
+    Update-Log "Couldn't restore original ACLs. Continuing." -Class Error
+    }
+}
+
 #Function to call the next three functions. This determines WinOS and WinVer and calls the function
 function select-LPFODCriteria($Type){
 
@@ -3471,7 +3694,7 @@ function select-LPFODCriteria($Type){
     $WinVer = $WPFSourceWimTBVersionNum.text
 
     if ($WinOS -eq "Windows 10"){
-        if (($Winver -eq "2009") -or ($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "21H2")) {$winver = "2004"} 
+        if (($Winver -eq "2009") -or ($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "21H2") -or ($winver -eq "22H2")) {$winver = "2004"} 
     }
 
     if ($type -eq "LP"){
@@ -5214,19 +5437,10 @@ $Win10_2004_FODs = @("Accessibility.Braille~~~~0.0.1.0",
 function apply-LanguagePacks{
     Update-Log -data "Applying Language Packs..." -Class Information
 
-#Delete after 2/2022 
-#    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
-#        Else
-#            {$WinOS = "Windows Server"}
-#    
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.19041.*") { $WinVer = "2004" }
-
     $WinOS = get-windowstype
     $Winver = get-winvernum
 
-    if (($WinOS -eq "Windows 10") -and (($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "2009") -or ($winver -eq "21H2"))) {$winver = "2004"}
+    if (($WinOS -eq "Windows 10") -and (($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "2009") -or ($winver -eq "21H2") -or ($winver -eq "22H2"))) {$winver = "2004"}
 
     $mountdir = $WPFMISMountTextBox.text
 
@@ -5240,8 +5454,17 @@ foreach ($item in $items){
     Update-Log -Data $text -Class Information
     
     try{
-    Add-WindowsPackage -PackagePath $source -Path $mountdir -ErrorAction Stop | out-null
-    Update-Log -Data "Injection Successful" -Class Information
+    
+        if ($demomode -eq $true){
+        $string = "Demo mode active - not applying " + $source
+        update-log -data $string -Class Warning
+        }
+        else
+        {
+        Add-WindowsPackage -PackagePath $source -Path $mountdir -ErrorAction Stop | out-null
+        Update-Log -Data "Injection Successful" -Class Information
+        }
+    
     }
     catch
     {
@@ -5257,21 +5480,12 @@ Update-Log -Data "Language Pack injections complete" -Class Information
 function apply-localexperiencepack{
      Update-Log -data "Applying Local Experience Packs..." -Class Information
 
-#Delete this block after 2/2022
-#    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
-#        Else
-#            {$WinOS = "Windows Server"}
-#    
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.19041.*") { $WinVer = "2004" }
-
     $mountdir = $WPFMISMountTextBox.text
 
     $WinOS = get-windowstype
     $Winver = get-winvernum
 
-    if (($WinOS -eq "Windows 10") -and (($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "2009") -or ($winver -eq "21H2"))) {$winver = "2004"}
+    if (($WinOS -eq "Windows 10") -and (($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "2009") -or ($winver -eq "21H2") -or ($winver -eq "22H2"))) {$winver = "2004"}
 
 $LPSourceFolder = $PSScriptRoot + '\imports\Lang\' + $WinOS + '\' + $winver + '\localexperiencepack\'
 $items = $WPFCustomLBLEP.items
@@ -5300,22 +5514,12 @@ Update-Log -Data "Local Experience Pack injections complete" -Class Information
 function apply-FODs{
     Update-Log -data "Applying Features On Demand..." -Class Information
 
-#Delete this block after 2/2022
-#    if ($WPFSourceWIMImgDesTextBox.text -like '*10*'){$WinOS = "Windows 10"}
-#        Else
-#           {$WinOS = "Windows Server"}
-#    
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $WinVer = "1909" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $WinVer = "1809" }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.19041.*") { $WinVer = "2004" }
-
-
     $mountdir = $WPFMISMountTextBox.text
 
     $WinOS = get-windowstype
     $Winver = get-winvernum
 
-    if (($WinOS -eq "Windows 10") -and (($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "2009") -or ($winver -eq "21H2"))) {$winver = "2004"}
+    if (($WinOS -eq "Windows 10") -and (($winver -eq "20H2") -or ($winver -eq "21H1") -or ($winver -eq "2009") -or ($winver -eq "21H2") -or ($winver -eq "22H2"))) {$winver = "2004"}
 
 
 $FODsource = $PSScriptRoot + '\imports\FODs\' + $winOS + '\' + $Winver + '\'
@@ -5824,7 +6028,10 @@ function invoke-MEMCMUpdatecatalog($prod,$ver){
         }
 
     if ($UpdateName -like "*Windows 10*"){
-    if (($UpdateName -like "* 1903 *") -or ($UpdateName -like "* 1909 *") -or ($UpdateName -like "* 2004 *") -or ($UpdateName -like "* 20H2 *") -or ($UpdateName -like "* 21H1 *") -or ($UpdateName -like "* 21H2 *")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
+#here
+    #if (($UpdateName -like "* 1903 *") -or ($UpdateName -like "* 1909 *") -or ($UpdateName -like "* 2004 *") -or ($UpdateName -like "* 20H2 *") -or ($UpdateName -like "* 21H1 *") -or ($UpdateName -like "* 21H2 *") -or ($UpdateName -like "* 22H2 *")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
+
+    if (($UpdateName -like "* 1903 *") -or ($UpdateName -like "* 1909 *") -or ($UpdateName -like "* 2004 *") -or ($UpdateName -like "* 20H2 *") -or ($UpdateName -like "* 21H1 *") -or ($UpdateName -like "* 21H2 *") -or ($UpdateName -like "* 22H2 *")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
         else{$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10'"}
         if ($updateName -like "*Dynamic*"){
             if ($WPFUpdatesCBEnableDynamic.IsChecked -eq $True){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10 Dynamic Update'"}
@@ -5932,7 +6139,11 @@ function invoke-MEMCMUpdatecatalog($prod,$ver){
 
     if ($prod -eq 'Windows 10'){     
 #        if (($ver -ge '1903') -or ($ver -eq "21H1")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
-        if (($ver -ge '1903') -or ($ver -eq "21H1") -or ($ver -eq "20H2") -or ($ver -eq "21H2")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
+#        if (($ver -ge '1903') -or ($ver -eq "21H1") -or ($ver -eq "20H2") -or ($ver -eq "21H2") -or ($ver -eq "22H2")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
+#here 
+        if (($ver -ge '1903') -or ($ver -like "2*")){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10, version 1903 and later'"}
+
+
         if ($ver -le '1809'){$WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 10'"}  
 
         $Updates = (Get-WmiObject -Namespace "root\SMS\Site_$($global:SiteCode)" -Class SMS_SoftwareUpdate -ComputerName $global:SiteServer -Filter $WMIQueryFilter -ErrorAction Stop | Where-Object { ($_.IsSuperseded -eq $false) -and ($_.LocalizedDisplayName -like "*$($ver)*$($Arch)*")} )
@@ -5956,7 +6167,10 @@ function invoke-MEMCMUpdatecatalog($prod,$ver){
 
      if($prod -eq 'Windows 11'){
         $WMIQueryFilter = "LocalizedCategoryInstanceNames = 'Windows 11'"
-        $Updates = (Get-WmiObject -Namespace "root\SMS\Site_$($global:SiteCode)" -Class SMS_SoftwareUpdate -ComputerName $global:SiteServer -Filter $WMIQueryFilter -ErrorAction Stop | Where-Object { ($_.IsSuperseded -eq $false) -and ($_.LocalizedDisplayName -like "*$($Arch)*") } )
+        #$Updates = (Get-WmiObject -Namespace "root\SMS\Site_$($global:SiteCode)" -Class SMS_SoftwareUpdate -ComputerName $global:SiteServer -Filter $WMIQueryFilter -ErrorAction Stop | Where-Object { ($_.IsSuperseded -eq $false) -and ($_.LocalizedDisplayName -like "*$($Arch)*") } )
+        if ($ver -eq "21H2"){$Updates = (Get-WmiObject -Namespace "root\SMS\Site_$($global:SiteCode)" -Class SMS_SoftwareUpdate -ComputerName $global:SiteServer -Filter $WMIQueryFilter -ErrorAction Stop | Where-Object { ($_.IsSuperseded -eq $false) -and ($_.LocalizedDisplayName -like "*Windows 11 for $($Arch)*") } )}
+            else{$Updates = (Get-WmiObject -Namespace "root\SMS\Site_$($global:SiteCode)" -Class SMS_SoftwareUpdate -ComputerName $global:SiteServer -Filter $WMIQueryFilter -ErrorAction Stop | Where-Object { ($_.IsSuperseded -eq $false) -and ($_.LocalizedDisplayName -like "*$($ver)*$($Arch)*") } )}
+
 
         }
 
@@ -5976,7 +6190,7 @@ function invoke-MEMCMUpdatecatalog($prod,$ver){
  
  
     foreach ($update in $updates){
-        if ((($update.localizeddisplayname -notlike "Feature update*") -and ($update.localizeddisplayname -notlike "Upgrade to Windows 11*" )) -and ($update.localizeddisplayname -notlike "*Language Pack*")){
+        if ((($update.localizeddisplayname -notlike "Feature update*") -and ($update.localizeddisplayname -notlike "Upgrade to Windows 11*" )) -and ($update.localizeddisplayname -notlike "*Language Pack*") -and ($update.localizeddisplayname -notlike "*editions),*")){
             update-log -Data "Checking the following update:" -Class Information
             update-log -data $update.localizeddisplayname -Class Information
             #write-host "Display Name"
@@ -6053,6 +6267,7 @@ function invoke-MEMCMUpdateSupersedence($prod,$Ver){
     }
     
     cd $PSSCriptRoot
+    update-log -data "Supersedence check complete" -class Information
 }
 
 #Function to update source from ConfigMgr when Making It So
@@ -6704,11 +6919,14 @@ function get-winvernum{
     If ($WPFSourceWimVerTextBox.text -like "10.0.14393.*") { $buildnum = 1607 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17763.*") { $buildnum = 1809 }
     If ($WPFSourceWimVerTextBox.text -like "10.0.17134.*") { $buildnum = 1803 }
-    If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }
-#    If ($WPFSourceWimVerTextBox.text -like "10.0.19041.*") { $buildnum = 2004 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.16299.*") { $buildnum = 1709 }   
     If ($WPFSourceWimVerTextBox.text -like "10.0.22000.*") { $buildnum = "21H2" }
     If ($WPFSourceWimVerTextBox.text -like "10.0.20348.*") { $buildnum = "21H2" }
     If ($WPFSourceWimVerTextBox.text -like "10.0.18362.*") { $buildnum = 1909 }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.19042.*") { $buildnum = "20H2" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.19043.*") { $buildnum = "21H1" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.19044.*") { $buildnum = "21H2" }
+    If ($WPFSourceWimVerTextBox.text -like "10.0.22621.*") { $buildnum = "22H2" }
  
     If ($WPFSourceWimVerTextBox.text -like "10.0.19041.*") { 
             $IsMountPoint = $False
@@ -6727,6 +6945,7 @@ function get-winvernum{
                 if ($regvalues.CurrentBuild -eq "19042"){$buildnum = "2009"}
                 if ($regvalues.CurrentBuild -eq "19043"){$buildnum = "21H1"}
                 if ($regvalues.CurrentBuild -eq "19044"){$buildnum = "21H2"}
+                if ($regvalues.CurrentBuild -eq "19045"){$buildnum = "22H2"}
                 }
             
             reg UNLOAD HKLM\OFFLINE | Out-Null
@@ -6735,16 +6954,23 @@ function get-winvernum{
             }
 
         If ($IsMountPoint -eq $False){
-            $global:Win10Version = $null
+            $global:Win10VerDet = $null
+            
+            #$global:Win10VerDet = ""
+            
+            
             update-log -data "Prompting user for Win10 version confirmation..." -class Information
+            
             invoke-19041select
            
-            if ($global:Win10Version -eq $null){return}
-            $temp = $global:Win10Version
+            if ($global:Win10VerDet -eq $null){return}
+            
+            $temp = $global:Win10VerDet
+            
             $buildnum = $temp
             update-log -data "User selected $buildnum" -class Information
           
-            $global:Win10Version = $null
+            $global:Win10VerDet = $null
 
         } 
     }
@@ -7119,18 +7345,20 @@ function invoke-2XXXprereq{
 
 #Function to display text notification to end user
 function invoke-textnotification{
-    update-log -data "*********************************" -class Comment
-    update-log -data "This version brings: " -class Comment
-    update-log -data " " -class Comment
-    update-log -data "Support for updated WIMs. RTM media is no longer required."  -class Comment
-    update-log -data "Console users are now prompted to confirm the version of certain Win10 versions."  -class Comment
-    update-log -data "This should fix errors selecting Win10 images and their customizations"  -class Comment
-    update-log -data " " -class Comment
-    update-log -data "If you are using Save/Load functionality, this update adds an"  -class Comment
-    update-log -data "an additional field that is saved. While the older save files should"  -class Comment
-    update-log -data "still work, if you need to edit them, you may need to re-select the source WIM."  -class Comment
-    update-log -data " "  -Class Comment
-    update-log -data "*********************************" -class Comment
+    update-log -data "*********************************" -class Warning
+    update-log -data "Notice to users - WIM Witch has gone End Of Life" -class Warning
+    update-log -data " " -class warning
+    update-log -data "Development and maintenance of WIM Witch" -Class warning
+    update-log -data "has been stopped by the owner." -Class warning
+    update-log -data "She should continue to function until the next" -Class warning
+    update-log -data "versions of Win10/11 are released." -Class warning
+    update-log -data " " -Class warning
+    update-log -data "Thank you for using this tool. " -Class warning
+    update-log -data "I appreciate you!" -Class warning
+    update-log -data " " -Class warning
+    update-log -data "-Donna Ryan, Mistress of WIM Witch" -Class warning
+    update-log -data "January 2023" -Class warning
+    update-log -data "*********************************" -class warning
 
 }
 
@@ -7186,20 +7414,20 @@ get-variable WPF*
 Get-FormVariables | out-null
 
 #Combo Box population
-$Win10VerNums = @("20H2","21H1","21H2")
+$Win10VerNums = @("20H2","21H1","21H2","22H2")
 Foreach ($Win10VerNum in $Win10VerNums){$WPFWin10PUCombo.Items.Add($Win10VerNum)| out-null }
 
 
 #Button_OK_Click
 $WPFWin10PUOK.Add_Click({
-    $global:Win10Version = $WPFWin10PUCombo.SelectedItem
+    $global:Win10VerDet = $WPFWin10PUCombo.SelectedItem
     $Form.Close()
     return 
 })
 
 #Button_Cancel_Click
 $WPFWin10PUCancel.Add_Click({
-    $global:Win10Version = $null
+    $global:Win10VerDet = $null
     update-log -data "User cancelled the confirmation dialog box" -Class Warning
     $Form.Close()
     return 
@@ -7286,7 +7514,7 @@ $WPFMISUpdatesTextBox.Text = "False"
 
 $WPFMISAppxTextBox.Text = "False"
 
-#$WPFAppTab.IsEnabled = $False
+$global:Win10VerDet = ""
 
 #===========================================================================
 # Section for Combo box functions
@@ -7297,8 +7525,8 @@ $WPFMISAppxTextBox.Text = "False"
 $ObjectTypes = @("Language Pack","Local Experience Pack","Feature On Demand")
 $WinOS = @("Windows Server","Windows 10","Windows 11")
 $WinSrvVer = @("2019","21H2")
-$Win10Ver = @("1809","1903","1909","2004")
-$Win11Ver = @("21H2")
+$Win10Ver = @("1809","2004")
+$Win11Ver = @("21H2","22H2")
 
 Foreach ($ObjectType in $ObjectTypes){$WPFImportOtherCBType.Items.Add($ObjectType) | out-null}
 Foreach ($WinOS in $WinOS){$WPFImportOtherCBWinOS.Items.Add($WinOS) | out-null}  
@@ -7691,6 +7919,12 @@ $WPFCMBSetCM.Add_Click({
 
     })
 
+#Button to tell dad joke - unanimously requested by WW users at MMSMOA 2022
+$WPFImportBDJ.Add_Click({
+    $joke = invoke-dadjoke
+    $DadjokePrompt = ([System.Windows.MessageBox]::Show($joke,"Hi hungry, I'm Dad",'OK'))
+    })
+
 #===========================================================================
 # Section for Checkboxes to call functions
 #===========================================================================
@@ -7773,7 +8007,7 @@ $WPFImportDotNetCheckBox.Add_Click( {
 #Enable Win10 version selection
 $WPFUpdatesW10Main.Add_Click( {
         If ($WPFUpdatesW10Main.IsChecked -eq $true) {
-            $WPFUpdatesW10_1909.IsEnabled = $True
+            #$WPFUpdatesW10_1909.IsEnabled = $True
             $WPFUpdatesW10_1903.IsEnabled = $True
             $WPFUpdatesW10_1809.IsEnabled = $True
             $WPFUpdatesW10_1803.IsEnabled = $True
@@ -7782,9 +8016,10 @@ $WPFUpdatesW10Main.Add_Click( {
             $WPFUpdatesW10_20H2.IsEnabled = $True
             $WPFUpdatesW10_21H1.IsEnabled = $True
             $WPFUpdatesW10_21H2.IsEnabled = $True
+            $WPFUpdatesW10_22H2.IsEnabled = $True
         }
         else {
-            $WPFUpdatesW10_1909.IsEnabled = $False
+            #$WPFUpdatesW10_1909.IsEnabled = $False
             $WPFUpdatesW10_1903.IsEnabled = $False
             $WPFUpdatesW10_1809.IsEnabled = $False
             $WPFUpdatesW10_1803.IsEnabled = $False
@@ -7793,6 +8028,19 @@ $WPFUpdatesW10Main.Add_Click( {
             $WPFUpdatesW10_20H2.IsEnabled = $False
             $WPFUpdatesW10_21H1.IsEnabled = $False
             $WPFUpdatesW10_21H2.IsEnabled = $False
+            $WPFUpdatesW10_22H2.IsEnabled = $False           
+        }
+    })
+
+#Enable Win11 version selection
+$WPFUpdatesW11Main.Add_Click( {
+        If ($WPFUpdatesW11Main.IsChecked -eq $true) {
+            $WPFUpdatesW11_21H2.IsEnabled = $True
+            $WPFUpdatesW11_22H2.IsEnabled = $True
+        }
+        else {
+            $WPFUpdatesW11_21H2.IsEnabled = $False
+            $WPFUpdatesW11_22H2.IsEnabled = $False
            
         }
     })
@@ -8021,6 +8269,7 @@ invoke-textnotification
 if ($HiHungryImDad -eq $true){
     $string = invoke-dadjoke
     Update-Log -Data $string -Class Comment
+    $WPFImportBDJ.Visibility = "Visible"
 }
 
 #Start GUI 
